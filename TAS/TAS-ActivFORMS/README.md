@@ -79,3 +79,40 @@ Address already in use`; `pkill -f application.MainGui` clears it.
   but every engine is left with `engine == null`, ready to NPE once actually used.
 - `bin/` and `TAS_gui/build/` are the same stale Eclipse/Ant-NetBeans build output
   as in `TAS.v1.6` -- unrelated to `out/`, which `build.sh`/`clean.sh` manage.
+- The GUI's "Open -> open ActivFORMS" menu action (`ApplicationController.java`,
+  `openActivFORMS.setOnAction`) launches `ActivFORMSv2.7.jar`'s own bundled JavaFX
+  viewer (`javafx.gui.MainApplication`) as a separate process, connecting to the
+  already-running engines on `localhost:9000-9002`. The original code ran a bare
+  `java -jar ...` with no JavaFX wiring (fails immediately with `NoClassDefFoundError`
+  on a JDK that doesn't bundle JavaFX) and used `Runtime.exec(String)`, which never
+  reads the child process's output -- so the crash was completely invisible. Fixed to
+  build the same `--module-path`/`--add-modules` flags `run.sh` uses (reading
+  `JAVAFX_HOME`, same default as the scripts) and to use
+  `new ProcessBuilder(...).inheritIO().start()` so a future crash actually surfaces.
+- **Fixed**: the ActivFORMS viewer (`javafx.gui.MainApplication`, launched by the
+  action above) used to become unresponsive ("... Is Not Responding") within a
+  minute or two of a live session, sometimes preceded by a
+  `java.net.SocketException: Connection reset` in `GoalManager.connectionLoop()`.
+  Root cause, found by decompiling `ActivFORMSv2.7.jar`'s `ActivFORMSEngine` class
+  (Fernflower, since its own classes are Java 24-targeted -- needed a JDK 21+ `java`
+  to run the decompiler, e.g. the one bundled with VS Code's Java extension):
+  `TickerTask.run()` calls `updateGlobalDataToClients()` -- a full Gson JSON
+  serialization + broadcast of the entire model state to every connected viewer --
+  on every tick, and the tick period is set directly, in literal milliseconds, by
+  `engine.setRealTimeUnit(...)`. All three engines called this with `1`, i.e. a
+  full state broadcast roughly every millisecond (~1000/sec) -- far beyond what
+  any viewer UI or socket client can keep up with. This is TAS's *own* source
+  (`ModelAdaptationEngine`/`ModelEvolutionEngine`/`GoalManagementEngine`), not
+  inside the compiled jar, so it was fixable: changed to `1000` (1 tick/sec) in
+  all three. Note this is a real timing-fidelity tradeoff, not a purely cosmetic
+  setting -- it also slows how fast the model's real-time clocks advance relative
+  to the configured service response times, which is coupled to when the model
+  decides adaptation is needed.
+- The `Gdk-WARNING: XSetErrorHandler() called with a GDK error trap pushed`
+  console message seen during the old hang is a native GTK/Glass warning from
+  inside `ActivFORMSv2.7.jar`'s compiled GUI code (no source available to check)
+  -- likely just a symptom of the flood above rather than a separate issue, not
+  fully confirmed either way. If a hung instance still turns up, `kill -9` (or the
+  desktop's "Force Quit") is needed to clear it -- plain `kill`/SIGTERM isn't
+  always honored by these JavaFX/GTK processes, matching what killed
+  `application.MainGui` unreliably during development too.

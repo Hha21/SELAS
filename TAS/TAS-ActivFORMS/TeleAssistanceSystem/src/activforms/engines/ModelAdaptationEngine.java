@@ -38,7 +38,11 @@ public class ModelAdaptationEngine implements AdaptationEngine{
 	    engine = new ActivFORMSEngine("resources/models/model-adaptation.xml", 9000);
 
 	    //engine = new ActivFORMSEngine("/Users/muiadmin/Dropbox/TAS-ActivFORMS/code/TeleAssistanceSystem/resources/models/model-adaptation.xml", 9000);
-	    engine.setRealTimeUnit(1);
+	    // 1 tick/sec, not the original 1ms: at 1ms the engine broadcasts a full model-state
+	    // snapshot to any connected viewer ~1000x/sec, which overwhelms it (unresponsive within
+	    // ~1-2 min). This also slows the model's real-time clock relative to wall-clock service
+	    // response times -- a real timing-fidelity tradeoff, not just a cosmetic refresh rate.
+	    engine.setRealTimeUnit(1000);
 	    
 	    // Set Probe and Effector
 	    probe = new Probe(engine);

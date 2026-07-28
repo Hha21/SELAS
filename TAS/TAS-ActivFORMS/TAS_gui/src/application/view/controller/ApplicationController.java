@@ -882,9 +882,20 @@ public class ApplicationController implements Initializable {
 //			dialogStage.setScene(scene);
 //			dialogStage.setTitle("ActivFORMS");
 //			dialogStage.show();	  
-		    String command = String.format("java -jar %s ModelAdaptation ModelEvolution GoalManagement", System.getProperty("user.dir") + "/libs/ActivFORMSv2.7.jar");
-		    System.out.println(command);
-		        Runtime.getRuntime().exec(command);
+		    // This launches ActivFORMSv2.7.jar's own bundled JavaFX viewer (javafx.gui.MainApplication)
+		    // as a separate JVM, connecting to the already-running engines on localhost:9000-9002.
+		    // A bare "java -jar" has no JavaFX on its classpath (not bundled since JDK 11), and with
+		    // Runtime.exec(String) the child's stdout/stderr are never read, so a crash here is
+		    // completely invisible -- inheritIO() below surfaces it in this process's own console.
+		    String javafxHome = System.getenv("JAVAFX_HOME");
+		    if (javafxHome == null) javafxHome = System.getProperty("user.home") + "/tools/javafx-sdk-17.0.15";
+		    String jarPath = System.getProperty("user.dir") + "/libs/ActivFORMSv2.7.jar";
+		    ProcessBuilder pb = new ProcessBuilder(
+			"java", "--module-path", javafxHome + "/lib",
+			"--add-modules", "javafx.controls,javafx.fxml,javafx.swing",
+			"-jar", jarPath, "ModelAdaptation", "ModelEvolution", "GoalManagement");
+		    System.out.println(String.join(" ", pb.command()));
+		    pb.inheritIO().start();
 		} catch(Exception exception) {
 			exception.printStackTrace();
 		}

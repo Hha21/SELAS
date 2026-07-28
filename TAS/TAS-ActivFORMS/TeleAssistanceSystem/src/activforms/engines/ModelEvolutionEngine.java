@@ -35,7 +35,8 @@ public class ModelEvolutionEngine implements AdaptationEngine{
 	    //engine = new ActivFORMSEngine("resources/models/model-adaptation.xml", 9001);
 	    engine = new ActivFORMSEngine("resources/models/model-evolution.xml", 9001);
 	    //engine.setCommittedLocationTime(1000);
-	    engine.setRealTimeUnit(1);
+	    // See ModelAdaptationEngine's setRealTimeUnit for why this isn't the original 1ms.
+	    engine.setRealTimeUnit(1000);
 	    probe = new Probe(engine);
 	    effector = new Effector(engine, workflowEffector, probe);
 	    

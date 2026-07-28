@@ -43,7 +43,8 @@ public class GoalManagementEngine implements AdaptationEngine{
 	try {
 	    //String path=TASStart.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 	    engine = new ActivFORMSEngine("Regular","resources/models/regular-mode.xml", 9002);
-	    engine.setRealTimeUnit(1);
+	    // See ModelAdaptationEngine's setRealTimeUnit for why this isn't the original 1ms.
+	    engine.setRealTimeUnit(1000);
 	   	    
 	    probe = new Probe(engine);
 	    effector = new Effector(engine, workflowEffector, probe);
