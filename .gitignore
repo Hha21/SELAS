@@ -1,18 +1,22 @@
 # Copyrighted paper (not ours to redistribute) -- see README for citation instead
 TAS/Tele_Assistance_A_Self-Adaptive_Service-Based_System_Exemplar.pdf
 
-# Build output produced by TAS/TAS.v1.6/build.sh
-TAS/TAS.v1.6/*/out/
+# Build output produced by build.sh in each TAS variant (TAS.v1.6, TAS-ActivFORMS, ...)
+TAS/*/*/out/
 
-# Stale precompiled output shipped in the original TAS.v1.6 distribution
-TAS/TAS.v1.6/*/bin/
+# Stale precompiled output shipped in the original distributions
+TAS/*/*/bin/
 
-# Stale Ant/NetBeans build+deploy tree shipped in the original distribution
+# Stale Ant/NetBeans build+deploy tree shipped in the original distributions
 # (duplicated source, duplicated libs, compiled classes, dist jars, old JNLP files)
-TAS/TAS.v1.6/TAS_gui/build/
+TAS/*/TAS_gui/build/
 
 # Eclipse workspace metadata (not per-project config -- large, personal, IDE-only)
-TAS/TAS.v1.6/.metadata/
+TAS/*/.metadata/
+
+# Runtime-generated output from running the GUI (TAS_gui/results/), in each TAS variant
+TAS/*/TAS_gui/results/log.csv
+TAS/*/TAS_gui/results/result.csv
 
 # macOS
 **/.DS_Store
