@@ -32,8 +32,13 @@ javac -d "$TAS/out" \
 echo "== TAS_gui =="
 mkdir -p "$GUI/out/application/view"
 find "$GUI/src" -name "*.java" > "$ROOT/.gui_sources.txt"
+# GUI code calls into RSP/TeleAssistanceSystem classes (e.g. ProfileExecutor's XStream
+# usage) that pull in those modules' own libs transitively at runtime -- Eclipse's project
+# references don't propagate a dependency's library jars downstream, so pull in RSP's and
+# TeleAssistanceSystem's full libs/ here too, not just TAS_gui's own three. jfxrt.jar
+# (legacy JDK8 JavaFX runtime) stays excluded to avoid clashing with the JavaFX SDK.
 javac -d "$GUI/out" \
-  -cp "$TAS/out:$RSP/out:$GUI/libs/antlrworks-1.5.2-complete.jar:$GUI/libs/itext-pdfa-5.5.5.jar:$GUI/libs/itext-xtra-5.5.5.jar:$GUI/libs/itextpdf-5.5.5.jar:$JAVAFX_HOME/lib/*" \
+  -cp "$TAS/out:$RSP/out:$RSP/libs/*:$TAS/libs/*:$GUI/libs/antlrworks-1.5.2-complete.jar:$GUI/libs/itext-pdfa-5.5.5.jar:$GUI/libs/itext-xtra-5.5.5.jar:$GUI/libs/itextpdf-5.5.5.jar:$JAVAFX_HOME/lib/*" \
   @"$ROOT/.gui_sources.txt"
 # javac only compiles .java files -- fxml/css sit alongside the source and are loaded
 # via getClass().getResource(...) at runtime, so copy them into the output tree too

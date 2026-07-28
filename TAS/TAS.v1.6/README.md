@@ -49,3 +49,15 @@ Dependency order: `ResearchServicePlatform -> TeleAssistanceSystem -> TAS_gui`.
 - `bin/` directories under each module are stale precompiled output from
   whenever this was last built in Eclipse — unrelated to `out/`, which is
   what `build.sh`/`clean.sh` produce/remove.
+- TAS_gui's own `libs/` doesn't have everything it needs at runtime: GUI code
+  calls into RSP/TeleAssistanceSystem classes (e.g. `ProfileExecutor`'s
+  XStream-based profile loading, used by the Inspect/Edit Profile action) that
+  pull in *those* modules' own libraries. Eclipse's project references don't
+  propagate a dependency's library jars downstream, so `build.sh`/`run.sh`
+  pull in RSP's and TeleAssistanceSystem's full `libs/` for TAS_gui too.
+- Runtime needs four `--add-opens` flags (see `run.sh`): XStream 1.5.0
+  reflectively `setAccessible()`s several private JDK-internal fields when
+  its constructor registers built-in converters, which JPMS blocks by default
+  since Java 9. Found by trial-and-error against the Inspect/Edit Profile
+  action specifically — a different XStream code path in the app could
+  surface a `InaccessibleObjectException` for a package not yet in that list.
