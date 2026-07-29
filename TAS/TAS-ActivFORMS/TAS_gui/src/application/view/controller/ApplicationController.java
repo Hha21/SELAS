@@ -245,9 +245,23 @@ public class ApplicationController implements Initializable {
     Object currentAdaptation="No Adaptation";
     
     private String currentPath;
-    
+
     ProgressBar progressBar;
     Label invocationLabel;
+
+    // Was: each of chartController's/tableViewController's ~11 chart/table methods
+    // independently re-opened and re-read the whole result.csv file. For a long run
+    // (tens of thousands of lines) that froze the UI right when the run finished, since
+    // all of it runs on the JavaFX Application Thread via Platform.runLater. Read once
+    // here, reuse across all of them.
+    private List<String> readResultLines(){
+    	try {
+    		return Files.readAllLines(Paths.get(resultFilePath));
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		return new ArrayList<>();
+    	}
+    }
 
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
@@ -398,7 +412,7 @@ public class ApplicationController implements Initializable {
     		 public void handle(KeyEvent event){
     			if (event.getCode().equals(KeyCode.ENTER)){
     				//System.out.println(sliceTextField.getText());
-					chartController.generateAvgCharts(resultFilePath, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
+					chartController.generateAvgCharts(readResultLines(), tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
     		    }
     		 }
     	});
@@ -545,23 +559,15 @@ public class ApplicationController implements Initializable {
     		File file = fileChooser.showOpenDialog(primaryStage);
     		if (file != null) {
     		    try {
-    			BufferedReader br = new BufferedReader(new FileReader(file.getPath()));
-    			String line;
-    			int invocationNum = 0;
-    			while ((line = br.readLine()) != null) {
-    			    String[] str = line.split(",");
-    			    if (str.length >= 3) {
-    				invocationNum = Integer.parseInt(str[0]);
-    			    }
-    			}
-    			br.close();
+    			List<String> fileLines = Files.readAllLines(Paths.get(file.getPath()));
+    			List<String> lines = readResultLines();
 
-    			chartController.generateCharts(resultFilePath, tasStart.getCurrentSteps());
-    			chartController.generateAvgCharts(resultFilePath, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
-    			
-    			tableViewController.fillReliabilityDate(file.getPath());
-    			tableViewController.fillCostData(file.getPath());
-    			tableViewController.fillPerformanceData(file.getPath());
+    			chartController.generateCharts(lines, tasStart.getCurrentSteps());
+    			chartController.generateAvgCharts(lines, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
+
+    			tableViewController.fillReliabilityDate(fileLines);
+    			tableViewController.fillCostData(fileLines);
+    			tableViewController.fillPerformanceData(fileLines);
     		    } catch (Exception e) {
     			e.printStackTrace();
     		    }
@@ -1162,12 +1168,13 @@ public class ApplicationController implements Initializable {
         						chartController.clear();
         						tableViewController.clear();
         						
-        						chartController.generateCharts(resultFilePath, tasStart.getCurrentSteps());
-        						chartController.generateAvgCharts(resultFilePath, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
+        						List<String> lines = readResultLines();
+        						chartController.generateCharts(lines, tasStart.getCurrentSteps());
+        						chartController.generateAvgCharts(lines, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
 
-        					    tableViewController.fillReliabilityDate(resultFilePath);
-        					    tableViewController.fillCostData(resultFilePath);
-        						tableViewController.fillPerformanceData(resultFilePath);
+        					    tableViewController.fillReliabilityDate(lines);
+        					    tableViewController.fillCostData(lines);
+        						tableViewController.fillPerformanceData(lines);
         					}
     				    });
     				}
@@ -1232,12 +1239,13 @@ public class ApplicationController implements Initializable {
     				chartController.clear();
     				tableViewController.clear();
     				
-    				chartController.generateCharts(resultFilePath, tasStart.getCurrentSteps());
-    				chartController.generateAvgCharts(resultFilePath, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
+    				List<String> lines = readResultLines();
+    				chartController.generateCharts(lines, tasStart.getCurrentSteps());
+    				chartController.generateAvgCharts(lines, tasStart.getCurrentSteps(),Integer.parseInt(sliceTextField.getText()));
 
-    			    tableViewController.fillReliabilityDate(resultFilePath);
-    			    tableViewController.fillCostData(resultFilePath);
-    				tableViewController.fillPerformanceData(resultFilePath);
+    			    tableViewController.fillReliabilityDate(lines);
+    			    tableViewController.fillCostData(lines);
+    				tableViewController.fillPerformanceData(lines);
     			}
     		    });
     	    }

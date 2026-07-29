@@ -16,9 +16,21 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 public class Log {
+	// Unbounded logData caused long runs (e.g. 10,000-step profiles) to grow memory/JavaFX
+	// list-change overhead without limit, and re-reading the whole persisted log file on every
+	// startup compounded it across sessions. Cap it; the on-disk file (out.println below) still
+	// keeps the full history, only the in-memory/GUI-visible list is bounded.
+	private static final int MAX_ENTRIES = 2000;
 	public static ObservableList<LogEntry> logData = FXCollections.observableArrayList();
-	private static PrintWriter out; 
+	private static PrintWriter out;
 	private static String logFile;
+
+	private static void addEntry(LogEntry entry){
+		logData.add(entry);
+		if (logData.size() > MAX_ENTRIES) {
+			logData.remove(0);
+		}
+	}
 	
 	public static void initialize(String file){
 		try {
@@ -39,7 +51,7 @@ public class Log {
         Date date = new Date();  
         String time=dataFormat.format(date).toString();
 
-		logData.add(new LogEntry(time,title,message));
+		addEntry(new LogEntry(time,title,message));
 		out.println(time+","+title+","+message);
 	}
 	
@@ -93,7 +105,7 @@ public class Log {
 	        while ((line = br.readLine()) != null) {
 				String[] strs=line.split(",");
 				if(strs.length==3){
-					logData.add(new LogEntry(strs[0],strs[1],strs[2]));
+					addEntry(new LogEntry(strs[0],strs[1],strs[2]));
 				}
 			}
 			br.close();

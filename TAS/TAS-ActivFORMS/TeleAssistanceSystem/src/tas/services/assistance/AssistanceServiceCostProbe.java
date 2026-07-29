@@ -30,24 +30,45 @@ public class AssistanceServiceCostProbe implements WorkflowProbeInterface,CostPr
     private static String resultFilePath="results"+File.separator+"result.csv";
     //private static String resultFilePath="result.csv";
     private double totalCost=0;
-    
+
     private StringBuilder resultBuilder;
     public int workflowInvocationCount=0;
     private Map<String,Double> delays=new HashMap<>();
+    // workflowEnded() used to open/write/close a fresh FileWriter on every single step --
+    // for a 10,000-step run, 10,000 blocking file-open/close cycles on the same thread
+    // driving the workflow loop. One persistent writer, flushed (not closed) per step,
+    // removes that per-step I/O cost; still durable since flush() forces it to disk.
+    private PrintWriter out;
 
-        
+
     static{
     	File file = new File(resultFilePath);
     	if(file.exists() && !file.isDirectory()) {
     		file.delete();
     	}
     }
-    
+
+    public AssistanceServiceCostProbe() {
+    	openWriter();
+    }
+
+    private void openWriter(){
+    	try {
+    		out = new PrintWriter(new BufferedWriter(new FileWriter(resultFilePath, true)));
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
+    }
+
     public void reset(){
+    	if (out != null) {
+    		out.close();
+    	}
     	File file = new File(resultFilePath);
     	if(file.exists() && !file.isDirectory()) {
     		file.delete();
     	}
+    	openWriter();
     	workflowInvocationCount=0;
     	totalCost=0;
     }
@@ -80,11 +101,8 @@ public class AssistanceServiceCostProbe implements WorkflowProbeInterface,CostPr
     	}
     	else
         	resultBuilder.append(workflowInvocationCount+","+"AssistanceService"+",true,"+totalCost+"\n");
-    	try(
-    		PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(resultFilePath, true)))) {
-    	    out.println(resultBuilder.toString());
-    	}catch (IOException e) {
-    	}
+    	out.println(resultBuilder.toString());
+    	out.flush();
     }
 	
     /*

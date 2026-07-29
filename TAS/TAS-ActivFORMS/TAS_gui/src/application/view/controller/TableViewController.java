@@ -1,7 +1,6 @@
 package application.view.controller;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javafx.collections.FXCollections;
@@ -91,22 +90,20 @@ public class TableViewController {
 	    new ReliabilityEntry("FASService2",100,90,10,0.1));
 	}*/
 	
-	public void fillReliabilityDate(String resultFilePath){
-		
+	public void fillReliabilityDate(List<String> lines){
+
 		//reliabilityData.clear();
-		
+
 		Map<String,ReliabilityEntry> reliabilityEntries=new HashMap<>();
 		try{
-			BufferedReader br = new BufferedReader(new FileReader(resultFilePath));
-			String line;
 			String service;
 			boolean result;
-			while ((line = br.readLine()) != null) {
+			for(String line:lines){
 				String[] str=line.split(",");
-				if(str.length>=3){					
+				if(str.length>=3){
 					service=str[1];
-					result=Boolean.parseBoolean(str[2]);					
-					
+					result=Boolean.parseBoolean(str[2]);
+
 					if(!reliabilityEntries.containsKey(service)){
 						reliabilityEntries.put(service, new ReliabilityEntry(service));
 					}
@@ -114,10 +111,9 @@ public class TableViewController {
 
 					reliabilityEntry.setInvocationNum(reliabilityEntry.getInvocationNum()+1);
 					if(!result)
-						reliabilityEntry.setFailNum(reliabilityEntry.getFailNum()+1);				
+						reliabilityEntry.setFailNum(reliabilityEntry.getFailNum()+1);
 				}
 			}
-			br.close();	
 			for (ReliabilityEntry entry : reliabilityEntries.values()) {
 				entry.setRate();
 				if(!entry.getService().equals("AssistanceService"))
@@ -152,41 +148,38 @@ public class TableViewController {
 	}
 	
 	
-	public void fillPerformanceData(String resultFilePath){
-		
+	public void fillPerformanceData(List<String> lines){
+
 		Map<String,PerformanceEntry> performanceEntries=new HashMap<>();
-		
+
 		try{
-			BufferedReader br = new BufferedReader(new FileReader(resultFilePath));
-			String line;
 			String service;
 			boolean result;
-			while ((line = br.readLine()) != null) {
-				
+			for(String line:lines){
+
 				String[] str=line.split(",");
-				
-				if(str.length>=3){					
+
+				if(str.length>=3){
 					service=str[1];
-					result=Boolean.parseBoolean(str[2]);					
-					
+					result=Boolean.parseBoolean(str[2]);
+
 					if(!service.equals("AssistanceService")){
-						
+
 						if(!performanceEntries.containsKey(service)){
 							performanceEntries.put(service, new PerformanceEntry(service));
 						}
 						PerformanceEntry reliabilityEntry=performanceEntries.get(service);
 
 						reliabilityEntry.setInvocationNum(reliabilityEntry.getInvocationNum()+1);
-						
+
 						if(result)
 							reliabilityEntry.addResponseTime(Double.parseDouble(str[5]));
 						else
 							reliabilityEntry.setFailNum(reliabilityEntry.getFailNum()+1);
-					}			
+					}
 				}
 			}
-			br.close();	
-			
+
 			for (PerformanceEntry entry : performanceEntries.values()) {
 				entry.setAvgResponseTime();
 				performanceData.add(entry);
@@ -202,43 +195,39 @@ public class TableViewController {
 		
 	}
 	
-	public void fillCostData(String resultFilePath){
-		
+	public void fillCostData(List<String> lines){
+
 		//costData.clear();
-		
+
 		Map<String,CostEntry> costEntries=new HashMap<>();
 		//costEntries.put("Total", new CostEntry("Total"));
-		
+
 		try{
-			BufferedReader br = new BufferedReader(new FileReader(resultFilePath));
-			String line;
-			
-			//double totalCost=0;	
+			//double totalCost=0;
 			//int invocationNum=0;
 			//int currentInvocation=1;
 			String service;
 			boolean result;
 
-	        while ((line = br.readLine()) != null) {
+	        for(String line:lines){
 				String[] str=line.split(",");
 				if(str.length>=3){
 					//invocationNum=Integer.parseInt(str[0]);
 					service=str[1];
 					result=Boolean.parseBoolean(str[2]);
-					
+
 					if(result && !service.equals("AssistanceService")){
 						if(!costEntries.containsKey(service)){
 							costEntries.put(service, new CostEntry(service));
 						}
-						
+
 						CostEntry entry=costEntries.get(service);
 						entry.setInvocationNum(entry.getInvocationNum()+1);
 						entry.setTotalCost(entry.getTotalCost()+Double.parseDouble(str[3]));
 					}
 				}
 			}
-			br.close();
-	
+
 			int totalInvocations=0;
 			double totalCost=0;
 			
