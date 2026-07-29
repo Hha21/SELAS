@@ -1,5 +1,6 @@
-# Copyrighted paper (not ours to redistribute) -- see README for citation instead
+# Copyrighted papers (not ours to redistribute) -- see READMEs for citations instead
 TAS/Tele_Assistance_A_Self-Adaptive_Service-Based_System_Exemplar.pdf
+BSN/Body Sensor Network: A Self-Adaptive System Exemplar in the Healthcare Domain.pdf
 
 # Build output produced by build.sh in each TAS variant (TAS.v1.6, TAS-ActivFORMS, ...)
 TAS/*/*/out/
@@ -17,6 +18,9 @@ TAS/*/.metadata/
 # Runtime-generated output from running the GUI (TAS_gui/results/), in each TAS variant
 TAS/*/TAS_gui/results/log.csv
 TAS/*/TAS_gui/results/result.csv
+
+# Top-level Python venv (requirements.txt)
+.venv/
 
 # macOS
 **/.DS_Store

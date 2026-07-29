@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>libbsn</name>
+  <version>1.0.0</version>
+  <description>libbsn</description>
+
+  <author email="ricardo.caldas@chalmers.se">Ricardo Caldas</author>
+  <maintainer email="ricardo.caldas@chalmers.se">Ricardo Caldas</maintainer>
+
+  <license>MIT License</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>lepton</build_depend>
+  
+  <test_depend>gtest</test_depend>
+
+  <exec_depend>lepton</exec_depend>
+
+  <export>
+  </export>
+</package>

@@ -1,0 +1,6 @@
+# Top-level Python env for this project (see .venv setup in PROJECT_PLAN.md / READMEs).
+# Activate with: source .venv/bin/activate
+
+# BSN/bsn/src/sa-bsn/simulation/analyzer -- QoS log analysis/plotting
+matplotlib
+numpy
