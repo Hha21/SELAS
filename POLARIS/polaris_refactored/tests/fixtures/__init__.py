@@ -1,0 +1,1 @@
+# Test fixtures for POLARIS testing framework

@@ -1,0 +1,327 @@
+# POLARIS Framework Configuration for SWIM System
+# Complete configuration for running SWIM with threshold-based reactive strategy
+# and proactive LLM reasoning using Google AI as the provider
+
+# Framework Core Configuration
+framework:
+  service_name: "polaris-swim-system"
+  version: "2.0.0"
+  environment: "development"
+  
+  # NATS Message Bus Configuration
+  nats_config:
+    servers:
+      - "nats://localhost:4222"
+    username: null
+    password: null
+    token: null
+    timeout: 30
+    
+  # Telemetry Configuration
+  telemetry_config:
+    enabled: true
+    collection_interval: 10  # seconds - frequent for SWIM
+    batch_size: 50
+    retention_days: 7
+    
+  # Logging Configuration
+  logging_config:
+    level: "INFO"
+    format: "text"
+    output: "console"
+    file_path: "./logs/polaris.log"
+    max_file_size: 10485760  # 10MB
+    backup_count: 5
+    
+  # Framework Settings
+  plugin_search_paths:
+    - "./plugins"
+  max_concurrent_adaptations: 5
+  adaptation_timeout: 120  # seconds
+
+# Managed Systems Configuration
+managed_systems:
+  swim:
+    system_id: "swim"
+    connector_type: "swim"
+    enabled: true
+    
+    # SWIM Connection Configuration
+    connection:
+      host: "localhost"
+      port: 4242
+      
+    # SWIM Implementation Configuration
+    implementation:
+      timeout: 30.0
+      max_retries: 3
+      retry_base_delay: 1.0
+      retry_max_delay: 5.0
+      
+    # Monitoring Configuration
+    monitoring_config:
+      collection_interval: 10  # seconds
+      collection_strategy: "polling_direct_connector"
+      health_check_interval: 30
+      metrics_to_collect:
+        - "server_count"
+        - "active_servers"
+        - "max_servers"
+        - "dimmer"
+        - "server_utilization"
+        - "basic_response_time"
+        - "optional_response_time"
+
+# LLM Integration Configuration (Google AI)
+llm:
+  provider: "google"
+  api_endpoint: "https://generativelanguage.googleapis.com"
+  api_key: "${GOOGLE_AI_API_KEY}"  # Set this environment variable
+  model_name: "gemini-2.5-flash"
+  max_tokens: 2000
+  temperature: 0.1
+  timeout: 60.0
+  max_retries: 3
+  retry_delay: 2.0
+  cache_ttl: 300  # 5 minutes
+  enable_function_calling: true
+
+# Control & Reasoning Configuration
+control_reasoning:
+  # Adaptive Controller Configuration
+  adaptive_controller:
+    enabled: true
+    control_strategies:
+      - "threshold_reactive"
+      - "agentic_llm_reasoning"
+    enable_pid_strategy: false
+    enable_enhanced_assessment: true  # Enable trend analysis and prediction
+    
+  # Threshold Reactive Strategy Configuration
+  threshold_reactive:
+    enabled: true
+    enable_multi_metric_evaluation: true
+    action_prioritization_enabled: true
+    max_concurrent_actions: 3
+    default_cooldown_seconds: 60.0
+    enable_fallback: true
+    
+    # Threshold Rules for SWIM
+    rules:
+      # High CPU/Server Utilization - Scale Up
+      - rule_id: "high_utilization_scale_up"
+        name: "High Server Utilization Scale Up"
+        description: "Scale up when server utilization is high"
+        enabled: true
+        priority: 3
+        cooldown_seconds: 120.0
+        logical_operator: "and"
+        action_type: "ADD_SERVER"
+        action_parameters:
+          reason: "high_utilization"
+        conditions:
+          - metric_name: "server_utilization"
+            operator: "gt"
+            value: 0.8
+            weight: 1.0
+            description: "Server utilization above 80%"
+          - metric_name: "server_count"
+            operator: "lt"
+            value: 10  # Don't scale beyond 10 servers
+            weight: 0.5
+            
+      # Low Server Utilization - Scale Down
+      - rule_id: "low_utilization_scale_down"
+        name: "Low Server Utilization Scale Down"
+        description: "Scale down when server utilization is low"
+        enabled: true
+        priority: 2
+        cooldown_seconds: 180.0
+        logical_operator: "and"
+        action_type: "REMOVE_SERVER"
+        action_parameters:
+          reason: "low_utilization"
+        conditions:
+          - metric_name: "server_utilization"
+            operator: "lt"
+            value: 0.3
+            weight: 1.0
+            description: "Server utilization below 30%"
+          - metric_name: "server_count"
+            operator: "gt"
+            value: 1  # Keep at least 1 server
+            weight: 0.5
+            
+      # High Response Time - Adjust QoS
+      - rule_id: "high_response_time_qos"
+        name: "High Response Time QoS Adjustment"
+        description: "Adjust dimmer when response time is high"
+        enabled: true
+        priority: 2
+        cooldown_seconds: 60.0
+        logical_operator: "or"
+        action_type: "SET_DIMMER"
+        action_parameters:
+          value: 0.7
+          reason: "high_response_time"
+        conditions:
+          - metric_name: "basic_response_time"
+            operator: "gt"
+            value: 1000  # milliseconds
+            weight: 1.0
+          - metric_name: "optional_response_time"
+            operator: "gt"
+            value: 2000  # milliseconds
+            weight: 0.8
+            
+      # Critical Server Count - Emergency Scale Up
+      - rule_id: "critical_server_count"
+        name: "Critical Server Count Emergency"
+        description: "Emergency scale up when server count is critically low"
+        enabled: true
+        priority: 5
+        cooldown_seconds: 30.0
+        logical_operator: "and"
+        action_type: "ADD_SERVER"
+        action_parameters:
+          reason: "critical_server_count"
+          urgent: true
+        conditions:
+          - metric_name: "active_servers"
+            operator: "lte"
+            value: 1
+            weight: 2.0
+            description: "Only 1 or fewer active servers"
+            
+    # Severity Weights
+    severity_weights:
+      critical: 3.0
+      high: 2.0
+      medium: 1.0
+      low: 0.5
+
+  # LLM Reasoning Strategy Configuration
+  agentic_llm_reasoning:
+    enabled: true
+    max_iterations: 8
+    confidence_threshold: 0.6
+    enable_tool_usage: true
+    enable_context_management: true
+    
+    # Available Tools for LLM Reasoning
+    available_tools:
+      - "system_state"
+      - "world_model"
+      - "knowledge_base"
+      - "action_validation"
+
+# Digital Twin Configuration
+digital_twin:
+  # World Model Configuration
+  world_model:
+    type: "llm_world_model"
+    conversation_history_limit: 15
+    enable_fallback_model: true
+    fallback_model_type: "statistical"
+    
+  # Knowledge Base Configuration
+  knowledge_base:
+    enabled: false
+    max_patterns: 1000
+    pattern_confidence_threshold: 0.7
+    
+  # Learning Engine Configuration
+  learning_engine:
+    enabled: true
+    learning_strategies:
+      - "pattern_recognition"
+      - "reinforcement_learning"
+    max_learned_knowledge: 500
+
+# Data Storage Configuration
+data_storage:
+  # Use in-memory storage for development
+  backends:
+    time_series: "in_memory"
+    document: "in_memory"
+    graph: "in_memory"
+  
+  # Repository Configuration
+  repositories:
+    system_state:
+      retention_hours: 168  # 1 week
+      max_entries: 10000
+    adaptation_actions:
+      retention_hours: 720  # 30 days
+      max_entries: 5000
+    execution_results:
+      retention_hours: 720  # 30 days
+      max_entries: 5000
+
+# Event Bus Configuration
+event_bus:
+  max_queue_size: 5000
+  worker_count: 4
+  enable_event_history: true
+  event_history_limit: 1000
+
+# Observability Configuration
+observability:
+  service_name: "polaris-swim"
+  enable_metrics: true
+  enable_tracing: true
+  enable_logging: true
+  
+  # Metrics Configuration
+  metrics:
+    collection_interval: 10  # Reduced for testing
+    export_interval: 20     # Reduced for testing
+    enable_system_metrics: true
+    enable_adaptation_metrics: true
+    enable_llm_metrics: true
+    
+  # Tracing Configuration
+  tracing:
+    sample_rate: 0.1  # 10% sampling for development
+    enable_adaptation_tracing: true
+    enable_llm_tracing: true
+    
+  # Logging Configuration
+  logging:
+    enable_structured_logging: true
+    log_level: "INFO"
+    enable_correlation_ids: true
+
+# Plugin Configuration
+plugins:
+  swim:
+    enabled: true
+    auto_load: true
+    config_validation: true
+
+# Environment-specific Overrides
+development:
+  framework:
+    logging_config:
+      level: "DEBUG"
+      format: "text"
+  llm:
+    cache_ttl: 60  # Shorter cache for development
+  observability:
+    tracing:
+      sample_rate: 1.0  # 100% sampling for development
+
+production:
+  framework:
+    logging_config:
+      level: "INFO"
+      output: "file"
+  llm:
+    temperature: 0.05  # More deterministic in production
+    cache_ttl: 900  # Longer cache for production
+  control_reasoning:
+    threshold_reactive:
+      default_cooldown_seconds: 120.0  # Longer cooldowns in production
+  observability:
+    tracing:
+      sample_rate: 0.05  # Lower sampling in production
