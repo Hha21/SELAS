@@ -92,7 +92,7 @@ class MySystemConnector(ManagedSystemConnector):
 
 ## SWIM Plugin Example
 
-The current SWIM plugin demonstrates a complete implementation: ![(based off SWIM TCP interface)](./swim/docs/ExternalControl.pdf)
+The current SWIM plugin demonstrates a complete implementation: ![(based off SWIM TCP interface)](../../../SWIM/docs/ExternalControl.pdf)
 
 ### Key Features
 
