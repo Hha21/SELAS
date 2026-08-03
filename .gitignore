@@ -1,6 +1,7 @@
 # Copyrighted papers (not ours to redistribute) -- see READMEs for citations instead
 TAS/Tele_Assistance_A_Self-Adaptive_Service-Based_System_Exemplar.pdf
 BSN/Body Sensor Network: A Self-Adaptive System Exemplar in the Healthcare Domain.pdf
+POLARIS/SEAMS_2025_AgenticFramework.pdf
 
 # Build output produced by build.sh in each TAS variant (TAS.v1.6, TAS-ActivFORMS, ...)
 TAS/*/*/out/

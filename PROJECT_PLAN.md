@@ -63,6 +63,10 @@ Mapping onto TAS's existing ReSeP platform:
 | World Model | what-if simulation | TAS's existing cost/reliability formulas, reusable as a lightweight predictive model |
 | Meta-Learner | reflects on history, updates strategy | new: periodically revises the Reasoner's prompt/thresholds from logged outcomes |
 
+This mapping is no longer purely theoretical: it's been validated
+against POLARIS's own reference implementation on SWIM (Phase 0a
+below) before being ported to TAS.
+
 Design decision: the LLM operates only at the adaptation/meta level
 (which service, which strategy). The clinical judgement embedded in the
 Medical Analysis Service stays a given, out of scope — for both safety
@@ -92,7 +96,45 @@ of the "Target-Specific SX" claim.
 
 ## Work plan
 
-- **Phase 0 (now):** get TAS building and running from the installed
+- **Phase 0a (done):** understand and reproduce POLARIS itself, using
+  its own original exemplar (SWIM) as a reference implementation
+  before porting the architecture to TAS.
+  - Reproduced the paper's SWIM result (Gemini-backed agentic
+    reasoner; see `POLARIS/reproduce/`).
+  - Trimmed `POLARIS/` down to a single engineering artifact: moved
+    the SWIM exemplar source out to root-level `SWIM/` (sibling to
+    `TAS/`, `BSN/`); removed the unused `polaris_refactored/` fork,
+    the SWITCH exemplar plugin/subsystem, an old unrelated React/ELK
+    dashboard prototype, and ~10 dead/duplicate reasoner and
+    meta-learner files inherited from the original repo.
+  - Generalized the Agentic Reasoner off a Gemini-only hardcode:
+    extracted a provider-agnostic `LLMClient` interface
+    (`polaris_poc/src/polaris/agents/llm_clients.py`) with a Gemini
+    adapter and an OpenAI-compatible adapter (covers OpenAI,
+    OpenRouter, or any self-hosted OpenAI-compatible server via
+    `base_url`).
+  - Added `SWIM/start_swim.sh` / `stop_swim.sh`, and generalized
+    `start_polaris_swim_system.sh` (`--llm-provider` / `--llm-model` /
+    `--llm-base-url`) so SWIM and the full POLARIS component graph
+    can each be started/stopped independently.
+  - Verified a full live run against a cheap OpenRouter model
+    (`deepseek/deepseek-v4-flash-0731`): real SWIM telemetry →
+    Monitor → Kernel → Agentic Reasoner (tool-use: Knowledge Base +
+    Digital Twin queries/simulations) → Execution → SWIM, producing a
+    real, well-justified `SET_DIMMER` decision.
+  - Found and fixed three bugs surfaced by that live run: a telemetry
+    timestamp type mismatch silently dropping ~half of the Digital
+    Twin's telemetry stream, the Execution Adapter treating
+    `NO_ACTION` as an unknown/failed action, and every Digital Twin
+    query type returning a `Dict` into a protobuf `string` field
+    (100% failure rate on `query_digital_twin` tool calls).
+- **Phase 0b (next):** get a locally-served LLM working as the
+  Agentic Reasoner's backend with access to its own layer
+  activations. Ollama-style serving doesn't expose these, so this
+  means a raw `transformers` (or vLLM/similar) backend with a forward
+  hook, likely wrapped as its own `LLMClient` adapter. Prove this
+  first against the POLARIS/SWIM setup above before porting to TAS.
+- **Phase 0c:** get TAS building and running from the installed
   source; understand the ReSeP platform, the workflow specification
   language, and how probes/effectors/adaptation engines currently plug
   in (Retry and Select Reliable via ActivFORMS, per the original paper).
@@ -116,6 +158,9 @@ depth are stretch goals, not core deliverables.
   chosen Reasoner backbone, or one of Anthropic's released pretrained
   NLAs for a compatible open-weight model — check compatibility before
   committing to a backbone.
+- Local-model serving with activation access (Phase 0b) hasn't had its
+  GPU/VRAM budget scoped yet — backbone choice is constrained by
+  whatever hardware is actually available, not just NLA compatibility.
 
 ## References
 
