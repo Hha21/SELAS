@@ -574,11 +574,18 @@ class BayesianWorldModel(WorldModel):
             
             processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
             self._computation_times.append(processing_time)
-            
+
+            # QueryResponse.result (and the gRPC message's `string result` field) is
+            # str-typed, but every _query_* handler above returns a Dict -- serialize
+            # here at the single convergence point rather than in each handler. The
+            # consumer (reasoner_agent.py) already does json.loads(response.result)
+            # with a str fallback, so this matches the contract it expects.
+            result_str = result if isinstance(result, str) else json.dumps(result, default=str)
+
             response = QueryResponse(
                 query_id=request.query_id,
                 success=True,
-                result=result,
+                result=result_str,
                 confidence=confidence,
                 explanation=explanation,
                 metadata={

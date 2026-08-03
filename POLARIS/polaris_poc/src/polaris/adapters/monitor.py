@@ -337,7 +337,6 @@ class MonitorAdapter(ExternalAdapter):
             "cycle_id": cycle_id,
         }
 
-        print(monitor_snapshot)  # <- add this
         # 3. Call the function to store this snapshot in the Knowledge Base.
         await self.store_system_snapshot(monitor_snapshot)
 

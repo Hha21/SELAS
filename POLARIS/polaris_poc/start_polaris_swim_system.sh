@@ -3,7 +3,9 @@
 # POLARIS SWIM System Startup Script
 # ===================================
 # Starts all 9 POLARIS components in an organized tmux environment
-# optimized for SWIM system with Gemini Pro model and Bayesian world model.
+# optimized for SWIM system with a Bayesian world model and a configurable
+# Agentic Reasoner LLM backend (Gemini, or any OpenAI-compatible endpoint --
+# OpenAI/OpenRouter/self-hosted -- via --llm-provider/--llm-model/--llm-base-url).
 #
 # Components started in dependency order:
 # 1. NATS Server (message bus infrastructure)
@@ -13,7 +15,7 @@
 # 5. Kernel (coordination and action routing)
 # 6. Monitor Adapter (SWIM telemetry collection)
 # 7. Execution Adapter (SWIM action execution)
-# 8. Agentic Reasoner (AI reasoning with Gemini Pro)
+# 8. Agentic Reasoner (AI reasoning, LLM backend configurable)
 # 9. Meta Learner (learning and adaptation optimization)
 
 set -euo pipefail
@@ -38,8 +40,23 @@ DRY_RUN=false
 KILL_SESSION=false
 LIST_COMPONENTS=false
 
+# Load .env (if present) so OPENROUTER_API_KEY/GEMINI_API_KEY etc. set there are
+# visible to this script's own preflight checks (python's start_component.py loads
+# it again itself via dotenv, but this script needs it too for its own gating).
+if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
 # SWIM-optimized configuration
-export GEMINI_API_KEY="${GEMINI_API_KEY:-}"  # Set your Gemini API key
+export GEMINI_API_KEY="${GEMINI_API_KEY:-}"  # Only required if LLM_PROVIDER=gemini
+
+# Agentic Reasoner LLM backend -- gemini (default, matches original reproduction)
+# or openai_compatible (OpenAI/OpenRouter/self-hosted, via LLM_BASE_URL)
+LLM_PROVIDER="${LLM_PROVIDER:-gemini}"
+LLM_MODEL="${LLM_MODEL:-}"
+LLM_BASE_URL="${LLM_BASE_URL:-}"
 
 # --- Color output ---
 RED='\033[0;31m'
@@ -283,13 +300,23 @@ Options:
     --show-logs COMPONENT   Show logs for specific component
     --validate-first        Validate all components before starting
     --dry-run               Show commands without executing
+    --llm-provider PROVIDER LLM backend for Agentic Reasoner: gemini (default) or openai_compatible
+    --llm-model MODEL       Model name/slug (required for openai_compatible)
+    --llm-base-url URL      API base URL for openai_compatible (e.g. OpenRouter's endpoint)
 
-Environment Variables:
-    GEMINI_API_KEY          Required: Your Google Gemini API key
+Environment Variables (can also go in polaris_poc/.env):
+    GEMINI_API_KEY          Required if --llm-provider gemini (default)
+    OPENROUTER_API_KEY      Required if --llm-provider openai_compatible (or OPENAI_API_KEY)
+    LLM_PROVIDER, LLM_MODEL, LLM_BASE_URL   Same as the --llm-* flags above
     SWIM_HOST               SWIM server host (default: localhost)
-    
+
+Note: Meta-Learner (component 9) is Gemini-only and is skipped when
+--llm-provider openai_compatible is used.
+
 Examples:
-    $0                      Start system with defaults
+    $0                      Start system with defaults (Gemini)
+    $0 --llm-provider openai_compatible --llm-model openai/gpt-4o-mini \\
+       --llm-base-url https://openrouter.ai/api/v1
     $0 -k                   Kill existing session
     $0 -s my-session        Use custom session name
     $0 --dry-run            Preview commands
@@ -343,6 +370,18 @@ while [[ $# -gt 0 ]]; do
         --dry-run)
             DRY_RUN=true
             shift
+            ;;
+        --llm-provider)
+            LLM_PROVIDER="$2"
+            shift 2
+            ;;
+        --llm-model)
+            LLM_MODEL="$2"
+            shift 2
+            ;;
+        --llm-base-url)
+            LLM_BASE_URL="$2"
+            shift 2
             ;;
         *)
             log_error "Unknown option: $1"
@@ -421,10 +460,26 @@ if [[ ! -d "$VENV_PATH" ]]; then
     exit 1
 fi
 
-# Check Gemini API key
-if [[ -z "$GEMINI_API_KEY" ]]; then
-    log_error "GEMINI_API_KEY environment variable is required"
-    log_info "Please set your Gemini API key: export GEMINI_API_KEY='your-api-key'"
+# Check LLM API key for the selected provider
+if [[ "$LLM_PROVIDER" == "gemini" ]]; then
+    if [[ -z "$GEMINI_API_KEY" ]]; then
+        log_error "GEMINI_API_KEY environment variable is required for --llm-provider gemini"
+        log_info "Please set it: export GEMINI_API_KEY='your-api-key' (or add to polaris_poc/.env)"
+        exit 1
+    fi
+elif [[ "$LLM_PROVIDER" == "openai_compatible" ]]; then
+    OPENAI_COMPATIBLE_KEY="${OPENROUTER_API_KEY:-${OPENAI_API_KEY:-}}"
+    if [[ -z "$OPENAI_COMPATIBLE_KEY" ]]; then
+        log_error "OPENROUTER_API_KEY (or OPENAI_API_KEY) is required for --llm-provider openai_compatible"
+        log_info "Please set it: export OPENROUTER_API_KEY='your-api-key' (or add to polaris_poc/.env)"
+        exit 1
+    fi
+    if [[ -z "$LLM_MODEL" ]]; then
+        log_error "--llm-model (or LLM_MODEL env var) is required for --llm-provider openai_compatible"
+        exit 1
+    fi
+else
+    log_error "Unknown --llm-provider: $LLM_PROVIDER (expected gemini or openai_compatible)"
     exit 1
 fi
 
@@ -902,29 +957,38 @@ create_window "execution" "$execution_command" 7
 
 sleep $STARTUP_DELAY
 
-# --- Component 8: Agentic Reasoner (Gemini Pro) ---
-log_step "8/9 Starting Agentic Reasoner with Gemini Pro"
+# --- Component 8: Agentic Reasoner ---
+log_step "8/9 Starting Agentic Reasoner ($LLM_PROVIDER${LLM_MODEL:+/$LLM_MODEL})"
 reasoner_command="cd $PROJECT_ROOT && source $VENV_PATH/bin/activate && "
 reasoner_command+="export PYTHONPATH=$PROJECT_ROOT/src:\${PYTHONPATH:-} && "
 reasoner_command+="export GEMINI_API_KEY='$GEMINI_API_KEY' && "
-reasoner_command+="export LLM_MODEL='gemini-2.5-flash' && "
-reasoner_command+="export LLM_TEMPERATURE=0.3 && "
-reasoner_command+="echo 'Starting Agentic Reasoner with Gemini Pro...' && "
+reasoner_command+="echo 'Starting Agentic Reasoner ($LLM_PROVIDER${LLM_MODEL:+/$LLM_MODEL})...' && "
 reasoner_command+="python src/scripts/start_component.py agentic-reasoner --use-improved-grpc --timeout-config robust --config '$POLARIS_CONFIG_PATH' --log-level INFO --monitor-performance"
+reasoner_command+=" --llm-provider '$LLM_PROVIDER'"
+if [[ -n "$LLM_MODEL" ]]; then
+    reasoner_command+=" --llm-model '$LLM_MODEL'"
+fi
+if [[ "$LLM_PROVIDER" == "openai_compatible" && -n "$LLM_BASE_URL" ]]; then
+    reasoner_command+=" --llm-base-url '$LLM_BASE_URL'"
+fi
 
 create_window "reasoner" "$reasoner_command" 8
 
 sleep $STARTUP_DELAY
 
-# --- Component 9: Meta Learner ---
-log_step "9/9 Starting Meta Learner"
-meta_command="cd $PROJECT_ROOT && source $VENV_PATH/bin/activate && "
-meta_command+="export PYTHONPATH=$PROJECT_ROOT/src:\${PYTHONPATH:-} && "
-meta_command+="export GEMINI_API_KEY='$GEMINI_API_KEY' && "
-meta_command+="echo 'Starting Meta Learner...' && "
-meta_command+="python src/scripts/start_component.py meta-learner --config '$POLARIS_CONFIG_PATH' --log-level INFO"
+# --- Component 9: Meta Learner (Gemini-only; not yet generalized to other providers) ---
+if [[ "$LLM_PROVIDER" == "gemini" ]]; then
+    log_step "9/9 Starting Meta Learner"
+    meta_command="cd $PROJECT_ROOT && source $VENV_PATH/bin/activate && "
+    meta_command+="export PYTHONPATH=$PROJECT_ROOT/src:\${PYTHONPATH:-} && "
+    meta_command+="export GEMINI_API_KEY='$GEMINI_API_KEY' && "
+    meta_command+="echo 'Starting Meta Learner...' && "
+    meta_command+="python src/scripts/start_component.py meta-learner --config '$POLARIS_CONFIG_PATH' --log-level INFO"
 
-create_window "meta-learner" "$meta_command" 9
+    create_window "meta-learner" "$meta_command" 9
+else
+    log_step "9/9 Skipping Meta Learner (Gemini-only, LLM_PROVIDER=$LLM_PROVIDER)"
+fi
 
 # --- Final setup ---
 log_step "Setting up system monitoring"
@@ -964,8 +1028,12 @@ if [[ "$DRY_RUN" != true ]]; then
         echo "  5. kernel         - Action coordination"
         echo "  6. monitor        - SWIM telemetry"
         echo "  7. execution      - SWIM actions"
-        echo "  8. reasoner       - Gemini Pro AI"
-        echo "  9. meta-learner   - Learning optimization"
+        echo "  8. reasoner       - Agentic Reasoner ($LLM_PROVIDER${LLM_MODEL:+/$LLM_MODEL})"
+        if [[ "$LLM_PROVIDER" == "gemini" ]]; then
+            echo "  9. meta-learner   - Learning optimization"
+        else
+            echo "  9. meta-learner   - skipped (Gemini-only)"
+        fi
         echo "  10. monitor-tools - System monitoring"
         echo
         log_info "Logs directory: $PROJECT_ROOT/logs/"

@@ -774,7 +774,7 @@ class DefaultKnowledgeQuery(KnowledgeQueryInterface):
                 "value": confidence,
                 "unit": "confidence_score",
                 "source": f"reasoner_{self.nats_base.agent_id}",
-                "timestamp": time.time(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "metadata": {
                     "session_id": context.session_id,
                     "reasoning_type": context.reasoning_type.value,

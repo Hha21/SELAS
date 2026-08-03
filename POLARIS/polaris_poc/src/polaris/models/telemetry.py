@@ -56,9 +56,13 @@ class TelemetryEvent(BaseModel):
     
     @field_validator('timestamp', mode='before')
     def set_timestamp(cls, v):
-        """Set timestamp to current UTC time if not provided."""
+        """Set timestamp to current UTC time if not provided; coerce a raw
+        Unix-epoch number (some publishers send time.time() directly) to an
+        ISO 8601 string instead of rejecting it."""
         if v is None:
             return datetime.now(timezone.utc).isoformat()
+        if isinstance(v, (int, float)):
+            return datetime.fromtimestamp(v, tz=timezone.utc).isoformat()
         return v
     
     @field_validator('name')

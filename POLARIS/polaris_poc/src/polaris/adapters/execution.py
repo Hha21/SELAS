@@ -387,6 +387,19 @@ class ExecutionAdapter(ExternalAdapter):
 
         self.logger.info("Executing action", extra=ctx)
 
+        if action.action_type == "NO_ACTION":
+            self.logger.info("No-op action (NO_ACTION) -- nothing to execute", extra=ctx)
+            return ExecutionResult(
+                action_id=action.action_id,
+                action_type=action.action_type,
+                status=ActionStatus.SUCCESS,
+                success=True,
+                message="No action taken",
+                started_at=started_at,
+                finished_at=datetime.now(timezone.utc).isoformat(),
+                duration_sec=time.time() - start_time,
+            )
+
         try:
             # Find action configuration
             action_config = self.action_configs.get(action.action_type)
