@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 
-from src.config import DTYPE, INJECT_TOKEN, MODEL_ID
+from src.config import DEVICE, DTYPE, INJECT_TOKEN, MODEL_ID
 from src.model import load_tokenizer
 
 
@@ -76,7 +76,7 @@ class Verbalizer(nn.Module):
         )
 
 
-def load_av(device: str):
+def load_av(device: str = DEVICE):
     """
     Load full Qwen2.5-0.5B as AV base.
 

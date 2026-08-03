@@ -21,6 +21,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import src.config                      # must precede HF imports (sets HF_HOME)
+
 import argparse
 import asyncio
 import json

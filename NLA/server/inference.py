@@ -23,19 +23,23 @@ ROOT = Path(__file__).parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# src.config must be imported before any HuggingFace library: it sets HF_HOME,
+# which huggingface_hub reads into module-level constants at import time.
+from src.config import (
+    AR_CHECKPOINT, AR_PREFIX, AR_SUFFIX, AV_CHECKPOINT, AV_USER_PROMPT,
+    DEVICE, PROBE_LAYER,
+)
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 from datasets import concatenate_datasets, load_from_disk
 
-from src.config import AR_PREFIX, AR_SUFFIX, AV_USER_PROMPT, DEVICE, PROBE_LAYER
 from src.ar import load_ar
 from src.av import load_av
-from src.model import load_target
+from src.model import decoder_layers, load_target
 
 
-AV_CHECKPOINT     = ROOT / "models" / "av.pt"
-AR_CHECKPOINT     = ROOT / "models" / "ar.pt"
 ACTIVATIONS_DIR   = ROOT / "activations" / "dataset"
 MAX_NEW_TOKENS    = 120                  # AV explanation generation
 AR_MAX_LENGTH     = 256
@@ -83,7 +87,7 @@ class NLAInference:
             h = out[0] if isinstance(out, tuple) else out
             self._act_cache["resid"] = h.detach()
 
-        self._hook_handle = self.target.model.layers[PROBE_LAYER].register_forward_hook(_hook)
+        self._hook_handle = decoder_layers(self.target)[PROBE_LAYER].register_forward_hook(_hook)
 
         # Pre-tokenise the AV prompt (independent of the activation; same chunk every time)
         prompt_str = self.tok.apply_chat_template(

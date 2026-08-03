@@ -1,0 +1,24 @@
+# Python virtual environment.
+# Deliberately per-machine and never committed: the torch build is tied to the
+# host's CUDA version and GPU architecture (Turing sm_75 locally, Ada on the
+# 4090 workstation, Hopper on the CSF H200s). Rebuild from requirements.txt.
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets (DEEPSEEK_API_KEY etc. for Stage 1 explanation generation)
+.env
+
+# Large generated artifacts -- moved between machines with rsync, not git.
+# (gitignore has no inline comments, so these are annotated above the pattern)
+# Stage 0 (text, activation) datasets
+activations/
+# raw training outputs
+checkpoints/
+*.pt
+
+# Model artifacts: HuggingFace downloads (models/hf) and the trained AV/AR
+# checkpoint pair per backbone (models/<backbone>/{av,ar}.pt). Machine-local
+# and large; only the README documenting the layout is tracked.
+models/*
+!models/README.md

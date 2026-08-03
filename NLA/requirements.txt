@@ -1,4 +1,8 @@
 # Core
+# torch is intentionally unpinned: the right build depends on the host's CUDA
+# version and GPU architecture, so .venv is rebuilt per machine and never
+# committed. If the default PyPI wheel picks the wrong CUDA, install torch
+# first from the matching index (see README) and then run this file.
 torch>=2.3.0
 transformers>=4.43.0
 accelerate>=0.30.0

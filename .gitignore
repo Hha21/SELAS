@@ -23,5 +23,10 @@ TAS/*/TAS_gui/results/result.csv
 # Top-level Python venv (requirements.txt)
 .venv/
 
+# Runtime activation traces: written by NLA/server during a POLARIS run,
+# read back by the NLA pipeline. Shared artifact of the two, owned by neither,
+# and moved between machines with rsync.
+traces/
+
 # macOS
 **/.DS_Store

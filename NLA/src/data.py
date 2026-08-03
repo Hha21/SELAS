@@ -24,6 +24,7 @@ from datasets import Dataset, load_dataset
 from tqdm import tqdm
 
 from src.config import DEVICE, PROBE_LAYER
+from src.model import decoder_layers
 
 _CORPUS           = ("HuggingFaceFW/fineweb", "sample-10BT")
 MIN_POSITION      = 150   # minimum tokens before the extraction point (~500 chars)
@@ -47,7 +48,7 @@ def make_extractor(target):
         h = out[0] if isinstance(out, tuple) else out
         acts["resid"] = h.detach()        # (batch, seq, hidden_size)
 
-    handle = target.model.layers[PROBE_LAYER].register_forward_hook(_hook)
+    handle = decoder_layers(target)[PROBE_LAYER].register_forward_hook(_hook)
 
     def extract(trunc_ids: torch.Tensor) -> np.ndarray:
         with torch.no_grad():

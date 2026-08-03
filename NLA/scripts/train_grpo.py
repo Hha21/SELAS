@@ -19,12 +19,13 @@ import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.config import DEVICE          # must precede HF imports (sets HF_HOME)
+
 import argparse
 import numpy as np
 import torch
 from datasets import load_from_disk, concatenate_datasets
 
-from src.config import DEVICE
 from src.av import load_av
 from src.ar import load_ar
 from src.train import train_grpo

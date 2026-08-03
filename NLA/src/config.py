@@ -1,9 +1,110 @@
+"""
+Central configuration for the NLA pipeline.
+
+Everything that varies per machine or per backbone is read from the environment
+so the same checkout runs unchanged on all three targets:
+
+  local dev box   GTX 1650 Ti, 4GB, Turing (sm_75)  -> Qwen2.5-0.5B, fp16
+  workstation     2x RTX 4090, 24GB each, Ada       -> 7B/12B backbone, bf16
+  CSF             4x H200, 141GB each, Hopper       -> NLA training at scale
+
+Overrides:
+
+  NLA_MODEL_ID     HuggingFace repo of the target model T
+  NLA_PROBE_LAYER  residual-stream layer to hook (see PROBE_LAYERS below)
+  NLA_DTYPE        auto | bfloat16 | float16 | float32   (auto = best available)
+  NLA_DEVICE       cuda | cuda:1 | cpu | auto            (auto = shard over GPUs)
+
+Nothing else in the codebase hardcodes a model, layer, or dtype -- src/model.py,
+src/av.py, src/ar.py, src/data.py and server/inference.py all import from here.
+"""
+
+import os
+import sys
+import warnings
+from pathlib import Path
+
+# HF_HOME must be set before huggingface_hub is first imported -- it reads the
+# env var into module-level constants at import time, so setting it afterwards
+# is silently ignored and downloads land in ~/.cache/huggingface instead.
+# Every entry point must therefore import src.config before any HF library.
+_ROOT = Path(__file__).resolve().parent.parent
+MODELS_DIR = Path(os.getenv("NLA_MODELS_DIR", _ROOT / "models"))
+
+if "huggingface_hub" in sys.modules and "HF_HOME" not in os.environ:
+    warnings.warn(
+        "huggingface_hub was imported before src.config, so HF_HOME could not "
+        f"be pointed at {MODELS_DIR / 'hf'}; downloads will go to the default "
+        "cache. Move the `from src.config import ...` line above the "
+        "transformers/datasets imports in this entry point.",
+        RuntimeWarning, stacklevel=2,
+    )
+
+os.environ.setdefault("HF_HOME", str(MODELS_DIR / "hf"))
+
 import torch
 
-MODEL_ID    = "Qwen/Qwen2.5-0.5B"
-PROBE_LAYER = 16                # ~2/3 of 24 layers
-DTYPE       = torch.bfloat16
-DEVICE      = "cuda" if torch.cuda.is_available() else "cpu"
+from src.compat import disable_triton_ops_without_compiler
+
+# Must run before any model forward pass; see src/compat.py for why.
+disable_triton_ops_without_compiler()
+
+# Probe layers for the backbones with a released NLA checkpoint pair
+# (huggingface.co/collections/kitft/nla-models). The probe layer is a property
+# of the released AV/AR, not a free choice -- getting it wrong silently poisons
+# every downstream number, so it is looked up rather than remembered.
+PROBE_LAYERS = {
+    "Qwen/Qwen2.5-0.5B":   16,   # ours, 24 layers, trained locally on 2x 4090
+    "Qwen/Qwen2.5-7B":     20,   # kitft/nla-qwen2.5-7b-L20-{av,ar}
+    "google/gemma-3-12b-pt": 32, # kitft/nla-gemma3-12b-L32-{av,ar}
+    "google/gemma-3-27b-pt": 41, # kitft/nla-gemma3-27b-L41-{av,ar}
+    "meta-llama/Llama-3.3-70B": 53,  # kitft/Llama-3.3-70B-NLA-L53-{av,ar}
+}
+
+MODEL_ID = os.getenv("NLA_MODEL_ID", "Qwen/Qwen2.5-0.5B")
+
+# Default to the known-good layer for this backbone; explicit env var always wins.
+PROBE_LAYER = int(os.getenv("NLA_PROBE_LAYER", PROBE_LAYERS.get(MODEL_ID, -1)))
+if PROBE_LAYER < 0:
+    raise ValueError(
+        f"No default probe layer known for {MODEL_ID!r}. "
+        f"Set NLA_PROBE_LAYER explicitly, or add an entry to PROBE_LAYERS."
+    )
+
+
+def _resolve_device(spec: str | None) -> str:
+    if spec:
+        return spec
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def _resolve_dtype(spec: str | None) -> torch.dtype:
+    """Pick the widest dtype the hardware supports *natively*.
+
+    bf16 needs compute capability >= 8.0 (Ampere). Deliberately NOT using
+    torch.cuda.is_bf16_supported(): it counts emulation and returns True on the
+    local Turing card (sm_75), which would hand back bf16 that silently runs
+    emulated and slow rather than falling back to fp16.
+    """
+    if spec and spec != "auto":
+        return getattr(torch, spec)
+    if not torch.cuda.is_available():
+        return torch.float32
+    return torch.bfloat16 if torch.cuda.get_device_capability()[0] >= 8 else torch.float16
+
+
+# "auto" shards a model too large for one card across all visible GPUs
+# (needed for a 12B target on 2x 24GB); a plain "cuda" keeps it on one.
+DEVICE = _resolve_device(os.getenv("NLA_DEVICE"))
+DTYPE  = _resolve_dtype(os.getenv("NLA_DTYPE"))
+
+# Trained AV/AR checkpoint pair for *this* backbone. One subdirectory per model
+# (models/Qwen2.5-0.5B/, models/gemma-3-12b-pt/, ...) so several can coexist --
+# a single flat models/av.pt silently serves the wrong pair once there is more
+# than one backbone in play, which the FVE numbers would not make obvious.
+CHECKPOINT_DIR = MODELS_DIR / MODEL_ID.split("/")[-1]
+AV_CHECKPOINT  = CHECKPOINT_DIR / "av.pt"
+AR_CHECKPOINT  = CHECKPOINT_DIR / "ar.pt"
 
 # AR prompt from the paper (Appendix: Prompting the activation reconstructor).
 # AR always receives: AR_PREFIX + z + AR_SUFFIX, and the last-token hidden state

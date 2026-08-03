@@ -19,7 +19,8 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 
-from src.config import DTYPE, MODEL_ID, PROBE_LAYER
+from src.config import DEVICE, DTYPE, MODEL_ID, PROBE_LAYER
+from src.model import decoder_stack
 
 
 class Reconstructor(nn.Module):
@@ -38,7 +39,7 @@ class Reconstructor(nn.Module):
         return self.head(h)                    # â  (batch, d_model)
 
 
-def load_ar(device: str, freeze_base: bool = True) -> Reconstructor:
+def load_ar(device: str = DEVICE, freeze_base: bool = True) -> Reconstructor:
     """
     Load a fresh copy of T, truncate it to PROBE_LAYER, and wrap as AR.
 
@@ -52,7 +53,7 @@ def load_ar(device: str, freeze_base: bool = True) -> Reconstructor:
         device_map=device,
     )
 
-    base = full_model.model   # Qwen2Model
+    base = decoder_stack(full_model)   # Qwen2Model, or Gemma3's text stack
 
     # Truncate to first PROBE_LAYER+1 decoder layers and strip the final norm.
     # The norm was fitted after 24 layers; without it, last_hidden_state is the
