@@ -3,26 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Natural Language Autoencoder</title>
+  <title>NLA · Activation Inspector</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
     <div>
-      <h1>Natural Language Autoencoder</h1>
-      <div class="subtitle">A from-scratch reproduction on Qwen2.5-0.5B</div>
+      <h1>NLA <span class="plus">·</span> Activation Inspector</h1>
+      <div class="subtitle">Per-token natural-language explanations of the residual stream</div>
     </div>
-    <div id="model-info">layer 16 · GRPO step 1000</div>
+    <div class="header-right">
+      <span id="run-info">
+        <span id="model-name">connecting…</span>
+        <span id="probe-pill" class="nla-pill">probe: —</span>
+        <span id="status-dot" class="dot"></span>
+        <span id="status-text">offline</span>
+      </span>
+      <a class="nav-link" href="/architecture.html">Architecture →</a>
+    </div>
   </header>
 
+  <!-- ───────────────────────────────────────────────── pipeline + metrics -->
+  <section id="pipeline-strip">
+    <!-- The NLA loop this server actually runs. Status dots are driven by real
+         request lifecycle events, not a timer. -->
+    <div class="pipeline">
+      <div class="pipeline-label">Pipeline</div>
+      <div class="pipeline-flow">
+        <div class="node node-target" data-stage="target">
+          <div class="node-icon">T</div>
+          <div class="node-body">
+            <div class="node-title">Target</div>
+            <div class="node-sub" id="stage-target-sub">frozen</div>
+          </div>
+          <div class="node-status" data-status="idle"></div>
+        </div>
+
+        <div class="flow-arrow">
+          <span class="flow-label">h<sub>ℓ</sub></span>
+          <span class="flow-line"></span>
+        </div>
+
+        <div class="node node-av" data-stage="av">
+          <div class="node-icon">AV</div>
+          <div class="node-body">
+            <div class="node-title">Verbalizer</div>
+            <div class="node-sub">activation → text</div>
+          </div>
+          <div class="node-status" data-status="idle"></div>
+        </div>
+
+        <div class="flow-arrow">
+          <span class="flow-label">text</span>
+          <span class="flow-line"></span>
+        </div>
+
+        <div class="node node-ar" data-stage="ar">
+          <div class="node-icon">AR</div>
+          <div class="node-body">
+            <div class="node-title">Reconstructor</div>
+            <div class="node-sub">text → â</div>
+          </div>
+          <div class="node-status" data-status="idle"></div>
+        </div>
+
+        <div class="flow-arrow flow-compare">
+          <span class="flow-label">compare</span>
+          <span class="flow-line dashed"></span>
+        </div>
+
+        <div class="node node-score" data-stage="score">
+          <div class="node-icon">Σ</div>
+          <div class="node-body">
+            <div class="node-title">Reconstruction</div>
+            <div class="node-sub">cosine · FVE</div>
+          </div>
+          <div class="node-status" data-status="idle"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-tile">
+      <div class="mt-label">Reconstruction</div>
+      <div class="mt-value" id="m-cosine">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-cosine-bar" style="width:0%; background:#4f46e5;"></div></div>
+      <div class="mt-hint">cosine, bounded [−1, 1]</div>
+    </div>
+
+    <div class="metric-tile">
+      <div class="mt-label">Per-sample FVE</div>
+      <div class="mt-value" id="m-fve">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-fve-bar" style="width:0%; background:#8b5cf6;"></div></div>
+      <div class="mt-hint" id="m-fve-hint">baseline unavailable</div>
+    </div>
+
+    <div class="metric-tile metric-sparkline">
+      <div class="mt-label">FVE across analysed tokens</div>
+      <svg id="sparkline" viewBox="0 0 220 56" preserveAspectRatio="none">
+        <line id="sparkline-zero" x1="0" x2="220" y1="56" y2="56"
+              stroke="#ef4444" stroke-dasharray="3 3" stroke-width="1" opacity="0.5"/>
+        <polyline id="sparkline-line" fill="none" stroke="#8b5cf6" stroke-width="1.5" points=""/>
+      </svg>
+      <div class="mt-hint"><span class="sla-mark">╌╌</span> FVE = 0 (corpus-mean baseline)</div>
+    </div>
+  </section>
+
   <main>
-    <!-- LEFT — chat -->
+    <!-- ─────────────────────────────────────────────────────────── chat -->
     <section id="chat-panel" class="column">
       <div class="column-header">
         <h2>Chat</h2>
         <div class="header-actions">
           <button id="settings-toggle" class="btn-secondary" title="Generation settings">⚙</button>
-          <button id="new-chat-btn"    class="btn-secondary">New chat</button>
+          <button id="new-chat-btn" class="btn-secondary">New chat</button>
         </div>
       </div>
 
@@ -40,8 +133,9 @@
           <input id="top-p" type="number" value="0.9" min="0.05" max="1" step="0.05">
         </label>
         <p class="hint">
-          Temperature 0 ⇒ greedy decoding. Base Qwen2.5-0.5B is not instruction-tuned;
-          treat the chat as text completion in a chat shell.
+          Temperature 0 ⇒ greedy decoding. The target is a <em>base</em> model, not
+          instruction-tuned — treat this as text completion in a chat shell. The
+          point is inspecting activations, not the quality of the reply.
         </p>
       </div>
 
@@ -50,53 +144,102 @@
       </div>
 
       <div id="input-area">
-        <textarea id="chat-input" placeholder="Type a message…  (Enter to send, Shift+Enter for newline)" rows="3"></textarea>
+        <textarea id="chat-input" rows="3"
+          placeholder="Type a message…  (Enter to send, Shift+Enter for newline)"></textarea>
         <button id="send-btn" class="btn-primary">Send</button>
       </div>
     </section>
 
-    <!-- MIDDLE — raw token sequence -->
+    <!-- ────────────────────────────────────────────────── model context -->
     <section id="tokens-panel" class="column">
       <div class="column-header">
-        <h2>Model context (tokens)</h2>
+        <h2>Model context</h2>
         <span id="token-count" class="muted">0 tokens</span>
       </div>
       <p class="column-help">
-        These are the tokens the target model actually sees, with the chat
-        template applied. Click any token to explain its layer-16 activation.
-        The activation at token <em>i</em> depends on tokens 0…<em>i</em>
-        (highlighted faintly when you select).
+        Every token the target model actually sees, with the chat template applied.
+        Click one to explain its layer-<span id="help-layer">ℓ</span> activation.
+        Because attention is causal, the activation at token <em>i</em> already
+        encodes tokens 0…<em>i</em> — those are shaded when you select.
       </p>
       <div id="tokens">
         <div class="placeholder">Send a message to populate the model context.</div>
       </div>
       <div class="legend">
-        <span class="legend-swatch special"></span> special token
-        <span class="legend-swatch assistant"></span> assistant turn
-        <span class="legend-swatch selected"></span> selected
-        <span class="legend-swatch in-context"></span> in context
+        <span><span class="legend-swatch special"></span> special</span>
+        <span><span class="legend-swatch assistant"></span> assistant turn</span>
+        <span><span class="legend-swatch selected"></span> selected</span>
+        <span><span class="legend-swatch in-context"></span> in context</span>
       </div>
     </section>
 
-    <!-- RIGHT — explanation -->
-    <aside id="explanation-panel" class="column">
+    <!-- ───────────────────────────────────────────────────── inspector -->
+    <aside id="inspector" class="column">
       <div class="column-header">
-        <h2>AV explanation</h2>
+        <h2>Inspector</h2>
+        <span id="inspector-sub" class="muted">no token selected</span>
       </div>
-      <div id="selected-token" class="muted">No token selected</div>
-      <div id="explanation" class="muted">Click any token in the middle panel to generate an explanation.</div>
-      <div id="metrics">
-        <div class="metric">
-          <span class="label">Reconstruction (cosine)</span>
-          <span id="reconstruction">—</span>
+
+      <nav id="tabs" class="tabs">
+        <button class="tab-btn tab-nla active" data-tab="explanation">Explanation</button>
+        <button class="tab-btn" data-tab="config">Config</button>
+      </nav>
+
+      <div class="tab-panel" data-panel="explanation">
+        <div id="nla-empty" class="placeholder">
+          Click any token in the model context to generate an explanation.
         </div>
-        <div class="metric">
-          <span class="label">Per-sample FVE</span>
-          <span id="fve">—</span>
+
+        <div id="nla-body" class="hidden">
+          <div class="nla-selected">
+            <span class="muted">token</span>
+            <code id="nla-token"></code>
+            <span class="muted" id="nla-position"></span>
+          </div>
+
+          <div class="reason-section">
+            <div class="reason-section-title">Activation Verbalizer explanation</div>
+            <blockquote id="nla-explanation" class="nla-explanation"></blockquote>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Reconstruction</div>
+              <div class="metric-value" id="nla-cosine">—</div>
+              <div class="metric-hint">cosine(a, â)</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Per-sample FVE</div>
+              <div class="metric-value" id="nla-fve">—</div>
+              <div class="metric-hint">1 − ‖a − â‖² / ‖a − ā‖²</div>
+            </div>
+          </div>
+
+          <div class="reason-section">
+            <div class="reason-section-title">Recently analysed</div>
+            <ul id="nla-history" class="neighbors"></ul>
+          </div>
         </div>
+      </div>
+
+      <div class="tab-panel hidden" data-panel="config">
+        <p class="column-help">
+          Live values reported by <code>/api/health</code>. A mismatched AV/AR pair
+          or a wrong probe layer still yields plausible-looking text, so the
+          configuration actually in use is worth checking.
+        </p>
+        <dl id="config-list" class="config-list"></dl>
       </div>
     </aside>
   </main>
+
+  <footer>
+    <span>
+      Natural Language Autoencoder after Anthropic (2026) · reference implementation
+      <a href="https://github.com/kitft/natural_language_autoencoders" target="_blank" rel="noopener">kitft</a>
+      · all values on this page come from the running server
+    </span>
+  </footer>
 
   <script src="app.js"></script>
 </body>

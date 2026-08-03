@@ -78,8 +78,13 @@ def _resolve_device(spec: str | None) -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def _resolve_dtype(spec: str | None) -> torch.dtype:
-    """Pick the widest dtype the hardware supports *natively*.
+def _resolve_dtype(spec: str | None, device: str) -> torch.dtype:
+    """Pick the widest dtype the *selected device* supports natively.
+
+    Keyed on `device` rather than on torch.cuda.is_available(): forcing
+    NLA_DEVICE=cpu on a CUDA box must give fp32, not the fp16 the GPU would
+    have wanted -- half precision on CPU is unsupported for many ops and
+    silently slow for the rest.
 
     bf16 needs compute capability >= 8.0 (Ampere). Deliberately NOT using
     torch.cuda.is_bf16_supported(): it counts emulation and returns True on the
@@ -88,7 +93,7 @@ def _resolve_dtype(spec: str | None) -> torch.dtype:
     """
     if spec and spec != "auto":
         return getattr(torch, spec)
-    if not torch.cuda.is_available():
+    if device == "cpu" or not torch.cuda.is_available():
         return torch.float32
     return torch.bfloat16 if torch.cuda.get_device_capability()[0] >= 8 else torch.float16
 
@@ -96,7 +101,7 @@ def _resolve_dtype(spec: str | None) -> torch.dtype:
 # "auto" shards a model too large for one card across all visible GPUs
 # (needed for a 12B target on 2x 24GB); a plain "cuda" keeps it on one.
 DEVICE = _resolve_device(os.getenv("NLA_DEVICE"))
-DTYPE  = _resolve_dtype(os.getenv("NLA_DTYPE"))
+DTYPE  = _resolve_dtype(os.getenv("NLA_DTYPE"), DEVICE)
 
 # Trained AV/AR checkpoint pair for *this* backbone. One subdirectory per model
 # (models/Qwen2.5-0.5B/, models/gemma-3-12b-pt/, ...) so several can coexist --

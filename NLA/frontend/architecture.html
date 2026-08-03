@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>POLARIS + NLA · Architecture</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="architecture.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>POLARIS <span class="plus">+</span> NLA <span class="hdr-sep">·</span> Architecture</h1>
+      <div class="subtitle">Where the interpretability layer plugs into the self-adaptive system</div>
+    </div>
+    <div class="header-right">
+      <span id="run-info">
+        <span class="nla-pill">reference diagram</span>
+        <span class="dot"></span>
+        <span>not wired</span>
+      </span>
+      <a class="nav-link" href="/">Activation Inspector →</a>
+    </div>
+  </header>
+
+  <div class="banner">
+    <strong>Static reference diagram.</strong>
+    Structure only — no telemetry, no agent state, no live routing. The POLARIS
+    feed is not connected yet, so nothing on this page is a measurement. The
+    <a href="/">Activation Inspector</a> is the part that is live today; it
+    corresponds to the <span class="inline-chip">NLA</span> tool attached to the
+    Reasoner below.
+  </div>
+
+  <main>
+    <!-- ──────────────────────────────────────────────────── architecture -->
+    <section id="diagram-panel" class="column">
+      <div class="column-header">
+        <h2>Architecture</h2>
+        <div class="route-tag">
+          highlight route:
+          <button class="route-btn active" data-route="strategic">strategic</button>
+          <button class="route-btn" data-route="stabilization">stabilization</button>
+          <button class="route-btn" data-route="none">none</button>
+        </div>
+      </div>
+
+      <!-- Outer dashed frame mirrors the classic SAS conceptual diagram:
+           Self-Adaptive System {Managing System, Managed System}, with
+           Stakeholders outside and an "evolve" link inward. -->
+      <div id="sas-frame">
+        <div class="sas-label">Self-Adaptive System</div>
+
+        <div id="stakeholders" class="stakeholders">
+          <span class="stake-icon">◎</span>
+          <span>Stakeholders</span>
+          <span class="stake-edge">— evolve →</span>
+        </div>
+
+        <div id="diagram">
+          <svg id="connectors" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+              </marker>
+              <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+              </marker>
+              <marker id="arrow-stab" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+              </marker>
+              <marker id="arrow-tel" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+              </marker>
+              <marker id="arrow-act" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+              </marker>
+              <marker id="arrow-meta" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+              </marker>
+            </defs>
+          </svg>
+
+          <!-- Loop reads: MS → MC → Kernel → {Fast Controller / Reasoner}
+               → Verifier → EA → MS. Meta-Learner sits above and edits policy
+               on a slower cycle. -->
+
+          <div class="grid-meta">
+            <div class="layer layer-meta">
+              <div class="layer-label-inline">Meta-Learning Layer</div>
+              <div class="layer-body layer-center">
+                <div class="node node-llm" data-agent="meta">
+                  <div class="node-icon">M</div>
+                  <div class="node-body">
+                    <div class="node-title">Meta-Learner</div>
+                    <div class="node-sub">LLM · reflect &amp; evolve</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-reason">
+            <div class="layer layer-reasoning">
+              <div class="layer-label-inline">Reasoning &amp; Knowledge Layer</div>
+              <div class="layer-body layer-row">
+                <div class="loop-tag loop-tag-strategic">slow loop · strategic</div>
+                <div class="node node-llm" data-agent="reasoner">
+                  <div class="node-icon">R</div>
+                  <div class="node-body">
+                    <div class="node-title">Reasoner</div>
+                    <div class="node-sub">LLM · deliberative</div>
+                  </div>
+                </div>
+
+                <div class="loop-divider"></div>
+
+                <div class="node node-reactive" data-agent="reactive">
+                  <div class="node-icon">F</div>
+                  <div class="node-body">
+                    <div class="node-title">Fast Controller</div>
+                    <div class="node-sub">reactive · low-latency</div>
+                  </div>
+                </div>
+                <div class="loop-tag loop-tag-stab">fast loop · reflex</div>
+              </div>
+
+              <div class="tools-row">
+                <span class="tools-label">Tools</span>
+                <span class="tool-chip" data-agent="kb" title="Knowledge Base">KB</span>
+                <span class="tool-chip" data-agent="wm" title="World Model">WM</span>
+                <span class="tool-chip tool-nla" data-agent="nla"
+                      title="Natural Language Autoencoder — per-token interpretability">
+                  NLA <span class="tool-new">live</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-control">
+            <div class="layer layer-control">
+              <div class="layer-label-inline">Adaptive Control Layer</div>
+              <div class="layer-body layer-center">
+                <div class="node node-kernel" data-agent="kernel">
+                  <div class="node-icon">K</div>
+                  <div class="node-body">
+                    <div class="node-title">Kernel</div>
+                    <div class="node-sub">orchestrator · routes by threshold</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEFT RAIL — telemetry climbing up -->
+          <div class="grid-tele-path">
+            <div class="rail-label rail-label-tel">telemetry ↑</div>
+            <div class="node node-aux node-rail" data-agent="metric-collector">
+              <div class="node-icon">MC</div>
+              <div class="node-body">
+                <div class="node-title">Metric Collector</div>
+                <div class="node-sub">sample</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT RAIL — actions descending -->
+          <div class="grid-act-path">
+            <div class="rail-label rail-label-act">actions ↓</div>
+            <div class="node node-aux node-rail" data-agent="verifier">
+              <div class="node-icon">V</div>
+              <div class="node-body">
+                <div class="node-title">Verifier</div>
+                <div class="node-sub">invariants</div>
+              </div>
+            </div>
+            <div class="node node-aux node-rail" data-agent="execution-adapter">
+              <div class="node-icon">EA</div>
+              <div class="node-body">
+                <div class="node-title">Execution Adapter</div>
+                <div class="node-sub">enact</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTTOM — managed system spans the width -->
+          <div class="grid-system">
+            <div class="node node-system" data-agent="system">
+              <div class="node-icon">S</div>
+              <div class="node-body">
+                <div class="node-title">Managed System · SWIM</div>
+                <div class="node-sub">servers + dimmer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend arch-legend">
+        <span><span class="legend-swatch llm"></span> LLM agent</span>
+        <span><span class="legend-swatch reactive"></span> rule-based</span>
+        <span><span class="legend-swatch kernel"></span> orchestrator</span>
+        <span><span class="legend-swatch system"></span> managed system</span>
+        <span><span class="legend-swatch nla"></span> interpretability</span>
+        <span class="legend-divider"></span>
+        <span><span class="legend-route tel">→</span> telemetry</span>
+        <span><span class="legend-route act">→</span> actions</span>
+        <span><span class="legend-route active">⇢</span> highlighted route</span>
+        <span><span class="legend-route meta">⇠</span> meta-learning</span>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────── details -->
+    <aside id="details" class="column">
+      <div class="column-header">
+        <h2 id="details-title">Components</h2>
+        <span id="details-sub" class="muted">nothing selected</span>
+      </div>
+
+      <div id="details-empty" class="placeholder">
+        <p>Click any component in the diagram to read its role.</p>
+        <p>
+          These are descriptions of what each part <em>does</em> in the POLARIS
+          architecture — not runtime state. Once the POLARIS feed is wired, this
+          panel is where live activity and per-agent reasoning will go.
+        </p>
+      </div>
+
+      <div id="details-body" class="hidden">
+        <div class="detail-kind" id="detail-kind"></div>
+        <p class="detail-role" id="detail-role"></p>
+
+        <div class="reason-section">
+          <div class="reason-section-title">Maps onto</div>
+          <p class="detail-maps" id="detail-maps"></p>
+        </div>
+
+        <div class="reason-section" id="detail-nla-section">
+          <div class="reason-section-title">Interpretability hook</div>
+          <p class="detail-maps" id="detail-nla"></p>
+        </div>
+
+        <div class="reason-section">
+          <div class="reason-section-title">Status</div>
+          <p class="detail-maps" id="detail-status"></p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <span>
+      POLARIS framework (Pandey et al., 2025) · NLA after Anthropic (2026) ·
+      diagram is structural documentation, not instrumentation
+    </span>
+  </footer>
+
+  <script src="architecture.js"></script>
+</body>
+</html>

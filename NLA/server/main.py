@@ -15,6 +15,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from src.config import (
+    AR_CHECKPOINT, AV_CHECKPOINT, DEVICE, DTYPE, MODEL_ID, PROBE_LAYER,
+)
 from server.inference import NLAInference
 
 
@@ -62,12 +65,22 @@ class ChatRequest(BaseModel):
 # --------------------------------------------------------------------- routes
 @app.get("/api/health")
 def health():
+    """Report the live configuration, so the UI never has to hardcode it.
+
+    The frontend renders the backbone, probe layer and checkpoint paths from
+    this response: a mismatched AV/AR pair or a wrong probe layer still produces
+    plausible-looking output, so the values actually in use need to be visible.
+    """
     nla = state.get("nla")
     return {
         "status":        "ok" if nla else "loading",
-        "model":         "Qwen2.5-0.5B",
-        "checkpoint_av": "models/av.pt",
-        "checkpoint_ar": "models/ar.pt",
+        "model":         MODEL_ID,
+        "probe_layer":   PROBE_LAYER,
+        "d_model":       nla.d_model if nla else None,
+        "dtype":         str(DTYPE).replace("torch.", ""),
+        "device":        DEVICE,
+        "checkpoint_av": str(AV_CHECKPOINT),
+        "checkpoint_ar": str(AR_CHECKPOINT),
         "fve_baseline":  ("corpus mean" if nla and nla.corpus_mean is not None
                           else "unavailable"),
     }
