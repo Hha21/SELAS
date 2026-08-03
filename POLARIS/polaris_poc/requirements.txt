@@ -7,13 +7,26 @@ PyYAML
 numpy
 
 # Networking / RPC
-grpcio~=1.67.0
-grpcio-tools~=1.67.0
-protobuf~=5.29.5
+# (unpinned from the original ~=1.67.0 exact-compatible pin: that release predates
+# Python 3.14 wheel availability and was forcing a from-source build requiring a
+# C++ toolchain we don't have here; let pip resolve to a version with a real wheel)
+grpcio>=1.67.0
+grpcio-tools>=1.67.0
+protobuf>=5.29.5
 
 # GEMINI WORLD MODEL (DIGITAL TWIN)
-google-genai>=1.0.0   
-langchain>=0.2.0      
+google-genai>=1.0.0
+langchain>=0.2.0
+
+# LLM CLIENTS (Agentic Reasoner)
+openai>=1.0.0          # OpenAI-compatible provider: OpenAI, OpenRouter, self-hosted servers
+httpx                  # local/Ollama-style HTTP reasoner (llm_reasoner.py)
+requests               # meta_learner_llm.py
+
+# BAYESIAN WORLD MODEL
+scipy
+scikit-learn
+filterpy
 
 # TESTING
 pytest>=7.0.0

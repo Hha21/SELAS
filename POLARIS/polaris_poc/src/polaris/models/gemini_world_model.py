@@ -16,10 +16,6 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 from collections import deque, defaultdict
 import uuid
 
-# Google Generative AI imports
-import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
-
 from .world_model import (
     WorldModel, WorldModelError, WorldModelInitializationError, WorldModelOperationError,
     QueryRequest, QueryResponse, SimulationRequest, SimulationResponse,
@@ -120,6 +116,12 @@ class GeminiWorldModel(WorldModel):
                         f"Install API key manager dependencies: pip install keyring cryptography"
                     )
             
+            # Deprecated google-generativeai SDK: imported lazily here (rather than at
+            # module level) so the rest of POLARIS can start without this package
+            # installed -- it's only needed if --world-model gemini is actually selected.
+            import google.generativeai as genai
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
             # Configure Gemini API
             genai.configure(api_key=api_key)
             

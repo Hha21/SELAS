@@ -54,13 +54,13 @@ POLARIS follows a layered, event-driven architecture with clear separation of co
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  🔧 Plugin Interface                                                       │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │ SWIM Plugin     │ │ SWITCH Plugin   │ │ Custom Plugins  │              │
-│  │ • Web Service   │ │ • ML Model      │ │ • Your System   │              │
-│  │   Simulation    │ │   Switching     │ │   Integration   │              │
-│  │ • Server        │ │ • YOLO          │ │ • HTTP/TCP/     │              │
-│  │   Scaling       │ │   Variants      │ │   Custom        │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│  ┌─────────────────┐ ┌─────────────────┐                                  │
+│  │ SWIM Plugin     │ │ Custom Plugins  │                                  │
+│  │ • Web Service   │ │ • Your System   │                                  │
+│  │   Simulation    │ │   Integration   │                                  │
+│  │ • Server        │ │ • HTTP/TCP/     │                                  │
+│  │   Scaling       │ │   Custom        │                                  │
+│  └─────────────────┘ └─────────────────┘                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -129,21 +129,6 @@ python src/scripts/start_component.py agentic-reasoner --use-bayesian-world-mode
 python src/scripts/start_component.py meta-learner
 ```
 
-### Running the SWITCH System (ML Model Adaptation)
-
-The SWITCH system demonstrates ML model adaptation with YOLO variants:
-
-```bash
-# Start SWITCH system components
-./start_switch_system.sh
-
-# Or manually:
-python src/scripts/start_component.py monitor --plugin-dir extern/switch_plugin
-python src/scripts/start_component.py execution --plugin-dir extern/switch_plugin
-python src/scripts/start_component.py digital-twin --world-model bayesian
-python extern/switch_plugin/run_switch_kernel.py
-```
-
 ### Monitoring System Activity
 
 ```bash
@@ -186,44 +171,15 @@ polaris_poc/
 │   │   └── gemini_world_model.py  # LLM-based implementation
 │   └── services/                   # gRPC services
 │       └── digital_twin_service.py # Digital twin API
-├── extern/                         # Managed system plugins
-│   ├── swim/                      # SWIM exemplar system
-│   ├── switch/                    # SWITCH ML system
-│   └── switch_plugin/             # SWITCH POLARIS plugin
+├── extern/                         # SWIM plugin (connector + config)
+│   ├── config.yaml                 # SWIM plugin configuration
+│   ├── swim_connector.py           # SWIM TCP connector
+│   └── swim_publish_action.py      # SWIM action publishing
 ├── config/                        # System configurations
-│   ├── swim_optimized_config.yaml # SWIM-specific config
-│   └── switch_optimized_config.yaml # SWITCH-specific config
+│   └── swim_optimized_config.yaml # SWIM-specific config
 ├── examples/                      # Usage examples & demos
 ├── tests/                         # Comprehensive test suite
 └── docs/                          # Detailed documentation
-```
-
-### POLARIS Refactored (`polaris_refactored/`)
-Clean architecture implementation following enterprise patterns:
-
-```
-polaris_refactored/
-├── src/
-│   ├── framework/                 # Core framework services
-│   │   ├── configuration/         # Config management
-│   │   └── plugin_management/     # Plugin system
-│   ├── adapters/                  # Adapter implementations
-│   │   ├── monitor_adapter/       # Monitoring strategies
-│   │   └── execution_adapter/     # Execution pipelines
-│   ├── digital_twin/              # Digital twin components
-│   │   ├── world_model.py         # World model interface
-│   │   ├── knowledge_base.py      # Knowledge management
-│   │   └── learning_engine.py     # Learning algorithms
-│   ├── control_reasoning/         # Control & reasoning
-│   │   ├── adaptive_controller.py # MAPE-K controller
-│   │   └── reasoning_engine.py    # Multi-strategy reasoning
-│   ├── infrastructure/            # Infrastructure services
-│   │   ├── message_bus.py         # Event messaging
-│   │   └── data_storage/          # Data persistence
-│   └── domain/                    # Domain models
-└── plugins/                       # System plugins
-    ├── swim/                      # SWIM plugin
-    └── switch/                    # SWITCH plugin
 ```
 
 ## 🔧 Core Components
@@ -415,12 +371,6 @@ python src/scripts/start_component.py monitor --plugin-dir my_system_plugin --va
 **Actions:** ADD_SERVER, REMOVE_SERVER, SET_DIMMER
 **Metrics:** Response times, throughput, server utilization, arrival rate
 
-#### SWITCH Plugin (`extern/switch_plugin/`)
-**System:** ML Model Switching System
-**Purpose:** YOLO model adaptation for optimal utility
-**Actions:** SWITCH_MODEL (between YOLOv5 variants)
-**Metrics:** Processing time, confidence, utility, CPU usage
-
 ## 🧪 Examples and Demos
 
 ### Verification Demo
@@ -492,7 +442,6 @@ Main configuration in `src/config/polaris_config.yaml`:
 
 ### System-Specific Configurations
 - `config/swim_optimized_config.yaml` - SWIM system optimization
-- `config/switch_optimized_config.yaml` - SWITCH system optimization
 - `config/bayesian_world_model_config.yaml` - Bayesian model parameters
 
 ### Plugin Configuration
@@ -596,10 +545,6 @@ python src/scripts/start_component.py <component> --log-level DEBUG
 - gRPC service definitions in `src/polaris/proto/`
 - Comprehensive docstrings throughout codebase
 - Configuration schema documentation
-
-### Architecture Documentation
-- [`polaris_refactored/doc/design.md`](polaris_refactored/doc/design.md) - System design principles
-- [`polaris_refactored/doc/requirements.md`](polaris_refactored/doc/requirements.md) - Detailed requirements
 
 ## 🤝 Contributing
 

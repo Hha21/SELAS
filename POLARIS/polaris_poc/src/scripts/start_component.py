@@ -283,6 +283,28 @@ Examples:
         help="Use Bayesian/Kalman filter world model instead of Gemini (Agentic Reasoner only)",
     )
 
+    parser.add_argument(
+        "--llm-provider",
+        choices=["gemini", "openai_compatible"],
+        default="gemini",
+        help="LLM backend for the reasoner (Agentic Reasoner only). 'openai_compatible' covers "
+        "OpenAI, OpenRouter, or any self-hosted OpenAI-compatible server via --llm-base-url.",
+    )
+
+    parser.add_argument(
+        "--llm-model",
+        default=None,
+        help="Model name/slug for the selected --llm-provider (e.g. 'gemini-2.5-flash' or an "
+        "OpenRouter slug like 'openai/gpt-4o-mini'). Required for openai_compatible.",
+    )
+
+    parser.add_argument(
+        "--llm-base-url",
+        default=None,
+        help="API base URL override for --llm-provider openai_compatible "
+        "(e.g. https://openrouter.ai/api/v1). Ignored for gemini.",
+    )
+
     # Reasoner specific arguments
     parser.add_argument(
         "--reasoning-mode",
@@ -339,9 +361,19 @@ Examples:
         parser.error("--world-model and --health-check are only valid for digital-twin component")
 
     if args.component not in ["agentic-reasoner"] and (
-        args.timeout_config != "default" or args.use_bayesian_world_model or args.use_improved_grpc
+        args.timeout_config != "default"
+        or args.use_bayesian_world_model
+        or args.use_improved_grpc
+        or args.llm_provider != "gemini"
+        or args.llm_model
+        or args.llm_base_url
     ):
-        parser.error("GRPC and Bayesian options are only valid for agentic-reasoner component")
+        parser.error(
+            "GRPC, Bayesian, and --llm-* options are only valid for agentic-reasoner component"
+        )
+
+    if args.component == "agentic-reasoner" and args.llm_provider == "openai_compatible" and not args.llm_model:
+        parser.error("--llm-model is required when --llm-provider openai_compatible is used")
 
     if args.component not in ["reasoner"] and (args.reasoning_mode != "llm" or args.prompt_config):
         parser.error("Reasoning mode and prompt config are only valid for reasoner component")
@@ -996,35 +1028,44 @@ async def start_agentic_reasoner(args, config_path: Path):
     logger.info("Validating environment for Agentic Reasoner...")
     issues = []
 
-    # Check API key with interactive prompt
-    api_validation = validate_api_key_environment("Agentic Reasoner")
+    llm_provider = args.llm_provider
+    llm_model = args.llm_model or ("gemini-2.5-flash" if llm_provider == "gemini" else None)
+    llm_base_url = args.llm_base_url
+    llm_api_key = None
 
-    if not api_validation["valid"]:
-        if not args.validate_only and not args.dry_run:
-            # Try to get API key interactively
+    if llm_provider == "gemini":
+        api_validation = validate_api_key_environment("Agentic Reasoner")
+        if not api_validation["valid"]:
             logger.info("API key not found, prompting user...")
-            api_key = get_api_key_for_component("Agentic Reasoner", interactive=True)
-            if not api_key:
+            llm_api_key = get_api_key_for_component("Agentic Reasoner", interactive=True)
+            if not llm_api_key:
                 issues.append("Gemini API key is required for Agentic Reasoner")
             else:
                 logger.info("✅ Gemini API key obtained interactively")
-                # Update the global API_KEY for use in agent creation
-                global API_KEY
-                API_KEY = api_key
         else:
-            issues.extend(api_validation["issues"])
-    else:
-        # Ensure we have the API key for agent creation
-        if not API_KEY:
-            API_KEY = get_api_key_for_component("Agentic Reasoner", interactive=False)
+            llm_api_key = get_api_key_for_component("Agentic Reasoner", interactive=False)
 
-    # Check for required packages
-    try:
-        import google.genai
+        try:
+            import google.genai
 
-        logger.info("✅ Google Generative AI package available")
-    except ImportError:
-        issues.append("Google Generative AI package not installed (pip install google-genai)")
+            logger.info("✅ Google Generative AI package available")
+        except ImportError:
+            issues.append("Google Generative AI package not installed (pip install google-genai)")
+    else:  # openai_compatible: OpenAI, OpenRouter, or a self-hosted server
+        llm_api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not llm_api_key:
+            issues.append(
+                "OPENROUTER_API_KEY (or OPENAI_API_KEY) is required for --llm-provider openai_compatible"
+            )
+        else:
+            logger.info("✅ OpenAI-compatible API key found")
+
+        try:
+            import openai
+
+            logger.info("✅ openai package available")
+        except ImportError:
+            issues.append("openai package not installed (pip install openai)")
 
     if args.use_bayesian_world_model:
         try:
@@ -1049,9 +1090,12 @@ async def start_agentic_reasoner(args, config_path: Path):
             agent = create_agentic_reasoner_with_bayesian_world_model(
                 agent_id="polaris_agentic_reasoner_bayesian_001",
                 config_path=str(config_to_use),
-                llm_api_key=API_KEY,
+                llm_api_key=llm_api_key,
                 nats_url=None,
                 logger=logger,
+                llm_provider=llm_provider,
+                llm_model=llm_model,
+                llm_base_url=llm_base_url,
             )
             logger.info("🧮 Using deterministic Bayesian world model for predictions")
         else:
@@ -1059,13 +1103,16 @@ async def start_agentic_reasoner(args, config_path: Path):
             agent = create_agentic_reasoner_agent(
                 agent_id="polaris_agentic_reasoner_001",
                 config_path=str(config_to_use),
-                llm_api_key=API_KEY,
+                llm_api_key=llm_api_key,
                 nats_url=None,
                 logger=logger,
                 use_improved_grpc=True,  # Always use improved GRPC for agentic reasoner
                 grpc_timeout_config=grpc_timeout_config,
+                llm_provider=llm_provider,
+                llm_model=llm_model,
+                llm_base_url=llm_base_url,
             )
-            logger.info("🔧 Using improved GRPC client with circuit breaker")
+            logger.info(f"🔧 Using improved GRPC client with circuit breaker (LLM: {llm_provider}/{llm_model})")
 
         logger.info("✅ Agentic Reasoner created successfully")
 

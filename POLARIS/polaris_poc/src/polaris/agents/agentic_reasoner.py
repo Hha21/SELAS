@@ -1,9 +1,11 @@
 """
-Agentic LLM Reasoner Implementation with Google Gemini Flash 2.5
+Agentic LLM Reasoner Implementation
 
 An autonomous agentic reasoner that can dynamically decide which tools to use
 (Knowledge Base queries, Digital Twin interactions) and make adaptation decisions
-based on its analysis. Uses Google Gemini Flash 2.5 as the reasoning engine.
+based on its analysis. The LLM backend is pluggable (Gemini, or any
+OpenAI-compatible endpoint -- OpenAI, OpenRouter, self-hosted) via
+`llm_clients.create_llm_client`.
 """
 
 import json
@@ -19,8 +21,7 @@ import tempfile
 import yaml
 from pathlib import Path
 
-from google import genai
-from google.genai import types
+from .llm_clients import create_llm_client
 
 from .reasoner_core import (
     ReasoningInterface,
@@ -724,6 +725,8 @@ class AgenticLLMReasoner(ReasoningInterface):
         kb_query_interface: Optional[KnowledgeQueryInterface] = None,
         dt_interface: Optional[DigitalTwinInterface] = None,
         model: str = "gemini-2.5-flash",
+        provider: str = "gemini",
+        base_url: Optional[str] = None,
         max_tokens: int = 8192,
         temperature: float = 0.3,
         max_tool_calls: int = 5,
@@ -733,6 +736,7 @@ class AgenticLLMReasoner(ReasoningInterface):
         self.api_key = api_key
         self.reasoning_type = reasoning_type
         self.model = model
+        self.provider = provider
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.max_tool_calls = max_tool_calls
@@ -745,8 +749,10 @@ class AgenticLLMReasoner(ReasoningInterface):
         self.perf_logger = PerformanceLogger()
         self.token_logger = TokenUsageLogger()
 
-        # Initialize Gemini client
-        self.client = genai.Client(api_key=self.api_key)
+        # Initialize LLM client (Gemini, or any OpenAI-compatible endpoint)
+        self.llm_client = create_llm_client(
+            provider=provider, api_key=self.api_key, model=model, base_url=base_url
+        )
 
         # Initialize context builder and action history tracking
         self.context_builder = ContextBuilder(self.logger, {})
@@ -1052,16 +1058,8 @@ Please analyze the system context and make adaptation decisions in JSON format:
 
             # Start the reasoning loop with chat history
             chat_history = [
-                types.Content(role="user", parts=[types.Part(text=self.system_prompt)]),
-                types.Content(
-                    role="model",
-                    parts=[
-                        types.Part(
-                            text="Understood. I will analyze system contexts and make adaptation decisions following the structured format with tool usage when needed."
-                        )
-                    ],
-                ),
-                types.Content(role="user", parts=[types.Part(text=user_prompt)]),
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_prompt},
             ]
 
             final_action = None
@@ -1071,7 +1069,7 @@ Please analyze the system context and make adaptation decisions in JSON format:
 
                 # Get LLM response
                 llm_start_time = time.time()
-                llm_response, inp, op = await self._call_gemini(chat_history)
+                llm_response, inp, op = await self._call_llm(chat_history)
                 token_usage_records.append((inp, op))
                 llm_duration_ms = (time.time() - llm_start_time) * 1000
                 llm_call_timings.append(llm_duration_ms)
@@ -1084,13 +1082,11 @@ Please analyze the system context and make adaptation decisions in JSON format:
                         "response_length": len(llm_response),
                     },
                 )
-                reasoning_steps.append(f"Received Gemini response (iteration {iteration + 1})")
-                self.logger.debug(f"Gemini Response (iteration {iteration + 1}): {llm_response}")
+                reasoning_steps.append(f"Received LLM response (iteration {iteration + 1})")
+                self.logger.debug(f"LLM Response (iteration {iteration + 1}): {llm_response}")
 
                 # Add assistant response to history
-                chat_history.append(
-                    types.Content(role="model", parts=[types.Part(text=llm_response)])
-                )
+                chat_history.append({"role": "assistant", "content": llm_response})
 
                 # Parse response for tool calls or final decision
                 tool_calls, action = self._parse_llm_response(llm_response)
@@ -1139,9 +1135,7 @@ Please analyze the system context and make adaptation decisions in JSON format:
                     # Add tool results to conversation
                     if tool_results:
                         tool_results_text = "Tool Results:\n" + json.dumps(tool_results, indent=2)
-                        chat_history.append(
-                            types.Content(role="user", parts=[types.Part(text=tool_results_text)])
-                        )
+                        chat_history.append({"role": "user", "content": tool_results_text})
                         reasoning_steps.append(
                             f"Added {len(tool_results)} tool results to conversation"
                         )
@@ -1166,17 +1160,13 @@ Please analyze the system context and make adaptation decisions in JSON format:
                 # No tool calls and no action - force a decision
                 if not tool_calls and not action:
                     chat_history.append(
-                        types.Content(
-                            role="user",
-                            parts=[
-                                types.Part(
-                                    text="Please provide your final decision and action in the required JSON format."
-                                )
-                            ],
-                        )
+                        {
+                            "role": "user",
+                            "content": "Please provide your final decision and action in the required JSON format.",
+                        }
                     )
                     llm_start_time = time.time()
-                    final_response, inp, op = await self._call_gemini(chat_history)
+                    final_response, inp, op = await self._call_llm(chat_history)
                     token_usage_records.append((inp, op))
                     llm_duration_ms = (time.time() - llm_start_time) * 1000
                     llm_call_timings.append(llm_duration_ms)
@@ -1373,79 +1363,44 @@ Please analyze the system context and make adaptation decisions in JSON format:
 
         return normalized
 
-    async def _call_gemini(self, chat_history: List[types.Content]) -> Tuple[str, int, int]:
-        """Call Gemini API with chat history."""
-        for attempt in range(self.max_retries):
-            call_start_time = time.time()
-            try:
-                # Generate content with the chat history
-                response = await asyncio.to_thread(
-                    self.client.models.generate_content,
-                    model=self.model,
-                    contents=chat_history,
-                    config=types.GenerateContentConfig(
-                        temperature=self.temperature,
-                        max_output_tokens=self.max_tokens,
-                    ),
-                )
-
-                call_duration_ms = (time.time() - call_start_time) * 1000
-
-                # Extract text from response
-                if response and response.text:
-                    self.logger.info(response.usage_metadata)
-                    input_tokens = response.usage_metadata.prompt_token_count
-
-                    output_tokens = response.usage_metadata.candidates_token_count
-                    self.perf_logger.log_metric(
-                        "gemini_api_call",
-                        call_duration_ms,
-                        {
-                            "attempt": attempt + 1,
-                            "success": True,
-                            "response_length": len(response.text),
-                            "model": self.model,
-                            "input_tokens": input_tokens,
-                            "output_tokens": output_tokens,
-                        },
-                    )
-                    return response.text.strip(), input_tokens, output_tokens
-
-                else:
-                    self.perf_logger.log_metric(
-                        "gemini_api_call",
-                        call_duration_ms,
-                        {
-                            "attempt": attempt + 1,
-                            "success": False,
-                            "error": "empty_response",
-                            "model": self.model,
-                        },
-                    )
-                    raise ValueError("Empty response from Gemini")
-
-            except Exception as e:
-                call_duration_ms = (time.time() - call_start_time) * 1000
-                self.perf_logger.log_metric(
-                    "gemini_api_call",
-                    call_duration_ms,
-                    {
-                        "attempt": attempt + 1,
-                        "success": False,
-                        "error": str(e),
-                        "model": self.model,
-                    },
-                )
-                self.logger.warning(f"Gemini call attempt {attempt + 1} failed: {e}")
-                if attempt + 1 == self.max_retries:
-                    raise
-                # Respect the API's suggested retry delay if present, otherwise backoff
-                import re as _re
-                _delay_match = _re.search(r"retryDelay.*?'(\d+)s'", str(e))
-                _sleep = int(_delay_match.group(1)) if _delay_match else 2 ** attempt
-                await asyncio.sleep(_sleep)
-
-        raise Exception("Gemini call failed after all retries")
+    async def _call_llm(self, chat_history: List[Dict[str, str]]) -> Tuple[str, int, int]:
+        """Call the configured LLM backend with chat history. Retries/backoff are
+        handled inside the client; this just wraps it with perf logging."""
+        call_start_time = time.time()
+        try:
+            text, input_tokens, output_tokens = await self.llm_client.generate(
+                chat_history,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            call_duration_ms = (time.time() - call_start_time) * 1000
+            self.perf_logger.log_metric(
+                "llm_api_call",
+                call_duration_ms,
+                {
+                    "success": True,
+                    "response_length": len(text),
+                    "model": self.model,
+                    "provider": self.provider,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                },
+            )
+            return text, input_tokens, output_tokens
+        except Exception as e:
+            call_duration_ms = (time.time() - call_start_time) * 1000
+            self.perf_logger.log_metric(
+                "llm_api_call",
+                call_duration_ms,
+                {
+                    "success": False,
+                    "error": str(e),
+                    "model": self.model,
+                    "provider": self.provider,
+                },
+            )
+            self.logger.warning(f"LLM call failed: {e}")
+            raise
 
     def _parse_llm_response(
         self, response: str
@@ -1647,18 +1602,25 @@ def create_agentic_reasoner_agent(
     logger: Optional[logging.Logger] = None,
     use_improved_grpc: bool = True,
     grpc_timeout_config: Optional[Dict[str, float]] = None,
+    llm_provider: str = "gemini",
+    llm_model: str = "gemini-2.5-flash",
+    llm_base_url: Optional[str] = None,
 ) -> "ReasonerAgent":
     """
-    Create a reasoner agent with agentic LLM reasoning implementation using Gemini Flash 2.5.
+    Create a reasoner agent with agentic LLM reasoning implementation.
 
     Args:
         agent_id: Unique identifier for the agent
         config_path: Path to configuration file
-        llm_api_key: API key for Gemini LLM
+        llm_api_key: API key for the LLM backend
         nats_url: NATS server URL
         logger: Logger instance
         use_improved_grpc: Whether to use the improved GRPC client
         grpc_timeout_config: Custom timeout configuration for GRPC client
+        llm_provider: "gemini" or "openai_compatible" (OpenAI/OpenRouter/self-hosted)
+        llm_model: Model name/slug for the selected provider
+        llm_base_url: Override API base URL (e.g. OpenRouter's endpoint);
+            ignored for the gemini provider
     """
     from .reasoner_agent import ReasonerAgent
 
@@ -1749,6 +1711,9 @@ def create_agentic_reasoner_agent(
             dt_interface=agent.dt_query,
             prompt_config_path=agentic_prompt_config_path,
             logger=logger,
+            provider=llm_provider,
+            model=llm_model,
+            base_url=llm_base_url,
         )
 
         agent.add_reasoning_implementation(reasoning_type, agentic_reasoner)
@@ -1764,10 +1729,13 @@ def create_agentic_reasoner_with_bayesian_world_model(
     llm_api_key: str,
     nats_url: Optional[str] = None,
     logger: Optional[logging.Logger] = None,
+    llm_provider: str = "gemini",
+    llm_model: str = "gemini-2.5-flash",
+    llm_base_url: Optional[str] = None,
 ) -> "ReasonerAgent":
     """
     Create a reasoner agent that uses the Bayesian/Kalman filter world model
-    instead of the Gemini LLM world model for deterministic predictions.
+    instead of an LLM-based world model for deterministic predictions.
     """
     # Update config to use Bayesian world model
     import yaml
@@ -1858,6 +1826,9 @@ def create_agentic_reasoner_with_bayesian_world_model(
                 dt_interface=agent.dt_query,
                 prompt_config_path=agentic_prompt_config_path,
                 logger=logger,
+                provider=llm_provider,
+                model=llm_model,
+                base_url=llm_base_url,
             )
             agent.add_reasoning_implementation(reasoning_type, agentic_reasoner)
             if logger:
