@@ -169,7 +169,11 @@ const EDGES = [
   { from: "meta",     to: "reasoner", kind: "meta", fromSide: "bottom", toSide: "top",    label: "evolve" },
 ];
 
+// "auto" follows the route POLARIS actually dispatched on (reported by the
+// bridge); the others pin it manually for reading the diagram offline.
+let routeMode   = "auto";
 let activeRoute = "strategic";
+let liveState   = null;
 
 // ---------------------------------------------------------------- geometry
 function anchorPoint(el, side) {
@@ -269,9 +273,13 @@ function drawConnectors() {
 }
 
 // ---------------------------------------------------------------- details
+let selectedId = null;
+
 function selectComponent(id) {
   const c = COMPONENTS[id];
   if (!c) return;
+  selectedId = id;
+  selectTab("component");
 
   document.querySelectorAll("#diagram .node, .tool-chip")
     .forEach((n) => n.classList.remove("selected"));
@@ -302,13 +310,186 @@ function selectComponent(id) {
   const cls    = c.status.live ? "status-live" : "status-pending";
   const dot    = c.status.live ? "●" : "○";
   status.innerHTML = `<span class="${cls}">${dot} ${escapeHtml(c.status.note)}</span>`;
+
+  renderLiveLine(id);
 }
 
-function setRoute(name) {
-  activeRoute = name;
+function setRoute(mode) {
+  routeMode = mode;
   document.querySelectorAll(".route-btn").forEach((b) =>
-    b.classList.toggle("active", b.dataset.route === name));
+    b.classList.toggle("active", b.dataset.route === mode));
+  resolveRoute();
   drawConnectors();
+}
+
+function resolveRoute() {
+  if (routeMode === "auto") {
+    // Nothing dispatched yet (or no bridge) -> highlight nothing rather than
+    // guessing a route the system has not actually taken.
+    activeRoute = (liveState && liveState.route) || null;
+  } else {
+    activeRoute = routeMode === "none" ? null : routeMode;
+  }
+}
+
+// ---------------------------------------------------------------- live state
+const POLL_MS = 2000;
+
+async function pollState() {
+  let s = null;
+  try {
+    const r = await fetch("/api/polaris/state", { cache: "no-store" });
+    if (r.ok) s = await r.json();
+  } catch {
+    s = null;
+  }
+  liveState = s && s.connected ? s : null;
+  renderLive(s);
+  resolveRoute();
+  drawConnectors();
+}
+
+function renderLive(s) {
+  const connected = !!(s && s.connected);
+  const dot   = document.getElementById("bridge-dot");
+  const pill  = document.getElementById("bridge-pill");
+  const text  = document.getElementById("bridge-text");
+  const strip = document.getElementById("metrics-strip");
+  const banner = document.getElementById("banner");
+
+  dot.className = connected ? "dot live" : (s && s.bridge && !s.bridge.reachable ? "dot" : "dot error");
+  pill.classList.toggle("live", connected);
+  strip.classList.toggle("hidden", !connected);
+  banner.classList.toggle("hidden", connected);
+
+  if (!connected) {
+    pill.textContent = "bridge: —";
+    text.textContent = "not connected";
+    renderActivity(null);
+    setNodeStatuses(null);
+    return;
+  }
+
+  pill.textContent = `${s.messages} msgs`;
+  text.textContent = "live";
+
+  setMetric("rt",      s.metrics.average_response_time, 1000, (v) => `${Math.round(v)}`, "ms");
+  setMetric("util",    s.metrics.server_utilization,       1, (v) => v.toFixed(2));
+  setMetric("dim",     s.metrics.dimmer,                   1, (v) => v.toFixed(2));
+  setMetric("servers", s.metrics.active_servers,
+            (s.metrics.max_servers && s.metrics.max_servers.value) || 3,
+            (v) => `${v}`);
+
+  paintSparkline(s.history.average_response_time || []);
+  renderActivity(s.activity);
+  setNodeStatuses(s.components);
+
+  // Keep an open component panel's live line current.
+  if (selectedId) renderLiveLine(selectedId);
+}
+
+function setMetric(key, entry, max, fmt, unit) {
+  const el  = document.getElementById(`m-${key}`);
+  const bar = document.getElementById(`m-${key}-bar`);
+  if (!el) return;
+  if (!entry || typeof entry.value !== "number") {
+    el.textContent = "—";
+    if (bar) bar.style.width = "0%";
+    return;
+  }
+  el.innerHTML = fmt(entry.value) +
+    (unit ? `<span class="mt-unit">${unit}</span>` : "");
+  if (bar) {
+    const pct = Math.max(0, Math.min(100, (entry.value / (max || 1)) * 100));
+    bar.style.width = `${pct}%`;
+  }
+}
+
+function paintSparkline(series) {
+  const line = document.getElementById("sparkline-line");
+  const hint = document.getElementById("spark-hint");
+  if (!line) return;
+  const vals = series.map((p) => p[1]);
+  if (vals.length < 2) {
+    line.setAttribute("points", "");
+    hint.textContent = vals.length ? "one sample so far" : "awaiting telemetry";
+    return;
+  }
+  const w = 220, h = 56;
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = (hi - lo) * 0.1 || 1;
+  const min = lo - pad, max = hi + pad;
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - ((v - min) / (max - min)) * h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  line.setAttribute("points", pts.join(" "));
+  hint.textContent = `${vals.length} samples · ${Math.round(lo)}–${Math.round(hi)} ms`;
+}
+
+function setNodeStatuses(components) {
+  document.querySelectorAll("#diagram .node").forEach((node) => {
+    const dot = node.querySelector(".node-status");
+    if (!dot) return;
+    const c = components && components[node.dataset.agent];
+    dot.dataset.status = c ? c.status : "idle";
+    dot.title = c
+      ? `${c.count} messages, last ${c.age_sec}s ago`
+      : "no traffic seen";
+  });
+}
+
+function renderActivity(activity) {
+  const el    = document.getElementById("activity-log");
+  const badge = document.getElementById("activity-count");
+  if (!activity || activity.length === 0) {
+    el.innerHTML = `<div class="placeholder">${
+      activity ? "Bridge connected, no messages yet." : "No bridge connection — nothing to show."
+    }</div>`;
+    badge.classList.add("hidden");
+    return;
+  }
+  badge.textContent = activity.length;
+  badge.classList.remove("hidden");
+
+  el.innerHTML = "";
+  for (const a of activity) {
+    const row = document.createElement("div");
+    row.className = "log-row";
+    const t = new Date(a.ts * 1000).toISOString().slice(11, 19);
+    row.innerHTML =
+      `<span class="log-time">${t}</span>` +
+      `<span class="log-msg">` +
+      (a.component ? `<span class="tag comp">${escapeHtml(a.component)}</span>` : "") +
+      `<span class="log-subject">${escapeHtml(a.subject)}</span>` +
+      (a.summary ? ` ${escapeHtml(a.summary)}` : "") +
+      `</span>`;
+    el.appendChild(row);
+  }
+}
+
+function renderLiveLine(id) {
+  const el = document.getElementById("detail-live");
+  if (!el) return;
+  const c = liveState && liveState.components && liveState.components[id];
+  if (!c) {
+    el.innerHTML = liveState
+      ? `<span class="status-pending">○ no traffic seen this run</span>`
+      : "";
+    return;
+  }
+  el.innerHTML =
+    `<span class="status-live">● live: ${c.count} messages, ` +
+    `last ${c.age_sec}s ago (${c.status})</span>`;
+}
+
+// ---------------------------------------------------------------- tabs
+function selectTab(tabId) {
+  document.querySelectorAll(".tab-btn").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === tabId));
+  document.querySelectorAll(".tab-panel").forEach((p) =>
+    p.classList.toggle("hidden", p.dataset.panel !== tabId));
 }
 
 function escapeHtml(s) {
@@ -328,10 +509,18 @@ document.querySelectorAll("[data-agent]").forEach((el) => {
 document.querySelectorAll(".route-btn").forEach((b) =>
   b.addEventListener("click", () => setRoute(b.dataset.route)));
 
+document.querySelectorAll(".tab-btn").forEach((b) =>
+  b.addEventListener("click", () => selectTab(b.dataset.tab)));
+
 drawConnectors();
 window.addEventListener("resize", drawConnectors);
 // Fonts and the grid settle a frame or two after load; redraw so the anchors
-// land on final geometry rather than the initial layout pass.
+// land on final geometry rather than the initial layout pass. The metric strip
+// appearing when the bridge connects also reflows the diagram, which is why
+// pollState() redraws too.
 window.addEventListener("load", () => requestAnimationFrame(drawConnectors));
 
 selectComponent("nla");
+resolveRoute();
+pollState();
+setInterval(pollState, POLL_MS);

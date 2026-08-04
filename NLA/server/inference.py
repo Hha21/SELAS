@@ -37,7 +37,7 @@ from datasets import concatenate_datasets, load_from_disk
 
 from src.ar import load_ar
 from src.av import load_av
-from src.model import decoder_layers, load_target
+from src.model import decoder_layers, decoder_stack, load_target
 
 
 ACTIVATIONS_DIR   = ROOT / "activations" / "dataset"
@@ -88,6 +88,8 @@ class NLAInference:
             self._act_cache["resid"] = h.detach()
 
         self._hook_handle = decoder_layers(self.target)[PROBE_LAYER].register_forward_hook(_hook)
+        # The decoder stack without the LM head -- see _run_body().
+        self._body = decoder_stack(self.target)
 
         # Pre-tokenise the AV prompt (independent of the activation; same chunk every time)
         prompt_str = self.tok.apply_chat_template(
@@ -135,10 +137,42 @@ class NLAInference:
     def _decode_tokens(self, ids: torch.Tensor) -> list[str]:
         return [self.tok.decode([int(i)]) for i in ids]
 
-    def _extract_activation(self, ids_up_to_pos: torch.Tensor) -> torch.Tensor:
+    def _run_body(self, ids: torch.Tensor) -> None:
+        """Forward through the decoder stack only, firing the probe-layer hook.
+
+        Deliberately not self.target(...): that runs the LM head too, producing
+        a (1, seq, vocab) logits tensor we then throw away. At Qwen2.5's 151936
+        vocab that is ~300 KB *per token* in fp16 -- 600 MB for a 2000-token
+        POLARIS prompt, which is what put a 4 GB card into CUDA OOM. The hook
+        lives inside the decoder stack, so calling it directly is equivalent
+        and allocates none of that.
+        """
         with torch.no_grad():
-            self.target(input_ids=ids_up_to_pos.unsqueeze(0))
+            self._body(input_ids=ids.unsqueeze(0))
+
+    def _extract_activation(self, ids_up_to_pos: torch.Tensor) -> torch.Tensor:
+        self._run_body(ids_up_to_pos)
         return self._act_cache["resid"][0, -1].float()   # (d_model,)
+
+    def activations_for(self, token_ids: list[int]) -> np.ndarray:
+        """Residual-stream activation at *every* position, in one forward pass.
+
+        Identical numbers to calling _extract_activation() on each prefix --
+        attention is causal, so position i depends only on tokens 0..i and is
+        unaffected by what follows it in the same pass. The difference is cost:
+        O(n) here versus O(n^2) for per-position prefills.
+
+        Deliberately run after generation rather than accumulated during it.
+        At each decode step the model is fed token i to predict token i+1, so
+        nothing is ever fed *after* the final sampled token -- capturing during
+        generation silently misses that last token's activation, which is
+        usually the most interesting one (the end of the decision).
+
+        Returns float32 (seq, d_model) on CPU.
+        """
+        ids = torch.tensor(token_ids, dtype=torch.long, device=self.device)
+        self._run_body(ids)
+        return self._act_cache["resid"][0].float().cpu().numpy()   # (seq, d_model)
 
     def _generate_explanation(self, activation: torch.Tensor) -> str:
         act        = activation.unsqueeze(0).to(self.device)

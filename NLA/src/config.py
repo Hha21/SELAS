@@ -14,6 +14,9 @@ Overrides:
   NLA_PROBE_LAYER  residual-stream layer to hook (see PROBE_LAYERS below)
   NLA_DTYPE        auto | bfloat16 | float16 | float32   (auto = best available)
   NLA_DEVICE       cuda | cuda:1 | cpu | auto            (auto = shard over GPUs)
+  NLA_TRACE_DIR    where runtime activation traces are written
+  NLA_RUN_ID       groups traces from one run into a subdirectory
+  NLA_CAPTURE      0 to disable trace capture entirely (default: enabled)
 
 Nothing else in the codebase hardcodes a model, layer, or dtype -- src/model.py,
 src/av.py, src/ar.py, src/data.py and server/inference.py all import from here.
@@ -110,6 +113,13 @@ DTYPE  = _resolve_dtype(os.getenv("NLA_DTYPE"), DEVICE)
 CHECKPOINT_DIR = MODELS_DIR / MODEL_ID.split("/")[-1]
 AV_CHECKPOINT  = CHECKPOINT_DIR / "av.pt"
 AR_CHECKPOINT  = CHECKPOINT_DIR / "ar.pt"
+
+# Runtime activation traces. Defaults to <repo>/../traces -- deliberately
+# outside NLA/, because a trace is the shared artifact of a POLARIS run and the
+# NLA pipeline, owned by neither. Gitignored at the SummerWork level.
+TRACE_DIR      = Path(os.getenv("NLA_TRACE_DIR", _ROOT.parent / "traces"))
+RUN_ID         = os.getenv("NLA_RUN_ID", "")   # blank -> writer picks a timestamp
+CAPTURE_TRACES = os.getenv("NLA_CAPTURE", "1") not in ("0", "false", "no")
 
 # AR prompt from the paper (Appendix: Prompting the activation reconstructor).
 # AR always receives: AR_PREFIX + z + AR_SUFFIX, and the last-token hidden state

@@ -15,22 +15,57 @@
     </div>
     <div class="header-right">
       <span id="run-info">
-        <span class="nla-pill">reference diagram</span>
-        <span class="dot"></span>
-        <span>not wired</span>
+        <span id="bridge-pill" class="nla-pill">bridge: —</span>
+        <span id="bridge-dot" class="dot"></span>
+        <span id="bridge-text">not connected</span>
       </span>
       <a class="nav-link" href="/">Activation Inspector →</a>
     </div>
   </header>
 
-  <div class="banner">
-    <strong>Static reference diagram.</strong>
-    Structure only — no telemetry, no agent state, no live routing. The POLARIS
-    feed is not connected yet, so nothing on this page is a measurement. The
-    <a href="/">Activation Inspector</a> is the part that is live today; it
-    corresponds to the <span class="inline-chip">NLA</span> tool attached to the
-    Reasoner below.
+  <div class="banner" id="banner">
+    <strong>POLARIS feed not connected.</strong>
+    Showing structure only. Start the bridge to populate telemetry, component
+    activity and routing:
+    <code>python src/scripts/dashboard_bridge.py</code> from
+    <code>POLARIS/polaris_poc</code>. Nothing on this page is invented — until
+    the bridge is up, values stay blank.
   </div>
+
+  <!-- ──────────────────────────────────────────── live SWIM metric strip -->
+  <section id="metrics-strip" class="hidden">
+    <div class="metric-tile">
+      <div class="mt-label">Response time</div>
+      <div class="mt-value" id="m-rt">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-rt-bar" style="width:0%; background:#4f46e5;"></div></div>
+      <div class="mt-hint" id="m-rt-hint">swim.average_response_time</div>
+    </div>
+    <div class="metric-tile">
+      <div class="mt-label">Server utilisation</div>
+      <div class="mt-value" id="m-util">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-util-bar" style="width:0%; background:#f59e0b;"></div></div>
+      <div class="mt-hint">swim.server_utilization</div>
+    </div>
+    <div class="metric-tile">
+      <div class="mt-label">Dimmer</div>
+      <div class="mt-value" id="m-dim">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-dim-bar" style="width:0%; background:#8b5cf6;"></div></div>
+      <div class="mt-hint">swim.dimmer</div>
+    </div>
+    <div class="metric-tile">
+      <div class="mt-label">Servers</div>
+      <div class="mt-value" id="m-servers">—</div>
+      <div class="mt-bar"><div class="mt-bar-fill" id="m-servers-bar" style="width:0%; background:#0ea5e9;"></div></div>
+      <div class="mt-hint">swim.active_servers</div>
+    </div>
+    <div class="metric-tile metric-sparkline">
+      <div class="mt-label" id="spark-label">Response time</div>
+      <svg id="sparkline" viewBox="0 0 220 56" preserveAspectRatio="none">
+        <polyline id="sparkline-line" fill="none" stroke="#4f46e5" stroke-width="1.5" points=""/>
+      </svg>
+      <div class="mt-hint" id="spark-hint">awaiting telemetry</div>
+    </div>
+  </section>
 
   <main>
     <!-- ──────────────────────────────────────────────────── architecture -->
@@ -38,8 +73,9 @@
       <div class="column-header">
         <h2>Architecture</h2>
         <div class="route-tag">
-          highlight route:
-          <button class="route-btn active" data-route="strategic">strategic</button>
+          route:
+          <button class="route-btn active" data-route="auto">auto</button>
+          <button class="route-btn" data-route="strategic">strategic</button>
           <button class="route-btn" data-route="stabilization">stabilization</button>
           <button class="route-btn" data-route="none">none</button>
         </div>
@@ -101,6 +137,7 @@
                     <div class="node-title">Meta-Learner</div>
                     <div class="node-sub">LLM · reflect &amp; evolve</div>
                   </div>
+                  <div class="node-status" data-status="idle"></div>
                 </div>
               </div>
             </div>
@@ -117,6 +154,7 @@
                     <div class="node-title">Reasoner</div>
                     <div class="node-sub">LLM · deliberative</div>
                   </div>
+                  <div class="node-status" data-status="idle"></div>
                 </div>
 
                 <div class="loop-divider"></div>
@@ -127,6 +165,7 @@
                     <div class="node-title">Fast Controller</div>
                     <div class="node-sub">reactive · low-latency</div>
                   </div>
+                  <div class="node-status" data-status="idle"></div>
                 </div>
                 <div class="loop-tag loop-tag-stab">fast loop · reflex</div>
               </div>
@@ -153,6 +192,7 @@
                     <div class="node-title">Kernel</div>
                     <div class="node-sub">orchestrator · routes by threshold</div>
                   </div>
+                  <div class="node-status" data-status="idle"></div>
                 </div>
               </div>
             </div>
@@ -167,6 +207,7 @@
                 <div class="node-title">Metric Collector</div>
                 <div class="node-sub">sample</div>
               </div>
+              <div class="node-status" data-status="idle"></div>
             </div>
           </div>
 
@@ -179,6 +220,7 @@
                 <div class="node-title">Verifier</div>
                 <div class="node-sub">invariants</div>
               </div>
+              <div class="node-status" data-status="idle"></div>
             </div>
             <div class="node node-aux node-rail" data-agent="execution-adapter">
               <div class="node-icon">EA</div>
@@ -186,6 +228,7 @@
                 <div class="node-title">Execution Adapter</div>
                 <div class="node-sub">enact</div>
               </div>
+              <div class="node-status" data-status="idle"></div>
             </div>
           </div>
 
@@ -197,6 +240,7 @@
                 <div class="node-title">Managed System · SWIM</div>
                 <div class="node-sub">servers + dimmer</div>
               </div>
+              <div class="node-status" data-status="idle"></div>
             </div>
           </div>
         </div>
@@ -223,6 +267,24 @@
         <span id="details-sub" class="muted">nothing selected</span>
       </div>
 
+      <nav id="tabs" class="tabs">
+        <button class="tab-btn active" data-tab="component">Component</button>
+        <button class="tab-btn" data-tab="activity">
+          Activity <span id="activity-count" class="tab-badge hidden">0</span>
+        </button>
+      </nav>
+
+      <div class="tab-panel hidden" data-panel="activity">
+        <p class="column-help">
+          Live NATS traffic seen by the bridge, newest first. Read-only —
+          the bridge subscribes to <code>polaris.&gt;</code> and publishes nothing.
+        </p>
+        <div id="activity-log" class="log">
+          <div class="placeholder">No bridge connection — nothing to show.</div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="component">
       <div id="details-empty" class="placeholder">
         <p>Click any component in the diagram to read its role.</p>
         <p>
@@ -249,7 +311,9 @@
         <div class="reason-section">
           <div class="reason-section-title">Status</div>
           <p class="detail-maps" id="detail-status"></p>
+          <p class="detail-maps" id="detail-live"></p>
         </div>
+      </div>
       </div>
     </aside>
   </main>

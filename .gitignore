@@ -28,5 +28,8 @@ TAS/*/TAS_gui/results/result.csv
 # and moved between machines with rsync.
 traces/
 
+# Pidfiles and service logs written by ./start.sh
+run/
+
 # macOS
 **/.DS_Store

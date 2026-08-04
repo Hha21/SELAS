@@ -136,23 +136,68 @@ listed with their probe layers in `PROBE_LAYERS` in `src/config.py`.
 
 ---
 
+## Serving POLARIS
+
+The server does more than host the demo: it is the LLM backend POLARIS reasons
+with. It exposes an OpenAI-compatible `/v1/chat/completions`, so POLARIS calls
+it as an ordinary provider with no NLA-specific code, and every call is captured
+as an activation trace.
+
+```
+POLARIS reasoner ──HTTP /v1/chat/completions──> NLA server ──> traces/<run_id>/
+```
+
+That HTTP boundary is deliberate: POLARIS's virtualenv keeps `nats`/`grpc` and
+no `torch`, this one keeps `torch`/`transformers` and no `nats`, and each stays
+installable and runnable alone. Traces then move as *files* rather than function
+calls, because at 12B the target model (~24 GB) and the AV/AR pair (~40 GB) do
+not fit on a 48 GB workstation together — collection and explanation have to be
+separable passes.
+
+Full details, endpoints and trace format: [server/README.md](server/README.md).
+To run the whole setup (SWIM + POLARIS + this server) use
+[`../start.sh`](../start.sh).
+
+Verify the interface end to end — this drives the server using POLARIS's *own*
+LLM client, then checks a trace was written with one activation per token:
+
+```bash
+./.venv/bin/python scripts/check_polaris_interface.py --url http://localhost:8000/v1
+```
+
+---
+
 ## Demo (web UI)
 
-A FastAPI server + static HTML/JS frontend laid out as three columns:
+Two pages, served by the same process.
 
-1. **Chat** (left) — type a message, the target model generates a response with the chosen
-   sampling settings (max tokens, temperature, top-p). "New chat" resets the conversation.
-2. **Model context** (middle) — every token the target model actually sees, with the chat
-   template applied. Special tokens (`<|im_start|>`, …) are highlighted. Clicking any token
-   selects it and faintly shades all tokens that came before it (the activation at token *i*
-   depends on tokens 0…*i*).
-3. **AV explanation** (right) — the AV's natural-language explanation of the selected token's
-   layer-16 activation, plus two reconstruction metrics:
-   - **Reconstruction (cosine)** — angle between AR's prediction and the (sqrt-d-normalised)
-     activation. Bounded [−1, 1], higher is better.
-   - **Per-sample FVE** — 1 − ‖a − â‖² / ‖a − ā‖², where ā is the corpus-mean activation
-     (computed at startup from `activations/dataset`). Same definition as the corpus FVE in
-     [REPRODUCE_LOG.md](REPRODUCE_LOG.md), evaluated on a single sample.
+**Activation Inspector** (`/`) — three columns:
+
+1. **Chat** (left) — type a message, the target model generates with the chosen
+   sampling settings. "New chat" resets the conversation.
+2. **Model context** (middle) — every token the target model actually sees, with
+   the chat template applied. Special tokens (`<|im_start|>`, …) are highlighted.
+   Clicking a token selects it and faintly shades everything before it (the
+   activation at token *i* depends on tokens 0…*i*).
+3. **Inspector** (right) — the AV's explanation of the selected token's
+   activation, plus:
+   - **Reconstruction (cosine)** — angle between AR's prediction and the
+     sqrt-d-normalised activation. Bounded [−1, 1], higher is better.
+   - **Per-sample FVE** — 1 − ‖a − â‖² / ‖a − ā‖², with ā the corpus-mean
+     activation (needs `activations/dataset`; reported as `n/a` otherwise).
+     Same definition as the corpus FVE in [REPRODUCE_LOG.md](REPRODUCE_LOG.md).
+
+   A **Config** tab shows the backbone, probe layer and checkpoint paths in use.
+   Worth checking — a mismatched AV/AR pair still produces confident-looking
+   prose.
+
+**Architecture** (`/architecture.html`) — the POLARIS/SWIM control loop, showing
+where this fits as a Reasoner tool. With POLARIS's dashboard bridge running it
+also shows live component activity, SWIM telemetry and routing; without it, the
+page says so and stays structural.
+
+Nothing in either page is mocked. When a service is down the UI reports that
+rather than showing stale or invented numbers.
 
 ```bash
 # Once: copy your best GRPO checkpoints into this backbone's models/ subdirectory
@@ -201,6 +246,7 @@ NLA_reproduce/
 ├── scripts/                      # entry points — run via shell scripts
 │   ├── phase00_load_model.py     #   verify GPU and model load
 │   ├── check_roundtrip.py        #   end-to-end T→AV→AR check, with baselines
+│   ├── check_polaris_interface.py#   POLARIS's own LLM client against this server
 │   ├── generate_data.py          #   Stage 0: build (text, activation) dataset (shard-safe)
 │   ├── generate_summaries.py     #   Stage 1: LLM explanation generation
 │   ├── train_ar_baseline.py      #   Stage 2: AR warm-start
@@ -226,15 +272,22 @@ NLA_reproduce/
 │   └── Qwen2.5-0.5B/             #   one subdirectory per backbone
 │       ├── av.pt                 #     copy of grpo_av_step1000.pt
 │       └── ar.pt                 #     copy of grpo_ar_step1000.pt
-├── server/                       # FastAPI inference server
-│   ├── main.py                   #   routes, lifespan, static mount
-│   ├── inference.py              #   NLAInference: tokenize, analyze
+├── server/                       # FastAPI server
+│   ├── main.py                   #   routes: /api/*, /v1/chat/completions
+│   ├── inference.py              #   NLAInference: chat, analyze, activations_for
+│   ├── traces.py                 #   TraceWriter / load_trace
 │   └── README.md
 └── frontend/                     # static client — no build tools
-    ├── index.html
-    ├── styles.css
-    └── app.js
+    ├── index.html                #   Activation Inspector
+    ├── app.js
+    ├── architecture.html         #   POLARIS/SWIM control loop view
+    ├── architecture.js
+    ├── architecture.css
+    └── styles.css
 ```
+
+Traces are written outside this directory, to `../traces/<run_id>/` — they are
+the shared artifact of a POLARIS run and this pipeline, owned by neither.
 
 ---
 
