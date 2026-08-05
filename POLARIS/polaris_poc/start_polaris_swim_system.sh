@@ -976,19 +976,26 @@ create_window "reasoner" "$reasoner_command" 8
 
 sleep $STARTUP_DELAY
 
-# --- Component 9: Meta Learner (Gemini-only; not yet generalized to other providers) ---
-if [[ "$LLM_PROVIDER" == "gemini" ]]; then
-    log_step "9/9 Starting Meta Learner"
-    meta_command="cd $PROJECT_ROOT && source $VENV_PATH/bin/activate && "
-    meta_command+="export PYTHONPATH=$PROJECT_ROOT/src:\${PYTHONPATH:-} && "
-    meta_command+="export GEMINI_API_KEY='$GEMINI_API_KEY' && "
-    meta_command+="echo 'Starting Meta Learner...' && "
-    meta_command+="python src/scripts/start_component.py meta-learner --config '$POLARIS_CONFIG_PATH' --log-level INFO"
-
-    create_window "meta-learner" "$meta_command" 9
-else
-    log_step "9/9 Skipping Meta Learner (Gemini-only, LLM_PROVIDER=$LLM_PROVIDER)"
+# --- Component 9: Meta Learner ---
+# Takes the same --llm-* selection as the Agentic Reasoner. It used to be
+# skipped outright for any non-Gemini provider, which meant a run against a
+# self-hosted endpoint quietly started 8 of 9 components and left the
+# meta-learner's reasoning both absent and uncapturable.
+log_step "9/9 Starting Meta Learner"
+meta_command="cd $PROJECT_ROOT && source $VENV_PATH/bin/activate && "
+meta_command+="export PYTHONPATH=$PROJECT_ROOT/src:\${PYTHONPATH:-} && "
+meta_command+="export GEMINI_API_KEY='$GEMINI_API_KEY' && "
+meta_command+="echo 'Starting Meta Learner ($LLM_PROVIDER${LLM_MODEL:+/$LLM_MODEL})...' && "
+meta_command+="python src/scripts/start_component.py meta-learner --config '$POLARIS_CONFIG_PATH' --log-level INFO"
+meta_command+=" --llm-provider '$LLM_PROVIDER'"
+if [[ -n "$LLM_MODEL" ]]; then
+    meta_command+=" --llm-model '$LLM_MODEL'"
 fi
+if [[ -n "$LLM_BASE_URL" ]]; then
+    meta_command+=" --llm-base-url '$LLM_BASE_URL'"
+fi
+
+create_window "meta-learner" "$meta_command" 9
 
 # --- Final setup ---
 log_step "Setting up system monitoring"

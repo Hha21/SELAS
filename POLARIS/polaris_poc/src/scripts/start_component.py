@@ -364,15 +364,27 @@ Examples:
         args.timeout_config != "default"
         or args.use_bayesian_world_model
         or args.use_improved_grpc
-        or args.llm_provider != "gemini"
-        or args.llm_model
-        or args.llm_base_url
     ):
         parser.error(
-            "GRPC, Bayesian, and --llm-* options are only valid for agentic-reasoner component"
+            "GRPC and Bayesian options are only valid for agentic-reasoner component"
         )
 
-    if args.component == "agentic-reasoner" and args.llm_provider == "openai_compatible" and not args.llm_model:
+    # --llm-* applies to both LLM-backed components: the reasoner decides
+    # adaptations, the meta-learner tunes the strategy. Both must be able to
+    # target the same endpoint, otherwise only half the system's reasoning can
+    # be captured and interpreted.
+    if args.component not in ["agentic-reasoner", "meta-learner"] and (
+        args.llm_provider != "gemini" or args.llm_model or args.llm_base_url
+    ):
+        parser.error(
+            "--llm-* options are only valid for the agentic-reasoner and meta-learner components"
+        )
+
+    if (
+        args.component in ["agentic-reasoner", "meta-learner"]
+        and args.llm_provider == "openai_compatible"
+        and not args.llm_model
+    ):
         parser.error("--llm-model is required when --llm-provider openai_compatible is used")
 
     if args.component not in ["reasoner"] and (args.reasoning_mode != "llm" or args.prompt_config):
@@ -1219,11 +1231,25 @@ async def start_meta_learner(args, config_path: Path):
         logger.error(f"Prompt config not found: {prompt_config_path}")
         return
 
-    # Get API key with interactive prompt if needed
-    api_key = get_api_key_for_component("Meta-Learner Agent", interactive=True)
-    if not api_key:
-        logger.error("❌ Gemini API key is required for Meta-Learner Agent")
-        sys.exit(1)
+    # Same LLM selection as the Agentic Reasoner, so both halves of POLARIS's
+    # reasoning can be pointed at one endpoint (e.g. the NLA server) and have
+    # their activations captured together.
+    llm_provider = args.llm_provider
+    llm_model = args.llm_model or ("gemini-2.5-flash" if llm_provider == "gemini" else None)
+    llm_base_url = args.llm_base_url
+
+    if llm_provider == "gemini":
+        # Only Gemini needs a real key; a self-hosted endpoint does not.
+        api_key = get_api_key_for_component("Meta-Learner Agent", interactive=True)
+        if not api_key:
+            logger.error("❌ Gemini API key is required for Meta-Learner Agent")
+            sys.exit(1)
+    else:
+        if not llm_model:
+            logger.error("❌ --llm-model is required with --llm-provider openai_compatible")
+            sys.exit(1)
+        # The OpenAI SDK rejects an empty key even when the server ignores it.
+        api_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENAI_API_KEY") or "local"
 
     # Build Meta-Learner (not as a reasoner agent)
     agent = MetaLearnerLLM(
@@ -1234,6 +1260,9 @@ async def start_meta_learner(args, config_path: Path):
         nats_url="nats://localhost:4222",
         update_interval_seconds=300.0,  # 5 minutes
         logger=logger,
+        model=llm_model,
+        llm_provider=llm_provider,
+        llm_base_url=llm_base_url,
     )
 
     # Connect to NATS

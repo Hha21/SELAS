@@ -22,8 +22,7 @@ import yaml
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import google.genai as genai
-from google.genai import types
+from .llm_clients import create_llm_client
 
 import requests
 import nats
@@ -79,6 +78,8 @@ class MetaLearnerLLM(BaseMetaLearnerAgent):
         kb_request_timeout: float = 30.0,
         max_change_percent: float = 10.0,  # More conservative - only 10% change per update
         logger: Optional[logging.Logger] = None,
+        llm_provider: str = "gemini",
+        llm_base_url: Optional[str] = None,
     ):
         # Initialize parent BaseMetaLearnerAgent
         super().__init__(agent_id, config_path, nats_url, logger)
@@ -95,12 +96,26 @@ class MetaLearnerLLM(BaseMetaLearnerAgent):
         self.last_update_time: Optional[float] = None
         self.update_history: List[Dict[str, Any]] = []  # Track changes over time
 
-        # Configure the Gemini client
+        # Same provider-agnostic client the Agentic Reasoner uses, rather than a
+        # direct genai.Client. This is what lets the meta-learner be pointed at a
+        # self-hosted OpenAI-compatible endpoint (the NLA server) so its
+        # activations can be captured too -- previously it could only reach
+        # Gemini, and its half of the reasoning was invisible to interpretation.
+        self.llm_provider = llm_provider
+        self.llm_base_url = llm_base_url
         try:
-            self.client = genai.Client(api_key=self.api_key)
-            self.logger.info(f"Initialized MetaLearnerLLM with Gemini model {model}")
+            self.client = create_llm_client(
+                provider=llm_provider,
+                api_key=self.api_key,
+                model=model,
+                base_url=llm_base_url,
+            )
+            where = f" at {llm_base_url}" if llm_base_url else ""
+            self.logger.info(
+                f"Initialized MetaLearnerLLM with {llm_provider} model {model}{where}"
+            )
         except Exception as e:
-            self.logger.error(f"Failed to configure Gemini client: {e}")
+            self.logger.error(f"Failed to configure LLM client: {e}")
             raise
 
         # Load initial prompt config
@@ -293,31 +308,34 @@ class MetaLearnerLLM(BaseMetaLearnerAgent):
         return summary
 
     async def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
-        """Call the Gemini API to generate strategic updates."""
-        full_prompt = f"{system_prompt}\n\n{user_prompt}"
-
-        config = types.GenerateContentConfig(
-            temperature=self.temperature,
-            max_output_tokens=self.max_tokens,
-            response_mime_type="application/json",
-        )
+        """Call the configured LLM to generate strategic updates."""
+        # Gemini's response_mime_type="application/json" has no equivalent on a
+        # generic OpenAI-compatible endpoint, so the constraint moves into the
+        # prompt. _parse_meta_updates already tolerates ```json fences and prose
+        # around the object, which is what a model without JSON mode emits.
+        messages = [
+            {
+                "role": "system",
+                "content": f"{system_prompt}\n\nRespond with a single JSON object and nothing else.",
+            },
+            {"role": "user", "content": user_prompt},
+        ]
 
         try:
-            self.logger.info("Calling Gemini API for strategic analysis...")
-            response = await self.client.aio.models.generate_content(
-                model=self.model,
-                contents=full_prompt,
-                config=config,
+            self.logger.info(
+                f"Calling {self.llm_provider} ({self.model}) for strategic analysis..."
             )
-
-            response_text = response.text.strip()
+            response_text, _, _ = await self.client.generate(
+                messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
             if not response_text:
-                raise ValueError("Gemini API returned an empty response.")
-
+                raise ValueError("LLM returned an empty response.")
             return response_text
 
-        except (genai.errors.ClientError, ValueError) as e:
-            self.logger.error(f"Gemini API call failed: {e}")
+        except Exception as e:
+            self.logger.error(f"LLM call failed: {e}")
             raise
 
     def _parse_meta_updates(self, llm_response: str) -> Optional[Dict[str, Any]]:
@@ -1156,6 +1174,8 @@ def create_meta_learner_agent(
     model: str = "gemini-2.5-flash",
     max_change_percent: float = 10.0,  # Conservative 10% max change
     logger: Optional[logging.Logger] = None,
+    llm_provider: str = "gemini",
+    llm_base_url: Optional[str] = None,
 ) -> MetaLearnerLLM:
     """Factory function to create a meta-learner agent."""
     return MetaLearnerLLM(
@@ -1168,4 +1188,6 @@ def create_meta_learner_agent(
         model=model,
         max_change_percent=max_change_percent,
         logger=logger,
+        llm_provider=llm_provider,
+        llm_base_url=llm_base_url,
     )
