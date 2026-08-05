@@ -23,6 +23,7 @@ let state = {
   selectedIndex:  null,  // currently-selected token index
   history:        [],    // [{index, token, cosine, fve}] most-recent-first
   health:         null,  // last /api/health payload
+  source:         "chat",// "chat" | "traces" -- what populated the context
 };
 
 const HISTORY_MAX = 12;
@@ -159,6 +160,10 @@ async function sendMessage() {
   const settings = readSettings();
   $("#send-btn").disabled = true;
   $("#chat-input").value  = "";
+
+  // Sending replaces the context with this chat, so leave trace-browsing mode
+  // rather than showing a trace picker that no longer matches what is displayed.
+  if (state.source !== "chat") setSource("chat");
 
   // Optimistic: show the user message plus an assistant placeholder.
   state.messages.push({ role: "user", content: text });
@@ -393,8 +398,27 @@ function paintSparkline() {
   if (!line) return;
 
   const w = 220, h = 56;
-  const series = [...state.history].reverse()
-    .map((x) => (x.fve == null ? x.cosine : x.fve));
+  const hist = [...state.history].reverse();
+
+  // The series is FVE only when every point has one. Falling back to cosine is
+  // fine -- inventing an "FVE" label for it is not, so say which is plotted.
+  const usingFve = hist.length > 0 && hist.every((x) => x.fve != null);
+  const series = hist.map((x) => (usingFve ? x.fve : x.cosine));
+
+  const label = $("#sparkline-label");
+  const hint  = $("#sparkline-hint");
+  if (label) {
+    label.textContent = hist.length === 0
+      ? "across analysed tokens"
+      : `${usingFve ? "FVE" : "cosine"} across analysed tokens`;
+  }
+  if (hint) {
+    hint.textContent = hist.length === 0
+      ? "no tokens analysed yet"
+      : usingFve
+        ? "FVE = 0 (corpus-mean baseline)"
+        : "cosine = 0 (no FVE baseline — run Stage 0)";
+  }
 
   if (series.length === 0) {
     line.setAttribute("points", "");
@@ -417,6 +441,97 @@ function paintSparkline() {
   line.setAttribute("points", pts.join(" "));
   zero.setAttribute("y1", y(0).toFixed(1));
   zero.setAttribute("y2", y(0).toFixed(1));
+}
+
+// ------------------------------------------------------------ trace browser
+// A trace is one call POLARIS actually made. Loading one replaces the context
+// with its tokens; from there everything behaves exactly as for a chat, because
+// analyzeToken() already sends token_ids rather than text. Nothing here reads
+// the .npz -- activations are re-derived per click -- so a run captured with
+// NLA_CAPTURE=text inspects identically to a full one.
+
+async function apiGet(path) {
+  const res = await fetch(path);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "request failed");
+  }
+  return res.json();
+}
+
+function setSource(src) {
+  state.source = src;
+  document.querySelectorAll(".src-btn").forEach((b) =>
+    b.classList.toggle("active", b.dataset.src === src));
+  $("#trace-pickers").classList.toggle("hidden", src !== "traces");
+  $("#trace-meta").classList.toggle("hidden", src !== "traces");
+  if (src === "traces") loadRuns();
+}
+
+async function loadRuns() {
+  const sel = $("#trace-run");
+  try {
+    const { runs } = await apiGet("/api/traces");
+    if (!runs.length) {
+      sel.innerHTML = `<option value="">no traces on disk</option>`;
+      $("#trace-req").innerHTML = "";
+      $("#trace-meta").textContent = "Nothing captured yet — run POLARIS against this server.";
+      return;
+    }
+    const keep = sel.value;
+    sel.innerHTML = runs.map((r) =>
+      `<option value="${r.run_id}">${r.run_id} · ${r.n_traces} call${r.n_traces === 1 ? "" : "s"}` +
+      `${r.current ? " (live)" : ""}${r.has_activations ? "" : " · text-only"}</option>`).join("");
+    sel.value = runs.some((r) => r.run_id === keep) ? keep : runs[0].run_id;
+    await loadTraceList(sel.value);
+  } catch (e) {
+    sel.innerHTML = `<option value="">error</option>`;
+    $("#trace-meta").textContent = `Could not list traces: ${e.message}`;
+  }
+}
+
+async function loadTraceList(runId) {
+  const sel = $("#trace-req");
+  if (!runId) return;
+  try {
+    const { traces } = await apiGet(`/api/traces/${encodeURIComponent(runId)}`);
+    sel.innerHTML = traces.map((t) =>
+      `<option value="${t.request_id}">${t.request_id} · ${t.n_tokens} tok — ` +
+      `${escapeHtml((t.preview || "").slice(0, 48))}…</option>`).join("");
+    if (traces.length) await openTrace(runId, traces[0].request_id);
+  } catch (e) {
+    sel.innerHTML = `<option value="">error</option>`;
+    $("#trace-meta").textContent = `Could not list run: ${e.message}`;
+  }
+}
+
+async function openTrace(runId, requestId) {
+  try {
+    const t = await apiGet(
+      `/api/traces/${encodeURIComponent(runId)}/${encodeURIComponent(requestId)}`);
+
+    state.tokens         = t.tokens || [];
+    state.tokenIds       = t.token_ids || [];
+    state.isSpecial      = t.is_special || state.tokens.map(() => false);
+    state.assistantStart = t.assistant_token_start ?? state.tokens.length;
+    state.selectedIndex  = null;
+
+    renderTokens();
+    resetExplanation();
+    resetMetrics();
+
+    const cfg = t.config || {};
+    const warn = cfg.model && state.health && cfg.model !== state.health.model
+      ? ` ⚠ captured with ${cfg.model}, server is running ${state.health.model}`
+      : "";
+    $("#trace-meta").innerHTML =
+      `<strong>${escapeHtml(t.request_id)}</strong> · ${t.n_tokens} tokens · ` +
+      `${escapeHtml(t.source || "?")} · layer ${cfg.probe_layer ?? "?"} · ` +
+      `${t.has_activations ? "activations on disk" : "text-only (activations re-derived)"}` +
+      `<span class="warn">${escapeHtml(warn)}</span>`;
+  } catch (e) {
+    $("#trace-meta").textContent = `Could not open trace: ${e.message}`;
+  }
 }
 
 // ---------------------------------------------------------------- tabs
@@ -463,6 +578,14 @@ document.addEventListener("keydown", (e) => {
     analyzeToken(state.selectedIndex - 1);
   }
 });
+
+document.querySelectorAll(".src-btn").forEach((b) =>
+  b.addEventListener("click", () => setSource(b.dataset.src)));
+
+$("#trace-run").addEventListener("change", (e) => loadTraceList(e.target.value));
+$("#trace-req").addEventListener("change", (e) =>
+  openTrace($("#trace-run").value, e.target.value));
+$("#trace-reload").addEventListener("click", () => loadRuns());
 
 renderHistory();
 setPipeline([]);

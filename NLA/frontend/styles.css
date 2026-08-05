@@ -691,3 +691,75 @@ footer code {
   main { grid-template-columns: 1fr; }
   #pipeline-strip { grid-template-columns: 1fr 1fr; }
 }
+
+/* ------------------------------------------------------------ trace browser */
+/* Switches the model-context panel between the local chat and a call POLARIS
+   actually made. Styled to match .tabs rather than introduce a second idiom. */
+.trace-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.trace-switch {
+  display: inline-flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.src-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+}
+.src-btn:hover   { color: #1a1a1a; background: #f8fafc; }
+.src-btn.active  { color: #fff; background: #8b5cf6; }
+
+.trace-pickers {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.trace-select {
+  font-family: inherit;
+  font-size: 0.72rem;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.28rem 0.4rem;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
+  text-overflow: ellipsis;
+}
+.ghost-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ghost-btn:hover { color: #1a1a1a; background: #f8fafc; }
+
+.trace-meta {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+.trace-meta strong { color: #334155; }
+.trace-meta .warn  { color: #b45309; }

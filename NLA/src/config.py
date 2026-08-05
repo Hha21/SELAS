@@ -16,7 +16,7 @@ Overrides:
   NLA_DEVICE       cuda | cuda:1 | cpu | auto            (auto = shard over GPUs)
   NLA_TRACE_DIR    where runtime activation traces are written
   NLA_RUN_ID       groups traces from one run into a subdirectory
-  NLA_CAPTURE      0 to disable trace capture entirely (default: enabled)
+  NLA_CAPTURE      full | text | off   (default full; text omits the .npz)
 
 Nothing else in the codebase hardcodes a model, layer, or dtype -- src/model.py,
 src/av.py, src/ar.py, src/data.py and server/inference.py all import from here.
@@ -133,7 +133,29 @@ AR_CHECKPOINT  = CHECKPOINT_DIR / "ar.pt"
 # NLA pipeline, owned by neither. Gitignored at the SummerWork level.
 TRACE_DIR      = Path(os.getenv("NLA_TRACE_DIR", _ROOT.parent / "traces"))
 RUN_ID         = os.getenv("NLA_RUN_ID", "")   # blank -> writer picks a timestamp
-CAPTURE_TRACES = os.getenv("NLA_CAPTURE", "1") not in ("0", "false", "no")
+# NLA_CAPTURE has three settings, not two:
+#
+#   full | 1   text + activations   (default)
+#   text       text only, no .npz
+#   off  | 0   nothing
+#
+# "text" exists because activations are *derived* data, not observations. The
+# sidecar records token_ids, so a forward pass over exactly those ids reproduces
+# the same residual stream -- no sampling is involved, the tokens are already
+# chosen. At 0.5B the .npz is ~37x the JSON and at 7B nearer 150x, so a run kept
+# for later NLA training is enormously cheaper as text that is re-expanded once,
+# on demand, at whatever layer and positions that training actually wants.
+_CAPTURE = os.getenv("NLA_CAPTURE", "full").strip().lower()
+if _CAPTURE in ("0", "false", "no", "off"):
+    CAPTURE_TRACES, CAPTURE_ACTIVATIONS = False, False
+elif _CAPTURE in ("text", "json", "text-only"):
+    CAPTURE_TRACES, CAPTURE_ACTIVATIONS = True, False
+elif _CAPTURE in ("1", "true", "yes", "full", "on"):
+    CAPTURE_TRACES, CAPTURE_ACTIVATIONS = True, True
+else:
+    raise ValueError(
+        f"NLA_CAPTURE={_CAPTURE!r} not understood (expected full|text|off)"
+    )
 
 # AR prompt from the paper (Appendix: Prompting the activation reconstructor).
 # AR always receives: AR_PREFIX + z + AR_SUFFIX, and the last-token hidden state

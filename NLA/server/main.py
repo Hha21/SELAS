@@ -21,7 +21,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.config import (
-    AR_CHECKPOINT, AV_CHECKPOINT, CAPTURE_TRACES, DEVICE, DTYPE, MODEL_ID,
+    AR_CHECKPOINT, AV_CHECKPOINT, CAPTURE_ACTIVATIONS, CAPTURE_TRACES,
+    DEVICE, DTYPE, MODEL_ID,
     PROBE_LAYER, RUN_ID, TRACE_DIR,
 )
 from server.inference import NLAInference
@@ -104,6 +105,9 @@ def health():
         "max_new_tokens": MAX_NEW_TOKENS_CAP,
         "traces": {
             "enabled":     bool(w and w.enabled),
+            "mode":        ("off" if not (w and w.enabled)
+                            else "full" if CAPTURE_ACTIVATIONS else "text"),
+            "activations": bool(w and w.enabled and CAPTURE_ACTIVATIONS),
             "run_id":      w.run_id if w else None,
             "dir":         str(w.dir) if w else None,
             "written":     w.count if w else 0,
@@ -115,6 +119,98 @@ def health():
 @app.post("/api/tokenize")
 def tokenize(req: TokenizeRequest):
     return {"tokens": state["nla"].tokenize(req.text)}
+
+
+# -------------------------------------------------------------- trace browser
+# Traces are the record of what POLARIS actually asked the model, so they are
+# what you want to inspect -- the chat box only ever shows text you typed
+# yourself. Because the sidecar stores token_ids, a trace can be fed straight to
+# /api/analyze, which already accepts them: no activations need to have been
+# saved, and none are read here. That is what makes NLA_CAPTURE=text usable --
+# the .npz is rebuilt on demand by the same forward pass the Inspector runs.
+
+def _safe_trace_dir(run_id: str) -> Path:
+    """Resolve run_id under TRACE_DIR, refusing anything that escapes it."""
+    d = (TRACE_DIR / run_id).resolve()
+    if not str(d).startswith(str(Path(TRACE_DIR).resolve())) or not d.is_dir():
+        raise HTTPException(status_code=404, detail=f"no such run: {run_id}")
+    return d
+
+
+@app.get("/api/traces")
+def list_runs():
+    """Runs present on disk, newest first."""
+    root = Path(TRACE_DIR)
+    if not root.is_dir():
+        return {"trace_dir": str(root), "runs": []}
+    runs = []
+    for d in sorted(root.iterdir(), reverse=True):
+        if not d.is_dir():
+            continue
+        files = sorted(d.glob("req-*.json"))
+        if not files:
+            continue
+        runs.append({
+            "run_id":      d.name,
+            "n_traces":    len(files),
+            "has_activations": any(d.glob("req-*.npz")),
+            "current":     d.name == (state["traces"].run_id if state.get("traces") else None),
+        })
+    return {"trace_dir": str(root), "runs": runs}
+
+
+@app.get("/api/traces/{run_id}")
+def list_traces(run_id: str):
+    """One row per call in a run: enough to choose which to open."""
+    d = _safe_trace_dir(run_id)
+    out = []
+    for f in sorted(d.glob("req-*.json")):
+        try:
+            m = json.loads(f.read_text())
+        except Exception:                                         # noqa: BLE001
+            continue
+        msgs = m.get("messages") or []
+        head = (msgs[0].get("content", "") if msgs else "")[:120].replace("\n", " ")
+        out.append({
+            "request_id":  m.get("request_id", f.stem),
+            "timestamp":   m.get("timestamp"),
+            "n_tokens":    m.get("n_tokens"),
+            "source":      m.get("source"),
+            "n_messages":  len(msgs),
+            "preview":     head,
+            "has_activations": bool(m.get("activations_file")),
+        })
+    return {"run_id": run_id, "traces": out}
+
+
+@app.get("/api/traces/{run_id}/{request_id}")
+def get_trace(run_id: str, request_id: str):
+    """One trace, shaped like what the context panel already renders.
+
+    Deliberately does not read the .npz: the Inspector re-derives activations
+    through /api/analyze, so a text-only trace behaves identically to a full one.
+    """
+    d = _safe_trace_dir(run_id)
+    f = d / f"{Path(request_id).name}.json"
+    if not f.is_file():
+        raise HTTPException(status_code=404, detail=f"no such trace: {request_id}")
+    m = json.loads(f.read_text())
+    return {
+        "request_id":            m.get("request_id"),
+        "run_id":                m.get("run_id"),
+        "timestamp":             m.get("timestamp"),
+        "source":                m.get("source"),
+        "messages":              m.get("messages"),
+        "completion":            m.get("completion"),
+        "tokens":                m.get("tokens"),
+        "token_ids":             m.get("token_ids"),
+        "is_special":            m.get("is_special"),
+        "assistant_token_start": m.get("assistant_token_start"),
+        "n_tokens":              m.get("n_tokens"),
+        "usage":                 m.get("usage"),
+        "config":                m.get("config"),
+        "has_activations":       bool(m.get("activations_file")),
+    }
 
 
 @app.post("/api/analyze")
@@ -250,10 +346,14 @@ def _capture_trace(out, messages, prompt_tokens, completion_tokens) -> str | Non
 
     request_id = writer.next_request_id()
     acts = None
-    try:
-        acts = state["nla"].activations_for(out["token_ids"])
-    except Exception as e:                                        # noqa: BLE001
-        state["trace_error"] = f"{type(e).__name__}: {e}"
+    # In "text" mode the forward pass is skipped entirely, not just the write --
+    # extracting activations we would discard costs a second pass over the whole
+    # sequence on every POLARIS call.
+    if CAPTURE_ACTIVATIONS:
+        try:
+            acts = state["nla"].activations_for(out["token_ids"])
+        except Exception as e:                                    # noqa: BLE001
+            state["trace_error"] = f"{type(e).__name__}: {e}"
 
     writer.write(
         request_id, acts,

@@ -98,13 +98,15 @@
     </div>
 
     <div class="metric-tile metric-sparkline">
-      <div class="mt-label">FVE across analysed tokens</div>
+      <!-- Label and baseline are set by paintSparkline(): the series falls back
+           to cosine when no FVE baseline exists, and must say so. -->
+      <div class="mt-label" id="sparkline-label">across analysed tokens</div>
       <svg id="sparkline" viewBox="0 0 220 56" preserveAspectRatio="none">
         <line id="sparkline-zero" x1="0" x2="220" y1="56" y2="56"
               stroke="#ef4444" stroke-dasharray="3 3" stroke-width="1" opacity="0.5"/>
         <polyline id="sparkline-line" fill="none" stroke="#8b5cf6" stroke-width="1.5" points=""/>
       </svg>
-      <div class="mt-hint"><span class="sla-mark">╌╌</span> FVE = 0 (corpus-mean baseline)</div>
+      <div class="mt-hint"><span class="sla-mark">╌╌</span> <span id="sparkline-hint">—</span></div>
     </div>
   </section>
 
@@ -162,6 +164,21 @@
         Because attention is causal, the activation at token <em>i</em> already
         encodes tokens 0…<em>i</em> — those are shaded when you select.
       </p>
+
+      <!-- Source switch. The chat box only shows text you typed; POLARIS's real
+           calls live in traces/, which is what is usually worth inspecting. -->
+      <div class="trace-bar">
+        <div class="trace-switch">
+          <button class="src-btn active" data-src="chat">Chat</button>
+          <button class="src-btn" data-src="traces">POLARIS traces</button>
+        </div>
+        <div id="trace-pickers" class="trace-pickers hidden">
+          <select id="trace-run" class="trace-select"></select>
+          <select id="trace-req" class="trace-select"></select>
+          <button id="trace-reload" class="ghost-btn" title="Rescan traces/">↻</button>
+        </div>
+      </div>
+      <div id="trace-meta" class="trace-meta hidden"></div>
       <div id="tokens">
         <div class="placeholder">Send a message to populate the model context.</div>
       </div>
