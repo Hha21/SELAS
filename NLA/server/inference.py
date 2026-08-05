@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
 # which huggingface_hub reads into module-level constants at import time.
 from src.config import (
     AR_CHECKPOINT, AR_PREFIX, AR_SUFFIX, AV_CHECKPOINT, AV_USER_PROMPT,
-    DEVICE, PROBE_LAYER,
+    DEVICE, PROBE_LAYER, TORCH_DEVICE,
 )
 
 import numpy as np
@@ -62,18 +62,31 @@ class NLAInference:
     """Holds T, AV, AR, the tokenizer, and the hook on layer PROBE_LAYER."""
 
     def __init__(self, device: str = DEVICE):
-        self.device = device
+        # `device` is an accelerate device_map, so "auto" is meaningful to
+        # from_pretrained (it shards T/AV/AR across every visible card) but is
+        # not a torch device. Keep the two apart: `device` goes to
+        # from_pretrained, self.device is where tensors are placed.
+        self.device_map = device
+        self.device     = TORCH_DEVICE if device == "auto" else device
+
+        # torch.load wants a real location, not a device_map -- it raises
+        # "don't know how to restore data location ... (tagged with auto)".
+        # Staging on CPU is right either way: load_state_dict copies into
+        # parameters that are already placed, so shards stay where accelerate
+        # put them, and a sharded model is exactly the case where the checkpoint
+        # must not all land on one card.
+        ckpt_location = "cpu" if device == "auto" else device
 
         # AV (also gives us the tokenizer with ㊗ guaranteed single-token)
         self.av, self.tok = load_av(device)
-        self.av.load_state_dict(torch.load(AV_CHECKPOINT, map_location=device))
+        self.av.load_state_dict(torch.load(AV_CHECKPOINT, map_location=ckpt_location))
         self.av.eval()
         for p in self.av.parameters():
             p.requires_grad_(False)
 
         # AR (truncated to PROBE_LAYER; we freeze everything for inference)
         self.ar = load_ar(device, freeze_base=False)
-        self.ar.load_state_dict(torch.load(AR_CHECKPOINT, map_location=device))
+        self.ar.load_state_dict(torch.load(AR_CHECKPOINT, map_location=ckpt_location))
         self.ar.eval()
         for p in self.ar.parameters():
             p.requires_grad_(False)
@@ -98,7 +111,7 @@ class NLAInference:
         )
         self._av_prompt_ids = self.tok(
             prompt_str, add_special_tokens=False, return_tensors="pt",
-        )["input_ids"][0].to(device)
+        )["input_ids"][0].to(self.device)
 
         # End-of-turn token for chat-template generation (Qwen uses <|im_end|>).
         # Fall back gracefully if not present.
@@ -205,6 +218,12 @@ class NLAInference:
         act    = self._extract_activation(ids[: position + 1])
         desc   = self._generate_explanation(act)
         a_hat  = self._reconstruct(desc)
+
+        # T and AR are separate device_maps, so under "auto" the hooked
+        # activation and the reconstruction can land on different cards. Compare
+        # them on one device; a no-op when unsharded.
+        act    = act.to(self.device)
+        a_hat  = a_hat.to(self.device)
 
         scale  = math.sqrt(self.d_model)
         a_norm = act * (scale / act.norm().clamp(min=1e-8))

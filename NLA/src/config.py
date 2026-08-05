@@ -58,7 +58,11 @@ disable_triton_ops_without_compiler()
 # every downstream number, so it is looked up rather than remembered.
 PROBE_LAYERS = {
     "Qwen/Qwen2.5-0.5B":   16,   # ours, 24 layers, trained locally on 2x 4090
-    "Qwen/Qwen2.5-7B":     20,   # kitft/nla-qwen2.5-7b-L20-{av,ar}
+    # Instruct, not base: kitft's card gives base_model Qwen/Qwen2.5-7B-Instruct,
+    # so the AV was only ever trained on Instruct activations. Qwen/Qwen2.5-7B is
+    # deliberately absent -- it is a different model, and an entry here would let
+    # it silently inherit layer 20 and produce confident, wrong explanations.
+    "Qwen/Qwen2.5-7B-Instruct": 20,  # kitft/nla-qwen2.5-7b-L20-{av,ar}
     "google/gemma-3-12b-pt": 32, # kitft/nla-gemma3-12b-L32-{av,ar}
     "google/gemma-3-27b-pt": 41, # kitft/nla-gemma3-27b-L41-{av,ar}
     "meta-llama/Llama-3.3-70B": 53,  # kitft/Llama-3.3-70B-NLA-L53-{av,ar}
@@ -105,6 +109,16 @@ def _resolve_dtype(spec: str | None, device: str) -> torch.dtype:
 # (needed for a 12B target on 2x 24GB); a plain "cuda" keeps it on one.
 DEVICE = _resolve_device(os.getenv("NLA_DEVICE"))
 DTYPE  = _resolve_dtype(os.getenv("NLA_DTYPE"), DEVICE)
+
+# DEVICE is an accelerate *device_map*, so "auto" is meaningful to
+# from_pretrained -- it shards a model too big for one card across all of them.
+# It is not a torch device: torch.load, Tensor.to and torch.tensor all reject it
+# ("don't know how to restore data location ... tagged with auto"). TORCH_DEVICE
+# is the concrete device for placing tensors. Under a sharded model, inputs go
+# to the first shard, which accelerate puts on cuda:0.
+TORCH_DEVICE = (
+    ("cuda" if torch.cuda.is_available() else "cpu") if DEVICE == "auto" else DEVICE
+)
 
 # Trained AV/AR checkpoint pair for *this* backbone. One subdirectory per model
 # (models/Qwen2.5-0.5B/, models/gemma-3-12b-pt/, ...) so several can coexist --

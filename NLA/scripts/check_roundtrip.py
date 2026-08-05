@@ -74,10 +74,11 @@ for text in texts:
 # shuffled baseline -- the control that shows the AV is sample-specific.
 for i, r in enumerate(results):
     other = results[(i + 1) % len(results)]
-    a_hat_shuffled = nla._reconstruct(other["explanation"])
+    a_hat_shuffled = nla._reconstruct(other["explanation"]).to(nla.device)
 
     scale  = nla.d_model ** 0.5
-    a_norm = r["act"] * (scale / r["act"].norm().clamp(min=1e-8))
+    act    = r["act"].to(nla.device)   # T and AR may sit on different shards
+    a_norm = act * (scale / act.norm().clamp(min=1e-8))
     cos_shuffled = F.cosine_similarity(a_norm, a_hat_shuffled, dim=-1).item()
 
     fve = r["fve"]

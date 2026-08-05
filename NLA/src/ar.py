@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 
-from src.config import DEVICE, DTYPE, MODEL_ID, PROBE_LAYER
+from src.config import DEVICE, DTYPE, MODEL_ID, PROBE_LAYER, TORCH_DEVICE
 from src.model import decoder_stack
 
 
@@ -36,6 +36,10 @@ class Reconstructor(nn.Module):
     ) -> torch.Tensor:
         out = self.base(input_ids=input_ids, attention_mask=attention_mask)
         h = out.last_hidden_state[:, -1, :]   # (batch, d_model) last-token pool
+        # Under device_map="auto" the base is sharded, so its output lands on
+        # whichever card holds the last layer -- not necessarily the head's.
+        # A no-op when unsharded.
+        h = h.to(self.head.weight.device)
         return self.head(h)                    # â  (batch, d_model)
 
 
@@ -67,7 +71,10 @@ def load_ar(device: str = DEVICE, freeze_base: bool = True) -> Reconstructor:
 
     d  = full_model.config.hidden_size
     ar = Reconstructor(base, d)
-    ar.head = ar.head.to(device=device, dtype=DTYPE)
+    # A concrete device: `device` may be the device_map "auto", which Tensor.to
+    # rejects. The head is one d x d matrix, so it does not need sharding.
+    head_device = TORCH_DEVICE if device == "auto" else device
+    ar.head = ar.head.to(device=head_device, dtype=DTYPE)
     # Identity init: output = x_l, a better starting point than random.
     # Reference impl notes this gives loss ~1.61 vs ~1.94 at step 0.
     nn.init.eye_(ar.head.weight)

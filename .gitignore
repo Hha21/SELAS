@@ -28,8 +28,13 @@ TAS/*/TAS_gui/results/result.csv
 # and moved between machines with rsync.
 traces/
 
-# Pidfiles and service logs written by ./start.sh
+# Pidfiles and service logs written by the start scripts
 run/
+
+# Per-machine configuration (model, device, ports, trace dir). .env.example is
+# committed and documents every key; the filled-in .env never is -- the whole
+# point is that it differs per host.
+.env
 
 # macOS
 **/.DS_Store

@@ -21,20 +21,23 @@ involves them. Project background and the longer plan are in
 ```
         ┌────────────────────────── SWIM (Docker) ──────────────────────────┐
         │            simulated servers + dimmer, TCP :4242                  │
-        └───────────▲───────────────────────────────────────┬───────────────┘
+        └───────────┬───────────────────────────────────────▲───────────────┘
            telemetry│                                actions│
-        ┌───────────┴───────────────────────────────────────▼───────────────┐
+        ┌───────────▼───────────────────────────────────────┴───────────────┐
         │  POLARIS   Monitor → Kernel → Reasoner → Verifier → Execution     │
         │            components talk over NATS :4222                        │
+        │            dashboard bridge :8090  mirrors NATS as JSON           │
         └───────────┬───────────────────────────────────▲───────────────────┘
-        OpenAI-compat│ /v1/chat/completions   NATS (read-only)│
+     POLARIS calls  │ prompt down,           NLA polls  │ GET /state
+     its reasoner   │ completion back up     the bridge │ (read-only)
         ┌───────────▼───────────────────────────────────┴───────────────────┐
-        │  NLA server :8000        target model + AV/AR + web UI             │
-        │  dashboard bridge :8090  mirrors NATS traffic to the UI            │
+        │  NLA server :8000   target model T + AV/AR + web UI                │
+        │  every POLARIS LLM call is executed here; a hook on layer l reads  │
+        │  T's residual stream as it generates                               │
         └───────────┬───────────────────────────────────────────────────────┘
-                    │ activation traces
+                    │ activations, written for offline use only
                     ▼
-                traces/<run_id>/*.npz        one activation per token
+                traces/<run_id>/*.npz     corpus for training a custom NLA
 ```
 
 Two deliberate boundaries:
@@ -81,12 +84,62 @@ mkdir -p NLA/models/Qwen2.5-0.5B
 rsync -avP <user>@<workstation>:'~/NLA/NLA_reproduce/models/*.pt' NLA/models/Qwen2.5-0.5B/
 ```
 
-### Run everything
+### Run it
+
+The system comes up as two halves, each its own script, because they usually run
+on two different machines:
+
+| Half | Script | Needs | Provides |
+|---|---|---|---|
+| **NLA** | `./start_nla.sh` | GPU, torch | target model, activation capture, UI |
+| **POLARIS + SWIM** | `./start_polaris.sh` | Docker, tmux | the adaptation loop and the managed system |
+
+Neither needs what the other needs — the GPU box need not have Docker, and the
+Docker box need not have a GPU — because the only link between them is HTTP.
+
+**On one machine** (needs both sets of prerequisites):
 
 ```bash
-./start.sh          # NLA server + bridge + SWIM + POLARIS
+./start.sh          # NLA, then SWIM + POLARIS + bridge
 ./stop.sh           # stop all of it
 ```
+
+**On two machines.** Start NLA first; it is much the slowest to load. Then, from
+the POLARIS box, one SSH command wires both directions:
+
+```bash
+# on the GPU box
+./start_nla.sh
+
+# on the POLARIS box
+ssh -L 8000:127.0.0.1:8000 -R 8090:127.0.0.1:8090 user@gpu-box   # leave open
+./start_polaris.sh
+```
+
+`-L 8000` lets POLARIS's reasoner reach the NLA server; `-R 8090` lets the NLA
+server reach POLARIS's dashboard bridge. Both match the defaults, so the tunnel
+needs no extra configuration, and the UI stays single-origin (no CORS).
+
+Stop each half with `./stop_nla.sh` and `./stop_polaris.sh`.
+
+### Configuration
+
+Per-machine settings live in `.env` at the repo root — gitignored, with every
+key documented in the committed [.env.example](.env.example):
+
+```bash
+cp .env.example .env
+```
+
+These are plain environment variables: `NLA/src/config.py` is already fully
+env-overridable and POLARIS already reads `polaris_poc/.env`, so this is one
+more place to put values, not a new mechanism. Anything exported in your shell
+still wins over the file.
+
+One deliberate exception: `NLA_PROBE_LAYER` is *not* configured here. The probe
+layer is a property of the released AV/AR checkpoint pair, not of the machine,
+so it lives in `PROBE_LAYERS` in `NLA/src/config.py` where a wrong value gets
+reviewed rather than drifting silently per host.
 
 Then open:
 
@@ -101,11 +154,12 @@ Then open:
 Useful flags:
 
 ```bash
-./start.sh --only nla              # just the NLA server + bridge, no POLARIS/SWIM
-./start.sh --only polaris          # just SWIM + POLARIS
-./start.sh --device cpu            # force CPU (useful when the GPU is busy)
-./start.sh --model Qwen/Qwen2.5-7B # different backbone (needs its own checkpoints)
-./stop.sh --rm                     # also delete the SWIM/NATS containers
+./start_nla.sh --device cpu                        # force CPU (GPU busy)
+./start_nla.sh --model Qwen/Qwen2.5-7B-Instruct    # different backbone (needs its own checkpoints)
+./start_nla.sh --foreground                        # run in this terminal, no pidfile
+./start_polaris.sh --no-nla                        # leave the reasoner on Gemini/OpenRouter
+./start_polaris.sh --nla-url http://host:8000/v1   # NLA somewhere other than the tunnel
+./stop_polaris.sh --rm                             # also delete the SWIM/NATS containers
 ```
 
 Service logs and pidfiles go to `run/` (gitignored). POLARIS's own component
