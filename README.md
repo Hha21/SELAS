@@ -10,7 +10,7 @@ Three pieces, each independently runnable:
 |---|---|---|
 | [SWIM/](SWIM/) | **managed system** | Simulated web infrastructure with two knobs — server count and a "dimmer" trading response fidelity for latency. Runs in Docker, controlled over TCP on port 4242. |
 | [POLARIS/](POLARIS/) | **managing system** | LLM-based self-adaptation framework (Pandey et al., 2025). Reads SWIM telemetry, reasons about it, and enacts adaptation actions. |
-| [NLA/](NLA/) | **interpretability** | Natural Language Autoencoder (Anthropic, 2026). Serves the LLM that POLARIS reasons with, captures its activations, and turns them into natural-language explanations. |
+| [NLA/](NLA/) | **LLM server + interpretability** | Natural Language Autoencoder (Anthropic, 2026). Two roles in one process: it *serves* the model POLARIS reasons with, and it *reads* that model's activations and turns them into natural-language explanations. See [the split](#the-interpretability--llm-server-split). |
 
 `BSN/` and `TAS/` are other SEAMS exemplars, parked for now — nothing below
 involves them. Project background and the longer plan are in
@@ -18,39 +18,186 @@ involves them. Project background and the longer plan are in
 
 ## How they fit together
 
-```
-        ┌────────────────────────── SWIM (Docker) ──────────────────────────┐
-        │            simulated servers + dimmer, TCP :4242                  │
-        └───────────┬───────────────────────────────────────▲───────────────┘
-           telemetry│                                actions│
-        ┌───────────▼───────────────────────────────────────┴───────────────┐
-        │  POLARIS   Monitor → Kernel → Reasoner → Verifier → Execution     │
-        │            components talk over NATS :4222                        │
-        │            dashboard bridge :8090  mirrors NATS as JSON           │
-        └───────────┬───────────────────────────────────▲───────────────────┘
-     POLARIS calls  │ prompt down,           NLA polls  │ GET /state
-     its reasoner   │ completion back up     the bridge │ (read-only)
-        ┌───────────▼───────────────────────────────────┴───────────────────┐
-        │  NLA server :8000   target model T + AV/AR + web UI                │
-        │  every POLARIS LLM call is executed here; a hook on layer l reads  │
-        │  T's residual stream as it generates                               │
-        └───────────┬───────────────────────────────────────────────────────┘
-                    │ activations, written for offline use only
-                    ▼
-                traces/<run_id>/*.npz     corpus for training a custom NLA
+The layering follows the standard conceptual model of a self-adaptive system
+(Weyns, Fig. 1.2): an **environment** at the bottom, a **managed system** acting
+on it, a **managing system** above that closing a feedback loop against explicit
+**adaptation goals**, and **stakeholders** outside the system boundary.
+
+This project adds one element that model does not have. POLARIS's feedback loop
+reasons with an **LLM**, so the decisive step is no longer a rule or a
+controller you can read — it is a forward pass. The **interpretability** block
+attaches to that LLM and gives stakeholders a way to ask *why*.
+
+```mermaid
+flowchart TB
+    SH(["👤 STAKEHOLDERS"])
+
+    subgraph SAS["SELF-ADAPTIVE SYSTEM"]
+        direction TB
+
+        subgraph MGN["MANAGING SYSTEM · POLARIS"]
+            direction TB
+            AG["<b>Adaptation Goals</b><br/>SLA &lt; 1.0 s · utilisation 0.65<br/>dimmer bounds · never remove_server"]
+            subgraph FL["FEEDBACK LOOP · NATS :4222"]
+                direction TB
+                MAPE["Monitor → Kernel → Reasoner → Verifier → Execution"]
+                LLM["<b>LLM</b> (client)<br/>reasoner · meta-learner"]
+                MAPE --- LLM
+            end
+            AG -. read .-> FL
+        end
+
+        subgraph MGD["MANAGED SYSTEM · SWIM"]
+            SWIM["simulated web infrastructure<br/>server count + dimmer · TCP :4242"]
+        end
+    end
+
+    ENV["<b>ENVIRONMENT</b><br/>ClarkNet request trace — arrival rate the system cannot control"]
+
+    subgraph NLA["NLA/ — one process, two separable roles"]
+        direction TB
+        subgraph SRV["① LLM SERVER — POLARIS depends on this"]
+            T["target model <b>T</b><br/>OpenAI-compatible /v1/chat/completions :8000"]
+        end
+        subgraph INT["② INTERPRETABILITY — nothing depends on this"]
+            direction TB
+            HOOK["hook on residual stream, layer ℓ"]
+            TRACES["traces/&lt;run_id&gt;/<br/>token_ids (+ optional activations)"]
+            AVAR["AV / AR<br/>activation ⇄ natural language"]
+            INSP["Activation Inspector<br/>click a token → read the explanation"]
+            HOOK --> TRACES --> AVAR --> INSP
+        end
+        T -.->|"every forward pass"| HOOK
+    end
+
+    SH -->|"evolve · set adaptation goals"| MGN
+    INSP -->|"why the LLM decided what it did"| SH
+
+    MGD -->|sense| MGN
+    MGN -->|adapt| MGD
+    ENV -->|sense| MGD
+    MGD -->|effect| ENV
+
+    LLM -->|"prompt (HTTP)"| T
+    T -->|completion| LLM
+
+    classDef goal fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef llm  fill:#ede9fe,stroke:#8b5cf6,color:#4c1d95
+    classDef interp fill:#f5f3ff,stroke:#a78bfa,color:#4c1d95
+    classDef env  fill:#f1f5f9,stroke:#94a3b8,color:#334155
+    class AG goal
+    class LLM,T llm
+    class HOOK,TRACES,AVAR,INSP interp
+    class ENV env
 ```
 
-Two deliberate boundaries:
+The same thing in plain text, if mermaid will not render where you are reading.
+First the self-adaptive system, read bottom-up as in the conceptual model:
 
-- **POLARIS ↔ NLA is plain HTTP.** POLARIS calls the NLA server as an ordinary
-  OpenAI-compatible LLM endpoint, so it needs no NLA-specific code. This also
-  keeps the dependency sets apart: POLARIS's venv has `nats`/`grpc` and no
-  `torch`; NLA's has `torch`/`transformers` and no `nats`.
-- **Activations move as files, not function calls.** The NLA server writes every
-  token's residual-stream activation to `traces/`; explaining them is a separate
-  pass. That is not just tidiness — at 12B the target model (~24 GB) and the
-  AV/AR pair (~40 GB) do not fit on a 48 GB workstation together, so collection
-  and explanation *have* to be separable.
+```
+                     ┌──────────────────────────────┐
+                     │         STAKEHOLDERS         │
+                     └───┬──────────────────────▲───┘
+        evolve · set     │                      │
+        adaptation goals │                      └───── explanations, from ② below
+  ╔══════════════════════▼══════════════════════════════════════╗
+  ║ SELF-ADAPTIVE SYSTEM                                         ║
+  ║  ┌────────────────────────────────────────────────────────┐  ║
+  ║  │ MANAGING SYSTEM · POLARIS                              │  ║
+  ║  │  ┌────────────────────┐                                │  ║
+  ║  │  │ Adaptation Goals   │┄┄┄ read ┄┄┄┐                   │  ║
+  ║  │  │ SLA < 1.0 s        │            │                   │  ║
+  ║  │  │ utilisation 0.65   │            ▼                   │  ║
+  ║  │  └────────────────────┘  ┌──────────────────────────┐  │  ║
+  ║  │                          │ FEEDBACK LOOP · NATS     │  │  ║
+  ║  │                          │ Monitor → Kernel →       │  │  ║
+  ║  │                          │ Reasoner → Verifier →    │  │  ║
+  ║  │                          │ Execution                │  │  ║
+  ║  │                          │ ┌──────────────────────┐ │  │  ║
+  ║  │                          │ │ LLM (client)         │ │  │  ║
+  ║  │                          │ │ reasoner · meta-l.   │ │  │  ║
+  ║  │                          │ │ ─────────────▶ ①     │ │  │  ║
+  ║  │                          │ └──────────────────────┘ │  │  ║
+  ║  │                          └──────────────────────────┘  │  ║
+  ║  └──────────┬──────────────────────────────▲──────────────┘  ║
+  ║       sense │                              │ adapt           ║
+  ║  ┌──────────▼──────────────────────────────┴──────────────┐  ║
+  ║  │ MANAGED SYSTEM · SWIM                                  │  ║
+  ║  │ server count + dimmer · TCP :4242                      │  ║
+  ║  └──────────┬──────────────────────────────▲──────────────┘  ║
+  ╚═════════════┼══════════════════════════════┼═════════════════╝
+          sense │                              │ effect
+  ┌─────────────▼──────────────────────────────┴────────────────┐
+  │ ENVIRONMENT                                                 │
+  │ ClarkNet request trace — arrival rate the system            │
+  │ cannot control, only respond to                             │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+And the block the LLM attaches to — the part this project adds:
+
+```
+       from POLARIS's LLM client
+                  │  prompt (HTTP)
+                  ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │ ① LLM SERVER · NLA/ :8000                                  │
+  │    target model T · /v1/chat/completions                   │
+  │    POLARIS depends on this; any OpenAI-compatible          │
+  │    endpoint would do                                       │
+  └───────┬────────────────────────────────────────┬───────────┘
+          │ completion (HTTP)                      │ every forward pass
+          ▼                                        ▼
+   back to POLARIS            ┌─────────────────────────────────┐
+                              │ ② INTERPRETABILITY · NLA/       │
+                              │    hook on residual stream, ℓ   │
+                              │            │                    │
+                              │            ▼                    │
+                              │    traces/<run_id>/             │
+                              │    token_ids (+ activations)    │
+                              │            │                    │
+                              │            ▼                    │
+                              │    AV / AR                      │
+                              │    activation ⇄ text            │
+                              │            │                    │
+                              │            ▼                    │
+                              │    Activation Inspector         │
+                              │    click a token → read why     │
+                              └────────────────┬────────────────┘
+                                               │ explanations
+                                               ▼
+                                        to STAKEHOLDERS
+```
+
+### The interpretability / LLM-server split
+
+`NLA/` looks like one component but plays two roles, and keeping them distinct is
+what makes the setup tractable:
+
+| | ① LLM server | ② Interpretability |
+|---|---|---|
+| Serves | the target model `T` over `/v1/chat/completions` | explanations of `T`'s activations |
+| POLARIS depends on it | **yes** — it is the reasoner's LLM backend | **no** — POLARIS has no idea it exists |
+| Replaceable by | vLLM, OpenRouter, any OpenAI-compatible endpoint | nothing; this is the research contribution |
+| Fails ⇒ | the SAS stops adapting | you lose explanations, the SAS runs on |
+
+Three consequences worth stating plainly:
+
+- **The interpretability block is an observer, not a participant.** It sits
+  outside the control loop. Removing it changes nothing about how the system
+  adapts — which is exactly what makes any explanation it produces trustworthy
+  evidence about the loop rather than an influence on it.
+- **POLARIS ↔ NLA is plain HTTP.** POLARIS calls the server as an ordinary
+  OpenAI-compatible endpoint and needs no NLA-specific code. This also keeps the
+  dependency sets apart: POLARIS's venv has `nats`/`grpc` and no `torch`; NLA's
+  has `torch`/`transformers` and no `nats`.
+- **Capture and explanation are separate passes.** The server records each call
+  to `traces/`; turning activations into text happens later, possibly on another
+  machine. That is not tidiness — at 7B the target (15.2 GB) and the AV/AR pair
+  (26.1 GB) are 41.3 GB together, so collection and explanation *have* to be
+  separable. Because a trace stores `token_ids`, activations are exactly
+  reproducible by re-running the forward pass, so `NLA_CAPTURE=text` records the
+  cheap half and rebuilds the rest on demand.
 
 ## Getting started
 
