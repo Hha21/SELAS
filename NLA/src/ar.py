@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 
-from src.config import DEVICE, DTYPE, MODEL_ID, PROBE_LAYER, TORCH_DEVICE
+from src.config import AR_SOURCE, DEVICE, DTYPE, MODEL_ID, PROBE_LAYER, TORCH_DEVICE
 from src.model import decoder_stack
 
 
@@ -51,8 +51,15 @@ def load_ar(device: str = DEVICE, freeze_base: bool = True) -> Reconstructor:
     final norm so that last_hidden_state == raw x_l (same quantity the hook
     captures during activation extraction).
     """
+    # A published AR is already truncated (its config reports PROBE_LAYER+1
+    # layers and it ships no model.norm), so the truncation below is a no-op for
+    # it rather than a second, destructive cut. A local .pt is applied on top of
+    # the base model by the caller, so that path builds the base as before.
+    kind, src = AR_SOURCE
+    base_id = str(src) if kind == "hub" else MODEL_ID
+
     full_model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        base_id,
         dtype=DTYPE,
         device_map=device,
     )
@@ -78,4 +85,25 @@ def load_ar(device: str = DEVICE, freeze_base: bool = True) -> Reconstructor:
     # Identity init: output = x_l, a better starting point than random.
     # Reference impl notes this gives loss ~1.61 vs ~1.94 at step 0.
     nn.init.eye_(ar.head.weight)
+
+    # A published AR keeps its trained head in a separate value_head.safetensors
+    # (the shards hold only the truncated body), so load it over the identity
+    # init. Without this the body would be the trained one but the head would
+    # still be identity -- which reconstructs *something* and would not obviously
+    # look broken.
+    if kind == "hub":
+        from huggingface_hub import hf_hub_download
+        from safetensors.torch import load_file
+
+        head_path = hf_hub_download(repo_id=str(src), filename="value_head.safetensors")
+        sd = load_file(head_path)
+        key = "weight" if "weight" in sd else next(iter(sd))
+        w = sd[key].to(device=ar.head.weight.device, dtype=ar.head.weight.dtype)
+        if tuple(w.shape) != tuple(ar.head.weight.shape):
+            raise ValueError(
+                f"value_head shape {tuple(w.shape)} does not match AR head "
+                f"{tuple(ar.head.weight.shape)} for {src}"
+            )
+        with torch.no_grad():
+            ar.head.weight.copy_(w)
     return ar

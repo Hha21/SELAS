@@ -128,6 +128,32 @@ CHECKPOINT_DIR = MODELS_DIR / MODEL_ID.split("/")[-1]
 AV_CHECKPOINT  = CHECKPOINT_DIR / "av.pt"
 AR_CHECKPOINT  = CHECKPOINT_DIR / "ar.pt"
 
+# Two checkpoint formats have to coexist. Our own training writes a .pt state
+# dict that is applied on top of a freshly built model; the *published* pairs are
+# complete fine-tuned HF models (sharded safetensors) that are loaded directly.
+# A local .pt always wins, so the locally-trained 0.5B pair keeps working exactly
+# as before and only backbones without one fall through to the hub.
+CHECKPOINT_REPOS = {
+    "Qwen/Qwen2.5-7B-Instruct": ("kitft/nla-qwen2.5-7b-L20-av",
+                                 "kitft/nla-qwen2.5-7b-L20-ar"),
+}
+_repos  = CHECKPOINT_REPOS.get(MODEL_ID, (None, None))
+AV_REPO = os.getenv("NLA_AV_REPO") or _repos[0]
+AR_REPO = os.getenv("NLA_AR_REPO") or _repos[1]
+
+
+def _checkpoint_source(pt_path, repo):
+    """('pt', Path) if a local state dict exists, else ('hub', repo_id), else (None, None)."""
+    if pt_path.is_file():
+        return ("pt", pt_path)
+    if repo:
+        return ("hub", repo)
+    return (None, None)
+
+
+AV_SOURCE = _checkpoint_source(AV_CHECKPOINT, AV_REPO)
+AR_SOURCE = _checkpoint_source(AR_CHECKPOINT, AR_REPO)
+
 # Runtime activation traces. Defaults to <repo>/../traces -- deliberately
 # outside NLA/, because a trace is the shared artifact of a POLARIS run and the
 # NLA pipeline, owned by neither. Gitignored at the SummerWork level.

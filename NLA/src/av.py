@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 
-from src.config import DEVICE, DTYPE, INJECT_TOKEN, MODEL_ID
+from src.config import AV_SOURCE, DEVICE, DTYPE, INJECT_TOKEN, MODEL_ID
 from src.model import load_tokenizer
 
 
@@ -84,7 +84,16 @@ def load_av(device: str = DEVICE):
     token, that ID is used; otherwise it is added as a new special token and the
     embedding table is resized. Returns (av, tokenizer).
     """
-    tok = load_tokenizer()
+    # Where the AV weights come from decides what we build from. A published
+    # pair is a complete fine-tuned model, so it is loaded directly and no state
+    # dict is applied afterwards; a local .pt is applied on top of the *base*
+    # model by the caller, so in that case we build the base as before.
+    kind, src = AV_SOURCE
+    base_id = str(src) if kind == "hub" else MODEL_ID
+
+    # The tokenizer must match the weights: a published AV may carry its own
+    # (it is what defines the inject token's id for those weights).
+    tok = load_tokenizer(base_id)
 
     # Check whether ㊗ is already a single token in the vocabulary.
     existing = tok.encode(INJECT_TOKEN, add_special_tokens=False)
@@ -95,7 +104,7 @@ def load_av(device: str = DEVICE):
     inject_id = tok.encode(INJECT_TOKEN, add_special_tokens=False)[0]
 
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        base_id,
         dtype=DTYPE,
         device_map=device,
     )

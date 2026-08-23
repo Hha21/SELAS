@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.config import (
-    AR_CHECKPOINT, AV_CHECKPOINT, CAPTURE_ACTIVATIONS, CAPTURE_TRACES,
+    AR_SOURCE, AV_SOURCE, CAPTURE_ACTIVATIONS, CAPTURE_TRACES,
     DEVICE, DTYPE, MODEL_ID,
     PROBE_LAYER, RUN_ID, TRACE_DIR,
 )
@@ -98,8 +98,12 @@ def health():
         "d_model":       nla.d_model if nla else None,
         "dtype":         str(DTYPE).replace("torch.", ""),
         "device":        DEVICE,
-        "checkpoint_av": str(AV_CHECKPOINT),
-        "checkpoint_ar": str(AR_CHECKPOINT),
+        # Report what was actually loaded, not where a .pt would have lived: a
+        # published pair resolves to a hub repo and no such file exists, so
+        # printing the path would name a file that is not there. This field
+        # exists precisely so a wrong pair is visible.
+        "checkpoint_av": f"{AV_SOURCE[1]} ({AV_SOURCE[0]})" if AV_SOURCE[0] else None,
+        "checkpoint_ar": f"{AR_SOURCE[1]} ({AR_SOURCE[0]})" if AR_SOURCE[0] else None,
         "fve_baseline":  ("corpus mean" if nla and nla.corpus_mean is not None
                           else "unavailable"),
         "max_new_tokens": MAX_NEW_TOKENS_CAP,

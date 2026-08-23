@@ -4,8 +4,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from src.config import DEVICE, DTYPE, MODEL_ID
 
 
-def load_tokenizer():
-    return AutoTokenizer.from_pretrained(MODEL_ID)
+def load_tokenizer(model_id: str | None = None):
+    """Tokenizer for `model_id`, defaulting to the target model T.
+
+    Callers pass an explicit id when the weights they are loading ship their own
+    tokenizer -- a published AV/AR defines the inject token's id for its own
+    embedding table, so borrowing T's tokenizer could point at a different row.
+    """
+    return AutoTokenizer.from_pretrained(model_id or MODEL_ID)
 
 
 def load_target(device: str = DEVICE):

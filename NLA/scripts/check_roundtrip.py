@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.config import (          # must precede HF imports (sets HF_HOME)
-    AR_CHECKPOINT, AV_CHECKPOINT, DEVICE, DTYPE, MODEL_ID, PROBE_LAYER,
+    AR_SOURCE, AV_SOURCE, DEVICE, DTYPE, MODEL_ID, PROBE_LAYER,
 )
 
 import argparse
@@ -46,15 +46,20 @@ args = parser.parse_args()
 
 texts = args.text or DEFAULT_TEXTS
 
-for path in (AV_CHECKPOINT, AR_CHECKPOINT):
-    if not path.exists():
-        raise SystemExit(f"missing checkpoint: {path}\nSee models/README.md for how to fetch it.")
+# A pair is either a local .pt or a published HF repo; config.py resolves which.
+for name, (kind, src) in (("AV", AV_SOURCE), ("AR", AR_SOURCE)):
+    if kind is None:
+        raise SystemExit(
+            f"no {name} checkpoint for {MODEL_ID}.\n"
+            "Provide models/<backbone>/{av,ar}.pt, or add the backbone to "
+            "CHECKPOINT_REPOS in src/config.py.\nSee models/README.md."
+        )
 
 print(f"backbone   {MODEL_ID}")
 print(f"probe      layer {PROBE_LAYER}")
 print(f"dtype      {DTYPE} on {DEVICE}")
-print(f"AV         {AV_CHECKPOINT}")
-print(f"AR         {AR_CHECKPOINT}")
+print(f"AV         {AV_SOURCE[1]}  ({AV_SOURCE[0]})")
+print(f"AR         {AR_SOURCE[1]}  ({AR_SOURCE[0]})")
 print()
 
 nla = NLAInference()

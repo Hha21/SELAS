@@ -86,13 +86,27 @@ mkdir -p "$RUN_DIR"
 # Checkpoints live in models/<backbone>/, matching src/config.py's CHECKPOINT_DIR.
 # Fail rather than warn: without the AV/AR pair the server raises on startup, and
 # a clear message here beats a traceback 60s into loading.
-ckpt_dir="$ROOT/NLA/models/$(basename "${MODEL:-Qwen/Qwen2.5-0.5B}")"
-if [[ ! -f "$ckpt_dir/av.pt" || ! -f "$ckpt_dir/ar.pt" ]]; then
-    err "No av.pt/ar.pt in $ckpt_dir"
-    err "See NLA/models/README.md. For the public 7B pair:"
-    err "  kitft/nla-qwen2.5-7b-L20-{av,ar}  (note: Instruct, not base)"
+# Two checkpoint forms are valid: a local av.pt/ar.pt from our own training, or
+# a published HF pair resolved from CHECKPOINT_REPOS. config.py decides which,
+# so ask it rather than re-implementing the rule here.
+ckpt_check=$(
+    cd "$ROOT/NLA" && NLA_MODEL_ID="${MODEL:-}" ./.venv/bin/python -c "
+import sys
+sys.path.insert(0, '.')
+from src.config import AV_SOURCE, AR_SOURCE, MODEL_ID
+if AV_SOURCE[0] is None or AR_SOURCE[0] is None:
+    print(f'MISSING no AV/AR checkpoint for {MODEL_ID}')
+else:
+    print(f'OK {AV_SOURCE[0]}:{AV_SOURCE[1]} {AR_SOURCE[0]}:{AR_SOURCE[1]}')
+" 2>/dev/null
+)
+if [[ "$ckpt_check" != OK* ]]; then
+    err "${ckpt_check:-could not resolve checkpoints}"
+    err "Provide NLA/models/<backbone>/{av,ar}.pt, or add the backbone to"
+    err "CHECKPOINT_REPOS in NLA/src/config.py (public pairs: kitft/nla-*)."
     exit 1
 fi
+info "checkpoints ${ckpt_check#OK }"
 
 PIDFILE="$RUN_DIR/nla-server.pid"
 if is_running "$PIDFILE"; then

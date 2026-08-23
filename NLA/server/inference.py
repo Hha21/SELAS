@@ -26,8 +26,8 @@ if str(ROOT) not in sys.path:
 # src.config must be imported before any HuggingFace library: it sets HF_HOME,
 # which huggingface_hub reads into module-level constants at import time.
 from src.config import (
-    AR_CHECKPOINT, AR_PREFIX, AR_SUFFIX, AV_CHECKPOINT, AV_USER_PROMPT,
-    DEVICE, PROBE_LAYER, TORCH_DEVICE,
+    AR_CHECKPOINT, AR_PREFIX, AR_SOURCE, AR_SUFFIX, AV_CHECKPOINT, AV_SOURCE,
+    AV_USER_PROMPT, DEVICE, PROBE_LAYER, TORCH_DEVICE,
 )
 
 import numpy as np
@@ -77,16 +77,20 @@ class NLAInference:
         # must not all land on one card.
         ckpt_location = "cpu" if device == "auto" else device
 
-        # AV (also gives us the tokenizer with ㊗ guaranteed single-token)
+        # AV (also gives us the tokenizer with ㊗ guaranteed single-token).
+        # A published pair arrives already fine-tuned, so there is no state dict
+        # to apply -- load_av built it from the checkpoint repo itself.
         self.av, self.tok = load_av(device)
-        self.av.load_state_dict(torch.load(AV_CHECKPOINT, map_location=ckpt_location))
+        if AV_SOURCE[0] == "pt":
+            self.av.load_state_dict(torch.load(AV_CHECKPOINT, map_location=ckpt_location))
         self.av.eval()
         for p in self.av.parameters():
             p.requires_grad_(False)
 
         # AR (truncated to PROBE_LAYER; we freeze everything for inference)
         self.ar = load_ar(device, freeze_base=False)
-        self.ar.load_state_dict(torch.load(AR_CHECKPOINT, map_location=ckpt_location))
+        if AR_SOURCE[0] == "pt":
+            self.ar.load_state_dict(torch.load(AR_CHECKPOINT, map_location=ckpt_location))
         self.ar.eval()
         for p in self.ar.parameters():
             p.requires_grad_(False)
