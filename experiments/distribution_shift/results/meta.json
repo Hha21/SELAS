@@ -1,0 +1,4205 @@
+{
+  "d_model": 3584,
+  "rows": [
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 488,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 2579,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 503,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 2500,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 781,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 3587,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 3669,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 1055,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 187,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 848,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 985,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 582,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00006.json",
+      "position": 649,
+      "seq_len": 4375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 2106,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 3247,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 933,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 1818,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 375,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 2804,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 744,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 2112,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00009.json",
+      "position": 1951,
+      "seq_len": 3616
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2339,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2511,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2904,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 905,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 1105,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2341,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2055,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00008.json",
+      "position": 2788,
+      "seq_len": 3375
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 3392,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 287,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 2153,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 1899,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 1014,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 2702,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 3262,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 1555,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 1803,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00013.json",
+      "position": 2983,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 1938,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 346,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 2124,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 1987,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 3008,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 3144,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 456,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 2048,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 1481,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 843,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 2214,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00005.json",
+      "position": 2622,
+      "seq_len": 3869
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 1284,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 3502,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 1897,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 2535,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 3018,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 1576,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 727,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 2601,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 1560,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00012.json",
+      "position": 3244,
+      "seq_len": 3614
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 184,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 776,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 2054,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 3560,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 993,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 404,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00017.json",
+      "position": 1497,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00006.json",
+      "position": 1525,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00006.json",
+      "position": 1512,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00006.json",
+      "position": 3320,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00006.json",
+      "position": 2561,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 2064,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 2060,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 2048,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 2687,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 1215,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 300,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 506,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 679,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 3321,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 1431,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 1977,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00007.json",
+      "position": 1643,
+      "seq_len": 3374
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 1985,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 2540,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 2272,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 555,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 329,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00005.json",
+      "position": 1569,
+      "seq_len": 3354
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 1866,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 2718,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 2298,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 820,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 3129,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 1914,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260827-135317/req-00003.json",
+      "position": 343,
+      "seq_len": 3311
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 797,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 210,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 1613,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 281,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 2707,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 1080,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 426,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00018.json",
+      "position": 2089,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00011.json",
+      "position": 1611,
+      "seq_len": 3881
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00011.json",
+      "position": 3348,
+      "seq_len": 3881
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00011.json",
+      "position": 3156,
+      "seq_len": 3881
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00011.json",
+      "position": 577,
+      "seq_len": 3881
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 900,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 185,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 3252,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 447,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 1917,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 411,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 612,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 865,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 1282,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 572,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00002.json",
+      "position": 2500,
+      "seq_len": 3357
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00010.json",
+      "position": 571,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00010.json",
+      "position": 3189,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00010.json",
+      "position": 1421,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00010.json",
+      "position": 725,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00010.json",
+      "position": 1813,
+      "seq_len": 3618
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00004.json",
+      "position": 1870,
+      "seq_len": 3310
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00004.json",
+      "position": 1720,
+      "seq_len": 3310
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 2122,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 619,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 445,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 745,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 1496,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 3516,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 960,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 595,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00001.json",
+      "position": 1048,
+      "seq_len": 3671
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 321,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 1799,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 2010,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 2649,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 3181,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-161738/req-00001.json",
+      "position": 2938,
+      "seq_len": 3349
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 3048,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 2387,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 2134,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 1814,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 2426,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "meta-learner",
+      "doc": "run-20260823-200843/req-00001.json",
+      "position": 2632,
+      "seq_len": 3351
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 1531,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 2021,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 2485,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 3462,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 2364,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 1471,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00002.json",
+      "position": 277,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00007.json",
+      "position": 3775,
+      "seq_len": 3798
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00007.json",
+      "position": 2541,
+      "seq_len": 3798
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00007.json",
+      "position": 2282,
+      "seq_len": 3798
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00014.json",
+      "position": 1445,
+      "seq_len": 3621
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00014.json",
+      "position": 2039,
+      "seq_len": 3621
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00014.json",
+      "position": 457,
+      "seq_len": 3621
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00014.json",
+      "position": 2092,
+      "seq_len": 3621
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00003.json",
+      "position": 1529,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00003.json",
+      "position": 1460,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00003.json",
+      "position": 304,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00003.json",
+      "position": 1721,
+      "seq_len": 3599
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00016.json",
+      "position": 3052,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00016.json",
+      "position": 3033,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00016.json",
+      "position": 2019,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00016.json",
+      "position": 2454,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00016.json",
+      "position": 3160,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00008.json",
+      "position": 1909,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00008.json",
+      "position": 2266,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00008.json",
+      "position": 3423,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00008.json",
+      "position": 2692,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00008.json",
+      "position": 1292,
+      "seq_len": 3891
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 232,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 1723,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 3749,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 3571,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 1172,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 3452,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00019.json",
+      "position": 3474,
+      "seq_len": 3882
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 2737,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 3324,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 732,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 2358,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 2362,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 3330,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 2417,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 2750,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 3353,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260827-135317/req-00015.json",
+      "position": 3102,
+      "seq_len": 3622
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 1745,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 1171,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 983,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 1573,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 2772,
+      "seq_len": 3596
+    },
+    {
+      "condition": "polaris",
+      "source": "reasoner",
+      "doc": "run-20260823-200843/req-00004.json",
+      "position": 1046,
+      "seq_len": 3596
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 679,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 649,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 619,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 612,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 595,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 582,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 577,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 572,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 571,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00001",
+      "position": 555,
+      "seq_len": 680
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 506,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 503,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 488,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 457,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 456,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 447,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 445,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 426,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 411,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00002",
+      "position": 404,
+      "seq_len": 579
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 375,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 346,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 343,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 329,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 321,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 304,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 300,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 287,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 281,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00003",
+      "position": 277,
+      "seq_len": 539
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00004",
+      "position": 232,
+      "seq_len": 694
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00004",
+      "position": 210,
+      "seq_len": 694
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00004",
+      "position": 187,
+      "seq_len": 694
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00004",
+      "position": 185,
+      "seq_len": 694
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00004",
+      "position": 184,
+      "seq_len": 694
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 781,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 776,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 745,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 744,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 732,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 727,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00005",
+      "position": 725,
+      "seq_len": 797
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 1055,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 1048,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 1046,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 1014,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 993,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 985,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 983,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 960,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 933,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00006",
+      "position": 905,
+      "seq_len": 1057
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1531,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1529,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1525,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1512,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1497,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1496,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1481,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1471,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1460,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00007",
+      "position": 1445,
+      "seq_len": 1550
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00008",
+      "position": 797,
+      "seq_len": 807
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3775,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3749,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3669,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3587,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3571,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3560,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3516,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3502,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3474,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00009",
+      "position": 3462,
+      "seq_len": 10955
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1987,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1985,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1977,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1951,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1938,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1917,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1914,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1909,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1899,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00010",
+      "position": 1897,
+      "seq_len": 2005
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00011",
+      "position": 900,
+      "seq_len": 934
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00011",
+      "position": 865,
+      "seq_len": 934
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00011",
+      "position": 848,
+      "seq_len": 934
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00011",
+      "position": 843,
+      "seq_len": 934
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00011",
+      "position": 820,
+      "seq_len": 934
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00012",
+      "position": 1105,
+      "seq_len": 1133
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00012",
+      "position": 1080,
+      "seq_len": 1133
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1431,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1421,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1292,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1284,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1282,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1215,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1172,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00013",
+      "position": 1171,
+      "seq_len": 1548
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00014",
+      "position": 1560,
+      "seq_len": 1568
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00014",
+      "position": 1555,
+      "seq_len": 1568
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3452,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3423,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3392,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3353,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3348,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3330,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3324,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3321,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3320,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00015",
+      "position": 3262,
+      "seq_len": 3483
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1818,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1814,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1813,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1803,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1799,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1745,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1723,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1721,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1720,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00016",
+      "position": 1643,
+      "seq_len": 1820
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00017",
+      "position": 1613,
+      "seq_len": 1857
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00017",
+      "position": 1611,
+      "seq_len": 1857
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00017",
+      "position": 1576,
+      "seq_len": 1857
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00017",
+      "position": 1573,
+      "seq_len": 1857
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00017",
+      "position": 1569,
+      "seq_len": 1857
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2804,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2788,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2772,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2750,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2737,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2718,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2707,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2702,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2692,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00018",
+      "position": 2687,
+      "seq_len": 2825
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2064,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2060,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2055,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2054,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2048,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2048,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2039,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2021,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2019,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00019",
+      "position": 2010,
+      "seq_len": 2073
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2298,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2282,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2272,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2266,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2214,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2153,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2134,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2124,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2122,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00020",
+      "position": 2112,
+      "seq_len": 2324
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00021",
+      "position": 1870,
+      "seq_len": 2042
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00021",
+      "position": 1866,
+      "seq_len": 2042
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2649,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2632,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2622,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2601,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2579,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2561,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2541,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2540,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2535,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00022",
+      "position": 2511,
+      "seq_len": 2670
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3252,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3247,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3244,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3189,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3181,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3160,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3156,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3144,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3129,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00023",
+      "position": 3102,
+      "seq_len": 6262
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2500,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2500,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2485,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2454,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2426,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2417,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2387,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2364,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2362,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00024",
+      "position": 2358,
+      "seq_len": 2687
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 3052,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 3048,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 3033,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 3018,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 3008,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 2983,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 2938,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 2904,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 2341,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00025",
+      "position": 2339,
+      "seq_len": 3469
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00026",
+      "position": 2106,
+      "seq_len": 2684
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00026",
+      "position": 2092,
+      "seq_len": 2684
+    },
+    {
+      "condition": "fineweb",
+      "source": "fineweb",
+      "doc": "fineweb-00026",
+      "position": 2089,
+      "seq_len": 2684
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 679,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 649,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 619,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 612,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 595,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 582,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 577,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 572,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 571,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00001",
+      "position": 555,
+      "seq_len": 689
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1497,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1496,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1481,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1471,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1460,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1445,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1431,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1421,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1292,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00002",
+      "position": 1284,
+      "seq_len": 1500
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 3033,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 3018,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 3008,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2983,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2938,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2904,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2804,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2788,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2772,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00003",
+      "position": 2750,
+      "seq_len": 3036
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 411,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 404,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 375,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 346,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 343,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 329,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 321,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 304,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 300,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00004",
+      "position": 287,
+      "seq_len": 423
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2153,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2134,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2124,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2122,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2112,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2106,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2092,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2089,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2064,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00005",
+      "position": 2060,
+      "seq_len": 2172
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1215,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1172,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1171,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1105,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1080,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1055,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1048,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1046,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 1014,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00006",
+      "position": 993,
+      "seq_len": 1270
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 1282,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 985,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 983,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 960,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 933,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 905,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 900,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 865,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 848,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00007",
+      "position": 843,
+      "seq_len": 1420
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 820,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 797,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 781,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 776,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 745,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 744,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 732,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 727,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 725,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00008",
+      "position": 506,
+      "seq_len": 1164
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1951,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1938,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1917,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1914,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1909,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1899,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1897,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1870,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1866,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00009",
+      "position": 1818,
+      "seq_len": 1977
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 503,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 488,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 457,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 456,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 447,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 445,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 426,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 281,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 277,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00010",
+      "position": 232,
+      "seq_len": 1319
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00011",
+      "position": 210,
+      "seq_len": 1501
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00011",
+      "position": 187,
+      "seq_len": 1501
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00011",
+      "position": 185,
+      "seq_len": 1501
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00011",
+      "position": 184,
+      "seq_len": 1501
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1643,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1613,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1611,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1576,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1573,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1569,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1560,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1555,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1531,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00012",
+      "position": 1529,
+      "seq_len": 1650
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00013",
+      "position": 1525,
+      "seq_len": 1575
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00013",
+      "position": 1512,
+      "seq_len": 1575
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 2010,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1987,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1985,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1977,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1814,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1813,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1803,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1799,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1745,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00014",
+      "position": 1723,
+      "seq_len": 2019
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00015",
+      "position": 1721,
+      "seq_len": 1994
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00015",
+      "position": 1720,
+      "seq_len": 1994
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2055,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2054,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2048,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2048,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2039,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2021,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00016",
+      "position": 2019,
+      "seq_len": 2182
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00017",
+      "position": 2214,
+      "seq_len": 2224
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2737,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2718,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2707,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2702,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2692,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2687,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2649,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2632,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2622,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00018",
+      "position": 2601,
+      "seq_len": 2989
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3353,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3348,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3330,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3324,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3321,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3320,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3262,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3252,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3247,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00019",
+      "position": 3244,
+      "seq_len": 3380
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3392,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3189,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3181,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3160,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3156,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3144,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3129,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3102,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3052,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00020",
+      "position": 3048,
+      "seq_len": 3394
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2579,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2561,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2541,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2540,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2535,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2511,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2500,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2500,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2485,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00021",
+      "position": 2454,
+      "seq_len": 2763
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3669,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3587,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3571,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3560,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3516,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3502,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3474,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3462,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3452,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00022",
+      "position": 3423,
+      "seq_len": 3739
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2426,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2417,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2387,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2364,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2362,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2358,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2341,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2339,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2298,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00023",
+      "position": 2282,
+      "seq_len": 3398
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00024",
+      "position": 2272,
+      "seq_len": 2433
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00024",
+      "position": 2266,
+      "seq_len": 2433
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00025",
+      "position": 3775,
+      "seq_len": 4079
+    },
+    {
+      "condition": "ultrachat",
+      "source": "ultrachat",
+      "doc": "ultrachat-00025",
+      "position": 3749,
+      "seq_len": 4079
+    }
+  ]
+}

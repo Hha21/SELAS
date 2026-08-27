@@ -33,6 +33,8 @@
   </div>
 
   <!-- ──────────────────────────────────────────── live SWIM metric strip -->
+  <!-- Stays here, above the diagram: these are measurements, and keeping them
+       out of the structural diagram is what stops the two being confused. -->
   <section id="metrics-strip" class="hidden">
     <div class="metric-tile">
       <div class="mt-label">Response time</div>
@@ -87,14 +89,35 @@
       <div id="sas-frame">
         <div class="sas-label">Self-Adaptive System</div>
 
-        <div id="stakeholders" class="stakeholders">
+        <!-- Stakeholders sit outside the system boundary; what they hand
+             inwards is the goal set, so the button opens it. -->
+        <button id="stakeholders" class="stakeholders" type="button"
+                aria-expanded="false" aria-controls="goals-panel">
           <span class="stake-icon">◎</span>
           <span>Stakeholders</span>
-          <span class="stake-edge">— evolve →</span>
+          <span class="stake-edge">— goals</span>
+          <span class="stake-caret" aria-hidden="true">▾</span>
+        </button>
+
+        <div id="goals-panel" class="goals-panel hidden" role="dialog"
+             aria-label="System goals">
+          <div class="goals-head">
+            <div>
+              <div class="goals-title">System Goals</div>
+              <div class="goals-sub">
+                what the stakeholders ask of the system — the Reasoner optimises
+                for these, the Verifier enforces the hard ones
+              </div>
+            </div>
+            <button id="goals-close" class="goals-close" type="button"
+                    aria-label="Close">×</button>
+          </div>
+          <div id="goals-body"></div>
+          <div class="goals-foot" id="goals-foot"></div>
         </div>
 
         <div id="diagram">
-          <svg id="connectors" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <svg id="connectors" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
                       markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -125,12 +148,19 @@
 
           <!-- Loop reads: MS → MC → Kernel → {Fast Controller / Reasoner}
                → Verifier → EA → MS. Meta-Learner sits above and edits policy
-               on a slower cycle. -->
+               on a slower cycle.
 
-          <div class="grid-meta">
+               Meta-Learner, Reasoner and Kernel are deliberately kept in one
+               centre column so the strategic and meta edges are dead-straight
+               verticals; everything else hangs off that spine. -->
+
+          <div class="frame frame-managing">
+            <div class="frame-label">Managing System</div>
+
             <div class="layer layer-meta">
               <div class="layer-label-inline">Meta-Learning Layer</div>
-              <div class="layer-body layer-center">
+              <div class="layer-body layer-spine">
+                <div class="spine-left"></div>
                 <div class="node node-llm" data-agent="meta">
                   <div class="node-icon">M</div>
                   <div class="node-body">
@@ -139,15 +169,17 @@
                   </div>
                   <div class="node-status" data-status="idle"></div>
                 </div>
+                <div class="spine-right"></div>
               </div>
             </div>
-          </div>
 
-          <div class="grid-reason">
             <div class="layer layer-reasoning">
               <div class="layer-label-inline">Reasoning &amp; Knowledge Layer</div>
-              <div class="layer-body layer-row">
-                <div class="loop-tag loop-tag-strategic">slow loop · strategic</div>
+              <div class="layer-body layer-spine">
+                <div class="spine-left">
+                  <div class="loop-tag loop-tag-strategic">slow loop · strategic</div>
+                </div>
+
                 <div class="node node-llm" data-agent="reasoner">
                   <div class="node-icon">R</div>
                   <div class="node-body">
@@ -157,17 +189,17 @@
                   <div class="node-status" data-status="idle"></div>
                 </div>
 
-                <div class="loop-divider"></div>
-
-                <div class="node node-reactive" data-agent="reactive">
-                  <div class="node-icon">F</div>
-                  <div class="node-body">
-                    <div class="node-title">Fast Controller</div>
-                    <div class="node-sub">reactive · low-latency</div>
+                <div class="spine-right">
+                  <div class="loop-tag loop-tag-stab">fast loop · reflex</div>
+                  <div class="node node-reactive" data-agent="reactive">
+                    <div class="node-icon">F</div>
+                    <div class="node-body">
+                      <div class="node-title">Fast Controller</div>
+                      <div class="node-sub">reactive · low-latency</div>
+                    </div>
+                    <div class="node-status" data-status="idle"></div>
                   </div>
-                  <div class="node-status" data-status="idle"></div>
                 </div>
-                <div class="loop-tag loop-tag-stab">fast loop · reflex</div>
               </div>
 
               <div class="tools-row">
@@ -180,13 +212,20 @@
                 </span>
               </div>
             </div>
-          </div>
 
-          <div class="grid-control">
             <div class="layer layer-control">
               <div class="layer-label-inline">Adaptive Control Layer</div>
-              <div class="layer-body layer-center">
-                <div class="node node-kernel" data-agent="kernel">
+              <div class="control-grid">
+                <div class="node node-aux ctl-mc" data-agent="metric-collector">
+                  <div class="node-icon">MC</div>
+                  <div class="node-body">
+                    <div class="node-title">Metric Collector</div>
+                    <div class="node-sub">sample</div>
+                  </div>
+                  <div class="node-status" data-status="idle"></div>
+                </div>
+
+                <div class="node node-kernel ctl-kernel" data-agent="kernel">
                   <div class="node-icon">K</div>
                   <div class="node-body">
                     <div class="node-title">Kernel</div>
@@ -194,51 +233,37 @@
                   </div>
                   <div class="node-status" data-status="idle"></div>
                 </div>
+
+                <div class="node node-aux ctl-verifier" data-agent="verifier">
+                  <div class="node-icon">V</div>
+                  <div class="node-body">
+                    <div class="node-title">Verifier</div>
+                    <div class="node-sub">invariants</div>
+                  </div>
+                  <div class="node-status" data-status="idle"></div>
+                </div>
+
+                <div class="node node-aux ctl-ea" data-agent="execution-adapter">
+                  <div class="node-icon">EA</div>
+                  <div class="node-body">
+                    <div class="node-title">Execution Adapter</div>
+                    <div class="node-sub">enact</div>
+                  </div>
+                  <div class="node-status" data-status="idle"></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- LEFT RAIL — telemetry climbing up -->
-          <div class="grid-tele-path">
-            <div class="rail-label rail-label-tel">telemetry ↑</div>
-            <div class="node node-aux node-rail" data-agent="metric-collector">
-              <div class="node-icon">MC</div>
-              <div class="node-body">
-                <div class="node-title">Metric Collector</div>
-                <div class="node-sub">sample</div>
-              </div>
-              <div class="node-status" data-status="idle"></div>
-            </div>
-          </div>
-
-          <!-- RIGHT RAIL — actions descending -->
-          <div class="grid-act-path">
-            <div class="rail-label rail-label-act">actions ↓</div>
-            <div class="node node-aux node-rail" data-agent="verifier">
-              <div class="node-icon">V</div>
-              <div class="node-body">
-                <div class="node-title">Verifier</div>
-                <div class="node-sub">invariants</div>
-              </div>
-              <div class="node-status" data-status="idle"></div>
-            </div>
-            <div class="node node-aux node-rail" data-agent="execution-adapter">
-              <div class="node-icon">EA</div>
-              <div class="node-body">
-                <div class="node-title">Execution Adapter</div>
-                <div class="node-sub">enact</div>
-              </div>
-              <div class="node-status" data-status="idle"></div>
-            </div>
-          </div>
-
-          <!-- BOTTOM — managed system spans the width -->
-          <div class="grid-system">
+          <!-- BOTTOM — managed system spans the width. Deliberately holds no
+               readouts: the live SWIM numbers live in the strip above. -->
+          <div class="frame frame-managed">
+            <div class="frame-label">Managed System</div>
             <div class="node node-system" data-agent="system">
               <div class="node-icon">S</div>
               <div class="node-body">
-                <div class="node-title">Managed System · SWIM</div>
-                <div class="node-sub">servers + dimmer</div>
+                <div class="node-title">SWIM</div>
+                <div class="node-sub">simulated web infrastructure · servers + dimmer</div>
               </div>
               <div class="node-status" data-status="idle"></div>
             </div>

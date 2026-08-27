@@ -231,21 +231,40 @@ class NLAInference:
 
         scale  = math.sqrt(self.d_model)
         a_norm = act * (scale / act.norm().clamp(min=1e-8))
+
+        # The AR's output scale is a property of how it was *trained*, and the
+        # two checkpoint families here disagree. src/train.py regresses the AR
+        # onto _normalize_to_sqrt_d(act), so our locally-trained 0.5B pair emits
+        # ||z_hat|| ~= 0.82*sqrt(d); the published kitft 7B pair emits 2.77*sqrt(d).
+        # Cosine does not care -- it is scale-invariant -- but FVE is a squared
+        # distance and a mismatched scale swamps it (FVE went to -4.6 purely from
+        # the magnitude gap, with the direction recovered perfectly well). So put
+        # both vectors on the same scale before any squared distance is taken.
+        # FVE is therefore a statement about direction; magnitude is reported
+        # separately as recon_scale_ratio rather than silently folded in.
+        a_hat_n = a_hat * (scale / a_hat.norm().clamp(min=1e-8))
+        scale_ratio = float(a_hat.norm() / scale)
+
         cosine = F.cosine_similarity(a_norm, a_hat, dim=-1).item()
 
         # Per-sample FVE against the corpus-mean baseline (in normalised space).
         # Definition mirrors src.train.fve so the number is comparable to corpus FVE.
         fve = None
         if self.corpus_mean is not None:
-            num = ((a_norm - a_hat).float() ** 2).sum().item()
+            num = ((a_norm - a_hat_n).float() ** 2).sum().item()
             den = ((a_norm - self.corpus_mean).float() ** 2).sum().item()
             fve = 1.0 - num / max(den, 1e-8)
 
         return {
-            "position":       position,
-            "explanation":    desc,
-            "reconstruction": cosine,
-            "fve":            fve,
+            "position":           position,
+            "explanation":        desc,
+            "reconstruction":     cosine,
+            "fve":                fve,
+            # ||z_hat|| / sqrt(d). ~1.0 means the AR emits the scale this repo's
+            # training targets; far from 1.0 means the checkpoint was trained to
+            # a different convention, which is invisible in cosine but would
+            # destroy FVE if the two were not renormalised above.
+            "recon_scale_ratio":  scale_ratio,
         }
 
     # ------------------------------------------------------------------ public

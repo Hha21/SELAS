@@ -52,7 +52,7 @@ flowchart TB
         end
     end
 
-    ENV["<b>ENVIRONMENT</b><br/>ClarkNet request trace — arrival rate the system cannot control"]
+    ENV["<b>ENVIRONMENT</b><br/>World Cup 1998 day-53 request trace<br/>arrival rate the system cannot control, only respond to"]
 
     subgraph NLA["NLA/ — one process, two separable roles"]
         direction TB
@@ -129,8 +129,8 @@ First the self-adaptive system, read bottom-up as in the conceptual model:
           sense │                              │ effect
   ┌─────────────▼──────────────────────────────┴────────────────┐
   │ ENVIRONMENT                                                 │
-  │ ClarkNet request trace — arrival rate the system            │
-  │ cannot control, only respond to                             │
+  │ World Cup 1998 day-53 request trace — arrival rate the      │
+  │ system cannot control, only respond to                      │
   └─────────────────────────────────────────────────────────────┘
 ```
 
