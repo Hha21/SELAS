@@ -38,3 +38,12 @@ run/
 
 # macOS
 **/.DS_Store
+
+# Experiment intermediates. The scripts in experiments/ regenerate these from
+# traces/ given a GPU; only the small results table and the paper figures are
+# worth versioning. acts.npz alone is ~4 MB per run.
+experiments/**/results/*.npz
+experiments/**/results/explanations.json
+experiments/**/results/meta.json
+__pycache__/
+*.pyc
