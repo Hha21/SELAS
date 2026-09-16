@@ -56,16 +56,19 @@ disable_triton_ops_without_compiler()
 # (huggingface.co/collections/kitft/nla-models). The probe layer is a property
 # of the released AV/AR, not a free choice -- getting it wrong silently poisons
 # every downstream number, so it is looked up rather than remembered.
+# WITHOUT EXCEPTION these are the *instruction-tuned* checkpoints. Every
+# released kitft NLA is fine-tuned from an Instruct/-it model, so the AV has
+# only ever seen Instruct activations; the corresponding base model is a
+# different network whose residual stream the AV would misread while still
+# returning fluent, confident explanations. The base ids are deliberately absent
+# rather than aliased -- an entry here would let one silently inherit a layer.
+# Verified 2026-09-16 against the `base_model` field of each model card.
 PROBE_LAYERS = {
     "Qwen/Qwen2.5-0.5B":   16,   # ours, 24 layers, trained locally on 2x 4090
-    # Instruct, not base: kitft's card gives base_model Qwen/Qwen2.5-7B-Instruct,
-    # so the AV was only ever trained on Instruct activations. Qwen/Qwen2.5-7B is
-    # deliberately absent -- it is a different model, and an entry here would let
-    # it silently inherit layer 20 and produce confident, wrong explanations.
-    "Qwen/Qwen2.5-7B-Instruct": 20,  # kitft/nla-qwen2.5-7b-L20-{av,ar}
-    "google/gemma-3-12b-pt": 32, # kitft/nla-gemma3-12b-L32-{av,ar}
-    "google/gemma-3-27b-pt": 41, # kitft/nla-gemma3-27b-L41-{av,ar}
-    "meta-llama/Llama-3.3-70B": 53,  # kitft/Llama-3.3-70B-NLA-L53-{av,ar}
+    "Qwen/Qwen2.5-7B-Instruct":   20,  # kitft/nla-qwen2.5-7b-L20-{av,ar}
+    "google/gemma-3-12b-it":      32,  # kitft/nla-gemma3-12b-L32-{av,ar}
+    "google/gemma-3-27b-it":      41,  # kitft/nla-gemma3-27b-L41-{av,ar}
+    "meta-llama/Llama-3.3-70B-Instruct": 53,  # kitft/Llama-3.3-70B-NLA-L53-{av,ar}
 }
 
 MODEL_ID = os.getenv("NLA_MODEL_ID", "Qwen/Qwen2.5-0.5B")
@@ -121,7 +124,7 @@ TORCH_DEVICE = (
 )
 
 # Trained AV/AR checkpoint pair for *this* backbone. One subdirectory per model
-# (models/Qwen2.5-0.5B/, models/gemma-3-12b-pt/, ...) so several can coexist --
+# (models/Qwen2.5-0.5B/, models/gemma-3-12b-it/, ...) so several can coexist --
 # a single flat models/av.pt silently serves the wrong pair once there is more
 # than one backbone in play, which the FVE numbers would not make obvious.
 CHECKPOINT_DIR = MODELS_DIR / MODEL_ID.split("/")[-1]

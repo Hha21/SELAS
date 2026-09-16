@@ -111,6 +111,13 @@ class OpenAICompatBackend:
         self.api_key = api_key
         self.timeout = timeout
         self.top_logprobs = top_logprobs
+        # Which options the last score() had to price with a separate echo
+        # request. Worth surfacing: if it is most of them every period, the
+        # endpoint's top-k is too small and each decision costs N+1 round trips.
+        self.last_fallback_ids: list[str] = []
+        # vLLM has rejected max_tokens=0 on some versions. Settled on first use
+        # rather than assumed, then remembered for the rest of the run.
+        self._echo_max_tokens: int | None = None
 
     # -- transport ---------------------------------------------------------
     def _post(self, path: str, payload: dict) -> dict:
@@ -160,6 +167,7 @@ class OpenAICompatBackend:
 
         logprobs: dict[str, float] = {}
         missing: list[str] = []
+        self.last_fallback_ids = []
         for oid in options:
             # Tokenisers usually emit " A" rather than "A" after "Action:", so
             # both spellings count and the better one wins.
@@ -172,17 +180,31 @@ class OpenAICompatBackend:
 
         for oid in missing:
             logprobs[oid] = self._echo_logprob(prompt, oid)
+        self.last_fallback_ids = missing
 
         return _softmax(logprobs)
 
     def _echo_logprob(self, prompt: str, option_id: str) -> float:
-        data = self._post("/completions", {
-            "model": self.model,
-            "prompt": f"{prompt} {option_id}",
-            "max_tokens": 0,
-            "echo": True,
-            "logprobs": 0,
-        })
+        candidates = [self._echo_max_tokens] if self._echo_max_tokens is not None else [0, 1]
+        data = None
+        for max_tokens in candidates:
+            try:
+                data = self._post("/completions", {
+                    "model": self.model,
+                    "prompt": f"{prompt} {option_id}",
+                    "max_tokens": max_tokens,
+                    "echo": True,
+                    "logprobs": 0,
+                })
+            except Exception as exc:
+                if max_tokens == candidates[-1]:
+                    raise
+                log.info("echo scoring with max_tokens=%d rejected (%s); retrying with 1",
+                         max_tokens, exc)
+                continue
+            self._echo_max_tokens = max_tokens
+            break
+        assert data is not None
         token_logprobs = (data["choices"][0].get("logprobs") or {}).get("token_logprobs") or []
         for value in reversed(token_logprobs):
             if value is not None:

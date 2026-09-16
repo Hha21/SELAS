@@ -80,20 +80,19 @@ with nothing left for KV cache, so **two GPUs** is the minimum sane allocation.
 Weights belong on `~/h200-scratch` (1 TB quota, H200 nodes + login nodes only).
 **No backup and no recovery there** — it is scratch, not storage.
 
-## Open question before anything is downloaded
+## Which checkpoint (settled)
 
-`NLA/src/config.py` maps the released NLA checkpoints to **base** models:
+Every released kitft NLA is fine-tuned from an **instruction-tuned** checkpoint.
+Verified 2026-09-16 against the `base_model` field of each model card:
 
-```python
-"meta-llama/Llama-3.3-70B": 53,   # kitft/Llama-3.3-70B-NLA-L53-{av,ar}
-"google/gemma-3-27b-pt":    41,   # kitft/nla-gemma3-27b-L41-{av,ar}
-```
+| NLA pair | base model | layer |
+|---|---|---|
+| `kitft/Llama-3.3-70B-NLA-L53-{av,ar}` | `meta-llama/Llama-3.3-70B-Instruct` | 53 |
+| `kitft/nla-gemma3-27b-L41-{av,ar}` | `google/gemma-3-27b-it` | 41 |
+| `kitft/nla-gemma3-12b-L32-{av,ar}` | `google/gemma-3-12b-it` | 32 |
+| `kitft/nla-qwen2.5-7b-L20-{av,ar}` | `Qwen/Qwen2.5-7B-Instruct` | 20 |
 
-Base and Instruct are different models with different activations. An AV trained
-on one and applied to the other produces confident, wrong explanations — the
-comment above those lines in your own config says exactly this.
-
-At ~141 GB per checkpoint this is not a cheap thing to get wrong, so confirm
-against each HF model card's `base_model` field before downloading. The
-controller works either way: scoring needs no chat template, so a base model is
-fine, few-shot.
+So `meta-llama/Llama-3.3-70B-Instruct` is what to download, and it is the same
+checkpoint the interpretability layer will need later — one 141 GB download, not
+two. `NLA/src/config.py` previously keyed three of these on the *base* ids
+(`-pt`, and bare `Llama-3.3-70B`); corrected in the same commit as this note.
