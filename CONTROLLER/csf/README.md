@@ -65,20 +65,40 @@ ssh -L 8000:<node>:8000 t95317ha@csf3.itservices.manchester.ac.uk
 
 ## Resource arithmetic
 
-`meta-llama/Llama-3.3-70B-*` at bf16 is ~141 GB of weights — one H200 exactly,
-with nothing left for KV cache, so **two GPUs** is the minimum sane allocation.
+`meta-llama/Llama-3.3-70B-Instruct` at bf16 is ~141 GB of weights -- one H200
+exactly, with nothing left for KV cache, so **two GPUs** is the minimum sane
+allocation.
 
-| | |
+| | surveyed 2026-09-16 |
 |---|---|
-| partition | `gpuH_short` (≤1 day, batch + interactive) or `gpuH` (≤4 days, batch only) |
-| account | `gpu-h200-fse-pgdr` — **required**, job is rejected without `-A` |
+| partition | `gpuH_short` (≤1 day) or `gpuH` (≤4 days, batch only) |
+| account | **`gpu-cdt-dmcs`** |
 | GPUs | `-G 2` → 282 GB VRAM |
-| cores | `-n 1 -c 16` (≤8 cores/GPU). `-c` not `-n`: vLLM is one process |
-| host RAM | 24 GB/core → 384 GB |
-| limits | 4 GPUs and 4 running jobs per user on `gpu-h200-fse*` |
+| cores | `-n 1 -c 16` (≤8/GPU). `-c` not `-n`: vLLM is one process |
+| host RAM | 24 GB/core → 384 GB (nodes have 1.5 TB) |
+| nodes | node820-823, 8×H200 each |
+| python | `module load apps/binapps/anaconda3/2024.10` → 3.12.7 |
+| vLLM | 0.19.1 already in user site; torch 2.10.0 cu128, `sm_90` present |
+| weights | `HF_HOME=~/h200-scratch/hf` (1.0 TB volume, 946 GB free) |
 
-Weights belong on `~/h200-scratch` (1 TB quota, H200 nodes + login nodes only).
-**No backup and no recovery there** — it is scratch, not storage.
+### The account is not the one in the CSF docs
+
+`gpuH`/`gpuH_short` list `AllowAccounts=gpu-h200,gpu-support-sysadmin,siteadmin`.
+Of our four associations (`sk01`, `gpu-free`, `gpu-cdt-dmcs`, `gpu-sk01`) only
+**`gpu-cdt-dmcs`** is accepted there; `gpu-h200-fse-pgdr` from the CSF
+documentation is not one of ours at all. Verified with `sbatch --test-only`,
+which reports where a job *would* land without submitting anything:
+
+| account | partition | estimate |
+|---|---|---|
+| `gpu-cdt-dmcs` | `gpuH_short` | same day |
+| `gpu-free` | `gpuL` | +2 days |
+| `gpu-free` | `gpuA` | +4 days |
+| `sk01` | `gpuA` | +10 days |
+
+`gpu-cdt-dmcs` is refused on `gpuA`/`gpuL` with `AssocGrpGRES`, and the other
+three are refused on `gpuH*`. So the pairing is fixed: H200 via `gpu-cdt-dmcs`,
+or wait days.
 
 ## Which checkpoint (settled)
 

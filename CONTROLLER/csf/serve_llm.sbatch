@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #SBATCH -p gpuH_short
-#SBATCH -A gpu-h200-fse-pgdr
+#SBATCH -A gpu-cdt-dmcs
 #SBATCH -G 2
 #SBATCH -n 1
 #SBATCH -c 16
@@ -17,15 +17,18 @@
 #          cache. Two GPUs is the minimum sane allocation, not a luxury.
 #   -c 16  cores, not tasks: vLLM is a single process, and `-n 16 -c 1` would
 #          leave it seeing one CPU. 8 cores/GPU is the partition maximum.
-#   -A     required on gpuH*; the job is rejected outright without it.
+#   -A     required on gpuH*, and the account is gpu-cdt-dmcs. NOT the
+#          gpu-h200-fse-pgdr in the CSF docs -- gpuH lists
+#          AllowAccounts=gpu-h200,gpu-support-sysadmin,siteadmin, and of our
+#          four associations only gpu-cdt-dmcs is accepted there (verified with
+#          sbatch --test-only). The others reach gpuA/gpuL instead, where the
+#          queue estimate is days rather than the hour gpuH_short quotes.
 #
 # logs/ must exist BEFORE submission -- Slurm opens the -o/-e files before the
 # body runs, so mkdir here is too late.
 
 set -euo pipefail
 
-WORKDIR="${SELAS_WORKDIR:-$HOME/selas}"
-VENV="${SELAS_VENV:-$HOME/h200-scratch/venvs/vllm}"
 MODEL="${SELAS_MODEL:-meta-llama/Llama-3.3-70B-Instruct}"
 SERVED_NAME="${SELAS_SERVED_NAME:-csf-llm}"
 MAX_LEN="${SELAS_MAX_LEN:-8192}"
@@ -34,18 +37,18 @@ ENDPOINT_DIR="$HOME/h200-scratch/endpoints"
 # A fixed port would collide with another job on the same node; derive one.
 PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
 
-cd "$WORKDIR"
 module purge
 module load libs/cuda/12.8.1
+# vllm 0.19.1 / torch 2.10.0 (cu128, sm_90 in the arch list) are already
+# installed into this interpreter's user site -- no venv to activate.
+module load apps/binapps/anaconda3/2024.10
 
 # Weights live on h200-scratch, not $TMPDIR: 141 GB is too large to stage per
-# job, and $TMPDIR is destroyed at job end.
+# job, and $TMPDIR is destroyed at job end. h200-scratch is mounted on the H200
+# compute nodes and the login nodes, which is exactly the two places that need it.
 export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
 export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 export VLLM_LOGGING_LEVEL=INFO
-
-# shellcheck disable=SC1091
-source "$VENV/bin/activate"
 
 echo "job $SLURM_JOB_ID on $(hostname)"
 echo "gpus=$CUDA_VISIBLE_DEVICES cores=$SLURM_CPUS_PER_TASK port=$PORT"
@@ -53,6 +56,26 @@ echo "model=$MODEL  HF_HOME=$HF_HOME"
 nvidia-smi --query-gpu=index,name,memory.total --format=csv
 
 mkdir -p "$ENDPOINT_DIR"
+
+# Fail fast if the weights are not already local. Without this vLLM would start
+# a 141 GB download while holding two H200s idle, and quite possibly hit the
+# wallclock before serving a single token.
+if ! python - "$MODEL" <<'PYCHECK'
+import sys, os
+from huggingface_hub import snapshot_download
+try:
+    p = snapshot_download(sys.argv[1], local_files_only=True)
+except Exception as exc:
+    print(f"weights not present locally under HF_HOME={os.environ.get('HF_HOME')}: "
+          f"{type(exc).__name__}", file=sys.stderr)
+    sys.exit(1)
+print(f"weights: {p}")
+PYCHECK
+then
+    echo "ABORTING: download the weights on a login node first, e.g." >&2
+    echo "  HF_HOME=\$HOME/h200-scratch/hf hf download $MODEL" >&2
+    exit 1
+fi
 
 # --max-logprobs: the controller asks for the top 20 at the action position so
 # that all eight options usually arrive in one request. vLLM's default cap is
