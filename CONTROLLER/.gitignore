@@ -1,0 +1,9 @@
+# Per-run output: decisions.jsonl and anything else a run writes. Each run gets
+# its own directory and stamps run_id on every record, deliberately -- appending
+# to a shared log with only a timestamp to separate runs is how POLARIS ended up
+# with the authors' shipped data and eight local runs in one file.
+runs/
+
+__pycache__/
+.pytest_cache/
+.venv/

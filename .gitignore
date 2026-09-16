@@ -47,3 +47,15 @@ experiments/**/results/explanations.json
 experiments/**/results/meta.json
 __pycache__/
 *.pyc
+
+# Paper sources and the term report build, kept out of the code repository.
+LaTeX/
+InitSummerWork.pdf
+
+# Working context documents: notes and references written for/with the agent
+# while developing, not part of the project's own record. Deliberately listed
+# one by one rather than as *.md -- every README in the tree is markdown too.
+LLM_Controller_Plan.md
+POLARIS_WIRING_ISSUES.md
+POLARIS_WIRING_AUDIT_2026-09.md
+csf3-slurm-manual.md

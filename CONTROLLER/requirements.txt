@@ -1,0 +1,7 @@
+# The controller itself needs nothing beyond the standard library; `requests` is
+# only imported when the OpenAI-compatible backend is actually used, so the
+# reactive oracle and the stub backend run on a bare interpreter.
+requests>=2.31.0
+
+# tests
+pytest>=7.0.0
