@@ -75,10 +75,32 @@ echo "model     $MODEL  (vllm :$VLLM_PORT)"
 echo "swim      run $RUN_INDEX, seed-set $SEED_SET${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
 echo "out       $OUT"
 
+# Collection runs from the EXIT trap, not only inline. The dry run reached the
+# end of the simulations, wrote 20 decisions and four .sca/.vec files, and then
+# exited before the collection block -- leaving a complete run with no tidy
+# output and no plot, recoverable only by hand. Whatever caused that (the
+# controllers are killed just above it), the results are too expensive to lose
+# to it: 105 minutes of wall clock and a GPU allocation. Running collection from
+# the trap means it happens on every exit path, and the guard makes it
+# idempotent when the inline call already succeeded.
+collect_results() {
+    [ -n "${COLLECTED:-}" ] && return 0
+    COLLECTED=1
+    echo "=== collecting results ==="
+    cd "$REPO/experiments/controller_comparison" || { echo "cannot cd to collect"; return 1; }
+    python collect.py "$OUT/reactive" "$OUT/llm" -o "$OUT/runs.json" 2>&1 | tee "$OUT/collect.txt" \
+        || echo "collect.py failed"
+    python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels Reactive LLM \
+        --title "SWIM run $RUN_INDEX, seed-set $SEED_SET, $MODEL" 2>&1 \
+        || echo "plot.py failed"
+    ls -la "$OUT" 2>/dev/null
+}
+
 cleanup() {
     echo "cleaning up"
     [ -n "${VLLM_PID:-}" ] && kill "$VLLM_PID" 2>/dev/null
     for pid in ${SWIM_PIDS:-} ${CTL_PIDS:-}; do kill "$pid" 2>/dev/null; done
+    collect_results
 }
 trap cleanup EXIT
 
@@ -155,10 +177,8 @@ for pid in $CTL_PIDS; do kill "$pid" 2>/dev/null; done
 sleep 3
 
 # --------------------------------------------------------------- 3. collection
-cd "$REPO/experiments/controller_comparison"
-python collect.py "$OUT/reactive" "$OUT/llm" -o "$OUT/runs.json" | tee "$OUT/collect.txt"
-python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels Reactive LLM \
-    --title "SWIM run $RUN_INDEX, seed-set $SEED_SET" || echo "plotting failed (non-fatal)"
+echo "reached the collection step"
+collect_results
 
 cat > "$OUT/manifest.json" <<JSON
 {"run_id": "$RUN_ID", "job_id": "$SLURM_JOB_ID", "node": "$(hostname)",
