@@ -1,0 +1,24 @@
+backend      openai-compat -> http://127.0.0.1:25893/v1 (csf-llm)
+state        synthetic: rt=0.910s util=1.76 servers=2/3 dimmer=0.50
+
+prompt       2200 chars, 8 options
+reasoning    221 chars
+  | breached, 0.910 s against 0.750 s threshold.
+  |   Capacity: 2 of 3 servers, spare 0.24, nothing booting, so headroom exists.
+  |   Trend: arrival rate high and utilisation high, so prioritise capacity.
+  |   Therefore: add a server.
+
+latency      2.74s
+echo fallback not needed: every option was in the endpoint's top-k
+
+action distribution   (* = legal this period)
+  * A  add_server                 raw=0.9993  legal=0.9993  <-- chosen
+  * B  remove_server              raw=0.0005  legal=0.0005
+  * C  no_op                      raw=0.0001  legal=0.0001
+  * D  set_dimmer 0.1             raw=0.0000  legal=0.0000
+  * E  set_dimmer 0.3             raw=0.0000  legal=0.0000
+    F  set_dimmer 0.5             raw=0.0001  legal=  masked
+  * G  set_dimmer 0.7             raw=0.0000  legal=0.0000
+  * H  set_dimmer 0.9             raw=0.0000  legal=0.0000
+
+OK       chose add_server. SWIM can be started now.

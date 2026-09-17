@@ -1,0 +1,4 @@
+{"run_id": "cmp-20260917-213631", "job_id": "20765893", "node": "node823.csf3.man.alces.network",
+ "model": "nvidia/Llama-3.3-70B-Instruct-FP8", "run_index": 6, "seed_set": 1,
+ "sim_time_limit": "default", "period_s": 60,
+ "finished": "2026-09-17T23:23:49+00:00"}

@@ -59,3 +59,8 @@ LLM_Controller_Plan.md
 POLARIS_WIRING_ISSUES.md
 POLARIS_WIRING_AUDIT_2026-09.md
 csf3-slurm-manual.md
+
+# OMNeT++ raw vector output: tens of MB per run, regenerable only by re-running
+# the 105-minute simulation, but everything the paper needs is already distilled
+# into runs.json by collect.py. The .sca is small and worth keeping.
+experiments/**/results/**/*.vec
