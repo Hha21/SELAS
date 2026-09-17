@@ -158,6 +158,37 @@ done
 
 Put the winner in `csf/local.env` as `CSF_ACCOUNT`; `csf/submit.sh` passes it.
 
+## The anaconda interpreter needs one package upgraded
+
+vLLM's first run died three minutes in, before loading any weights:
+
+```
+vllm -> transformers.generation.candidate_generator -> from sklearn.metrics import roc_curve
+ValueError: numpy.dtype size changed... Expected 96 from C header, got 88 from PyObject
+```
+
+`numpy` 2.2.6 sits in the user site and wins; anaconda's `scikit-learn` 1.5.1 is
+built against numpy 1.x and cannot load against it. The fix is one package,
+installed into the user site so it shadows the module version:
+
+```bash
+pip install --user --upgrade scikit-learn        # 1.5.1 (anaconda) -> 1.9.1 (user site)
+```
+
+Verify by importing what actually failed, not just sklearn:
+
+```bash
+python -c "import vllm.entrypoints.openai.api_server; print('ok')"
+```
+
+`bottleneck` still reports the same numpy-1 incompatibility, but that path is
+caught internally and the import completes, so it needs nothing.
+
+Worth knowing generally: the user site shadows the anaconda module for every
+package, so anything anaconda ships compiled against numpy 1.x will break the
+moment it meets the user-site numpy. Upgrade the offender in the user site
+rather than downgrading numpy, which vLLM and torch depend on.
+
 ## Which checkpoint (settled)
 
 Every released kitft NLA is fine-tuned from an **instruction-tuned** checkpoint.
