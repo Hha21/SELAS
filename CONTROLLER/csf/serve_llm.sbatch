@@ -1,9 +1,9 @@
 #!/bin/bash --login
 #SBATCH -p gpuH_short
 #SBATCH -A gpu-cdt-dmcs
-#SBATCH -G 2
+#SBATCH -G 1
 #SBATCH -n 1
-#SBATCH -c 16
+#SBATCH -c 8
 #SBATCH -t 0-08
 #SBATCH -J selas-llm
 #SBATCH -o logs/%x_%j.out
@@ -13,9 +13,13 @@
 # against. Draft: confirm against csf/recon.sh output before first submission --
 # it assumes a venv with vLLM at $VENV and weights reachable via $HF_HOME.
 #
-#   -G 2   70B at bf16 is ~141 GB, one H200 exactly, leaving nothing for KV
-#          cache. Two GPUs is the minimum sane allocation, not a luxury.
-#   -c 16  cores, not tasks: vLLM is a single process, and `-n 16 -c 1` would
+#   -G 1   gemma-3-27b-it at bf16 is ~54 GB, comfortable on one 141 GB H200
+#          with room for KV cache. For Llama-3.3-70B-Instruct (~141 GB, one
+#          H200 exactly, nothing left over) override at submit time:
+#            SELAS_MODEL=meta-llama/Llama-3.3-70B-Instruct sbatch -G 2 -c 16 \
+#                csf/serve_llm.sbatch
+#          Command-line flags override #SBATCH and must precede the filename.
+#   -c 8   cores, not tasks: vLLM is a single process, and `-n 8 -c 1` would
 #          leave it seeing one CPU. 8 cores/GPU is the partition maximum.
 #   -A     required on gpuH*, and the account is gpu-cdt-dmcs. NOT the
 #          gpu-h200-fse-pgdr in the CSF docs -- gpuH lists
@@ -29,7 +33,7 @@
 
 set -euo pipefail
 
-MODEL="${SELAS_MODEL:-meta-llama/Llama-3.3-70B-Instruct}"
+MODEL="${SELAS_MODEL:-google/gemma-3-27b-it}"
 SERVED_NAME="${SELAS_SERVED_NAME:-csf-llm}"
 MAX_LEN="${SELAS_MAX_LEN:-8192}"
 ENDPOINT_DIR="$HOME/h200-scratch/endpoints"
@@ -103,7 +107,7 @@ for _ in $(seq 1 120); do
 JSON
         cp "$ENDPOINT_DIR/$SLURM_JOB_ID.json" "$ENDPOINT_DIR/latest.json"
         echo "READY: $(hostname):$PORT  -> $ENDPOINT_DIR/$SLURM_JOB_ID.json"
-        echo "tunnel:  ssh -L 8000:$(hostname):$PORT t95317ha@csf3.itservices.manchester.ac.uk"
+        echo "tunnel:  ssh -L 8000:$(hostname):$PORT \$CSF_USER@csf3.itservices.manchester.ac.uk"
         break
     fi
     sleep 10
