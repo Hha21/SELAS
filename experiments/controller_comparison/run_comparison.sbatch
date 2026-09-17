@@ -37,7 +37,19 @@ SEED_SET="${SELAS_SEED_SET:-1}"
 SIM_LIMIT="${SELAS_SIM_LIMIT:-}"          # e.g. 1800s for a short pipeline test
 PERIOD="${SELAS_PERIOD:-60}"
 RUN_ID="${SELAS_RUN_ID:-cmp-$(date -u +%Y%m%d-%H%M%S)}"
-OUT="$REPO/experiments/controller_comparison/results/$RUN_ID"
+
+# Results go to HOME, not h200-scratch, and not inside the repo clone.
+#
+# h200-scratch is the right home for weights and the container image: large,
+# fast, next to the GPUs, and everything on it can be re-downloaded. It is the
+# wrong home for results, because it has no backup, no recycle bin and no
+# recovery -- and a run's output is the one artefact here that cannot be
+# regenerated without another 105 minutes of wall clock and a GPU allocation.
+#
+# Writing them inside the repo clone is separately untidy: they are not
+# gitignored, so every `git status` on CSF shows them, and a `git pull` has to
+# step around them.
+OUT="${SELAS_RESULTS:-$HOME/selas-results}/$RUN_ID"
 
 # Slurm sets these for a batch job but not inside an `srun` step, and `set -u`
 # turns that into an instant death on line 47 rather than a degraded run. The
