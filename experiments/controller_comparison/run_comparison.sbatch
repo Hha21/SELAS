@@ -56,7 +56,7 @@ echo "out       $OUT"
 cleanup() {
     echo "cleaning up"
     [ -n "${VLLM_PID:-}" ] && kill "$VLLM_PID" 2>/dev/null
-    for pid in ${SWIM_PIDS:-}; do kill "$pid" 2>/dev/null; done
+    for pid in ${SWIM_PIDS:-} ${CTL_PIDS:-}; do kill "$pid" 2>/dev/null; done
 }
 trap cleanup EXIT
 
@@ -88,6 +88,7 @@ python run_controller.py --check-backend --backend openai \
 
 # ------------------------------------------------------- 2. simulations + arms
 SWIM_PIDS=""
+CTL_PIDS=""
 for arm in reactive llm; do
     port="${ARM_PORT[$arm]}"
     res="$OUT/$arm"; mkdir -p "$res"
@@ -118,14 +119,18 @@ for arm in reactive llm; do
     python run_controller.py --port "$port" --period "$PERIOD" \
         --run-dir "$res" --run-id "$arm" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
-    echo "  controller '$arm' started"
+    CTL_PIDS="$CTL_PIDS $!"
+    echo "  controller '$arm' started (pid $!)"
 done
 
 echo "waiting for both simulations to finish..."
 wait $SWIM_PIDS
 echo "simulations done; giving controllers a moment to flush"
 sleep 15
-pkill -f "run_controller.py --port" 2>/dev/null
+# By recorded pid, not pkill -f: that pattern also matches any enclosing shell
+# whose command line contains it, which kills the job rather than the child.
+for pid in $CTL_PIDS; do kill "$pid" 2>/dev/null; done
+sleep 3
 
 # --------------------------------------------------------------- 3. collection
 cd "$REPO/experiments/controller_comparison"

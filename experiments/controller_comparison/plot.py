@@ -119,9 +119,11 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
             # the first minutes being read as part of the comparison.
             ax.axvline(warmup, color=GRID, linewidth=1.0, zorder=0)
 
-    ax_srv.annotate("warm-up ends", xy=(warmup, 1.0), xycoords=("data", "axes fraction"),
-                    xytext=(4, -10), textcoords="offset points",
-                    fontsize=7.5, color=INK_SECONDARY)
+    # On the bottom panel, just above the axis: on the top panel it landed
+    # directly on the servers trace, which is a step line pinned to the top.
+    ax_util.annotate("warm-up ends", xy=(warmup, 0.02), xycoords=("data", "axes fraction"),
+                     xytext=(4, 0), textcoords="offset points",
+                     ha="left", va="bottom", fontsize=7.5, color=INK_SECONDARY)
 
     handles, labels = ax_srv.get_legend_handles_labels()
     if not handles:
