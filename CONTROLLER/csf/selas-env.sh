@@ -25,4 +25,4 @@ module load libs/cuda/12.8.1                 # pinned: bare `libs/cuda` resolves
 
 export HF_HOME="$HOME/h200-scratch/hf"       # token and weight cache together, on the volume the H200 nodes mount
 export SELAS_ENDPOINTS="$HOME/h200-scratch/endpoints"
-export SELAS_MODEL="meta-llama/Llama-3.3-70B-Instruct"
+export SELAS_MODEL="google/gemma-3-27b-it"
