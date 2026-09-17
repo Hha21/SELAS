@@ -37,6 +37,34 @@ and ≥5 runs per condition means the laptop must stay awake and connected for
 most of a day. Worth solving before the repeat campaign, not before the first
 run.
 
+## Working over the connection
+
+`ssh host 'cmd'` starts a **new non-interactive shell every time**. ControlMaster
+multiplexes the TCP transport, not a shell session, so there is no long-lived
+shell on the far side holding state: a `module load` done by one command is gone
+by the next. Every remote command therefore re-establishes its own environment,
+which is what `selas-env.sh` is for:
+
+```bash
+ssh csf3 'source ~/selas-env.sh && python -c "import vllm; print(vllm.__version__)"'
+```
+
+Putting those lines in `~/.bashrc` instead would apply them to every command run
+on CSF, including unrelated work; module loads in `.bashrc` are a well-known
+source of confusing breakage.
+
+**Reopening the master.** `ControlPersist` expiry leaves the socket *file*
+behind, and ssh then refuses to reuse it with
+`ControlSocket ... already exists, disabling multiplexing` -- it silently falls
+back to an ordinary connection that nothing else can share. Always clear it
+first:
+
+```bash
+rm -f ~/.ssh/csf3-long.sock
+ssh -M -S ~/.ssh/csf3-long.sock -o ControlPersist=12h -fN \
+    t95317ha@csf3.itservices.manchester.ac.uk
+```
+
 ## Procedure
 
 ```bash
