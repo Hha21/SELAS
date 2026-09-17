@@ -88,7 +88,7 @@ python -m vllm.entrypoints.openai.api_server \
     --model "$MODEL" --served-model-name "$SERVED" \
     --tensor-parallel-size "$SLURM_GPUS" \
     --host 127.0.0.1 --port "$VLLM_PORT" \
-    --max-model-len 8192 --max-logprobs 30 --dtype bfloat16 \
+    --max-model-len 8192 --max-logprobs 30 --dtype auto \
     > "$OUT/vllm.log" 2>&1 &
 VLLM_PID=$!
 
