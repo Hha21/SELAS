@@ -70,8 +70,13 @@ mkdir -p "$ENDPOINT_DIR"
 if ! python - "$MODEL" <<'PYCHECK'
 import sys, os
 from huggingface_hub import snapshot_download
+# The same ignore_patterns the download used. Without them snapshot_download
+# counts the deliberately-skipped original/*.pth as missing and raises
+# IncompleteSnapshotError on a cache that is in fact complete -- aborting the
+# job over 141 GB of weights that are all present.
 try:
-    p = snapshot_download(sys.argv[1], local_files_only=True)
+    p = snapshot_download(sys.argv[1], ignore_patterns=["original/*", "*.pth"],
+                          local_files_only=True)
 except Exception as exc:
     print(f"weights not present locally under HF_HOME={os.environ.get('HF_HOME')}: "
           f"{type(exc).__name__}", file=sys.stderr)
@@ -80,7 +85,7 @@ print(f"weights: {p}")
 PYCHECK
 then
     echo "ABORTING: download the weights on a login node first, e.g." >&2
-    echo "  HF_HOME=\$HOME/h200-scratch/hf hf download $MODEL" >&2
+    echo "  HF_HOME=\$HOME/h200-scratch/hf python ~/fetch_weights.py $MODEL" >&2
     exit 1
 fi
 
