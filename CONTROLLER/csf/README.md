@@ -126,7 +126,7 @@ Command-line flags override `#SBATCH` and must precede the script filename.
 | | surveyed 2026-09-16 |
 |---|---|
 | partition | `gpuH_short` (≤1 day) or `gpuH` (≤4 days, batch only) |
-| account | **`gpu-cdt-dmcs`** |
+| account | see below -- set `CSF_ACCOUNT` |
 | cores | `-n 1 -c 8` per GPU (partition maximum). `-c` not `-n`: vLLM is one process |
 | host RAM | 24 GB/core → 192 GB at `-c 8` (nodes have 1.5 TB) |
 | nodes | node820-823, 8×H200 each |
@@ -134,24 +134,29 @@ Command-line flags override `#SBATCH` and must precede the script filename.
 | vLLM | 0.19.1 already in user site; torch 2.10.0 cu128, `sm_90` present |
 | weights | `HF_HOME=~/h200-scratch/hf` (1.0 TB volume, 946 GB free) |
 
-### The account is not the one in the CSF docs
+### Check which account reaches the H200s -- do not assume
 
-`gpuH`/`gpuH_short` list `AllowAccounts=gpu-h200,gpu-support-sysadmin,siteadmin`.
-Of our four associations (`sk01`, `gpu-free`, `gpu-cdt-dmcs`, `gpu-sk01`) only
-**`gpu-cdt-dmcs`** is accepted there; `gpu-h200-fse-pgdr` from the CSF
-documentation is not one of ours at all. Verified with `sbatch --test-only`,
-which reports where a job *would* land without submitting anything:
+`gpuH`/`gpuH_short` restrict `AllowAccounts` to a specific set, and the account
+named in the CSF documentation was not one of ours at all. Of our four Slurm
+associations exactly one is accepted on `gpuH*`, and that one is in turn refused
+on `gpuA`/`gpuL` with `AssocGrpGRES`. The pairing is rigid: the right account
+reaches the H200s with a same-day queue estimate, while the others land on
+`gpuA`/`gpuL` days out.
 
-| account | partition | estimate |
-|---|---|---|
-| `gpu-cdt-dmcs` | `gpuH_short` | same day |
-| `gpu-free` | `gpuL` | +2 days |
-| `gpu-free` | `gpuA` | +4 days |
-| `sk01` | `gpuA` | +10 days |
+Find yours without submitting anything -- `--test-only` reports where a job
+*would* land:
 
-`gpu-cdt-dmcs` is refused on `gpuA`/`gpuL` with `AssocGrpGRES`, and the other
-three are refused on `gpuH*`. So the pairing is fixed: H200 via `gpu-cdt-dmcs`,
-or wait days.
+```bash
+sacctmgr -nP show assoc user=$USER format=Account,Partition,QOS
+for acct in $(sacctmgr -nP show assoc user=$USER format=Account); do
+  for part in gpuH_short gpuA gpuL; do
+    echo -n "$acct $part: "
+    sbatch --test-only -p $part -A $acct -G 1 -n 1 -c 8 -t 0-01 --wrap=true 2>&1 | head -1
+  done
+done
+```
+
+Put the winner in `csf/local.env` as `CSF_ACCOUNT`; `csf/submit.sh` passes it.
 
 ## Which checkpoint (settled)
 

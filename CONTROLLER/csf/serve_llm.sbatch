@@ -1,6 +1,5 @@
 #!/bin/bash --login
 #SBATCH -p gpuH_short
-#SBATCH -A gpu-cdt-dmcs
 #SBATCH -G 1
 #SBATCH -n 1
 #SBATCH -c 8
@@ -21,12 +20,16 @@
 #          Command-line flags override #SBATCH and must precede the filename.
 #   -c 8   cores, not tasks: vLLM is a single process, and `-n 8 -c 1` would
 #          leave it seeing one CPU. 8 cores/GPU is the partition maximum.
-#   -A     required on gpuH*, and the account is gpu-cdt-dmcs. NOT the
-#          gpu-h200-fse-pgdr in the CSF docs -- gpuH lists
-#          AllowAccounts=gpu-h200,gpu-support-sysadmin,siteadmin, and of our
-#          four associations only gpu-cdt-dmcs is accepted there (verified with
-#          sbatch --test-only). The others reach gpuA/gpuL instead, where the
-#          queue estimate is days rather than the hour gpuH_short quotes.
+#   -A     required on gpuH*, and deliberately NOT a #SBATCH line here: Slurm
+#          parses these before any shell runs, so no variable would expand and
+#          the account would have to be committed as a literal. It is passed at
+#          submit time instead -- use csf/submit.sh, which reads it from the
+#          gitignored csf/local.env.
+#
+#          Do not assume the account in the CSF documentation is one of yours.
+#          gpuH lists a specific AllowAccounts set, and only some associations
+#          are in it; `sbatch --test-only` reports where a job would land
+#          without submitting anything, which is the cheap way to find out.
 #
 # logs/ must exist BEFORE submission -- Slurm opens the -o/-e files before the
 # body runs, so mkdir here is too late.
