@@ -112,12 +112,16 @@ def read_decisions(path: Path) -> list[dict]:
 
 
 def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
-    sca = next(iter(sorted(run_dir.glob("*.sca"))), run_dir / "missing.sca")
-    vec = next(iter(sorted(run_dir.glob("*.vec"))), run_dir / "missing.vec")
+    # Searched recursively rather than at the top level: SWIM writes under a
+    # network-named subdirectory (result-dir ../../../results/SWIM), and the
+    # controller writes under its own run id. Neither lands beside the other.
+    sca = next(iter(sorted(run_dir.rglob("*.sca"))), run_dir / "missing.sca")
+    vec = next(iter(sorted(run_dir.rglob("*.vec"))), run_dir / "missing.vec")
+    dec = next(iter(sorted(run_dir.rglob("decisions.jsonl"))), run_dir / "decisions.jsonl")
 
     scalars = read_scalars(sca)
     vectors = read_vectors(vec)
-    decisions = read_decisions(run_dir / "decisions.jsonl")
+    decisions = read_decisions(dec)
 
     # Cumulative utility over the evaluation window. SWIM scores from the end of
     # the warmup period, so anything before it must not contribute.
@@ -137,6 +141,7 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
             "sca": sca.name if sca.exists() else None,
             "vec": vec.name if vec.exists() else None,
             "decisions": len(decisions),
+            "decisions_path": str(dec) if decisions else None,
         },
         "vectors_found": sorted(vectors),
         "utility_total": scalars.get("utility_total"),
