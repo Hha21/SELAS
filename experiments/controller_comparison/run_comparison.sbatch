@@ -39,6 +39,16 @@ PERIOD="${SELAS_PERIOD:-60}"
 RUN_ID="${SELAS_RUN_ID:-cmp-$(date -u +%Y%m%d-%H%M%S)}"
 OUT="$REPO/experiments/controller_comparison/results/$RUN_ID"
 
+# Slurm sets these for a batch job but not inside an `srun` step, and `set -u`
+# turns that into an instant death on line 47 rather than a degraded run. The
+# defaults exist so the script can be exercised interactively under
+# `srun --jobid=...`, which is the cheapest way to debug it -- a batch job costs
+# a queue wait to learn the same thing.
+: "${SLURM_JOB_ID:=$$}"
+: "${SLURM_CPUS_PER_TASK:=8}"
+: "${SLURM_GPUS:=1}"
+: "${CUDA_VISIBLE_DEVICES:=unset}"
+
 VLLM_PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
 declare -A ARM_PORT=( [reactive]=4242 [llm]=4243 )
 
