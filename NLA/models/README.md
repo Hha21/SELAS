@@ -10,7 +10,7 @@ models/
 ├── Qwen2.5-0.5B/           # one subdirectory per backbone
 │   ├── av.pt               #   trained Activation Verbalizer
 │   └── ar.pt               #   trained Activation Reconstructor
-└── gemma-3-12b-pt/         # (later)
+└── gemma-3-12b-it/         # (later)
     ├── av.pt
     └── ar.pt
 ```

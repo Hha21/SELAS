@@ -21,8 +21,9 @@ from pathlib import Path
 
 from controller import (
     ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
-    ReasoningStyle, SwimClient, Trajectory, build_backend,
+    ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
+from controller.actions import is_legal
 
 ROOT = Path(__file__).resolve().parent
 
@@ -72,6 +73,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                        help="read SWIM once, print the observation, exit")
     modes.add_argument("--print-prompt", action="store_true",
                        help="read SWIM once, print the prompt the model would see, exit")
+    modes.add_argument("--check-backend", action="store_true",
+                       help="score one synthetic decision against the LLM backend "
+                            "and exit. Needs no SWIM -- run this before starting the "
+                            "simulation, not after.")
 
     return p.parse_args(argv)
 
@@ -86,6 +91,78 @@ def build_builder(args: argparse.Namespace) -> ContextBuilder:
     )
 
 
+def check_backend(args: argparse.Namespace) -> int:
+    """Exercise the model end to end on a synthetic state, with no simulator.
+
+    SWIM is the only component with a clock: once it starts, its 105 minutes of
+    wall time run whether or not anything is controlling it. So the endpoint is
+    proved first, on a state invented here, and SWIM is started only afterwards.
+    """
+    import time
+
+    backend = build_backend(
+        args.backend, base_url=args.llm_base_url, model=args.llm_model,
+        api_key=args.llm_api_key,
+    )
+    builder = build_builder(args)
+    obs = synthetic_observation()
+    traj = Trajectory(window=args.window)
+    traj.record_observation(0, obs)
+
+    policy = LLMPolicy(
+        backend=backend, builder=builder, dimmer_mode=DimmerMode(args.dimmer_mode),
+        max_reasoning_tokens=args.max_reasoning_tokens, temperature=args.temperature,
+    )
+
+    print(f"backend      {backend.name}"
+          + (f" -> {args.llm_base_url} ({args.llm_model})" if args.llm_base_url else ""))
+    print(f"state        synthetic: rt={obs.avg_rt:.3f}s util={obs.total_utilization:.2f} "
+          f"servers={obs.active_servers}/{obs.max_servers} dimmer={obs.dimmer:.2f}")
+
+    started = time.perf_counter()
+    result = policy(0, obs, traj)
+    elapsed = time.perf_counter() - started
+
+    if result.policy.endswith("fallback"):
+        print(f"\nFAILED   the backend did not answer: {result.notes}")
+        print("         the reactive fallback was used, so a real run would adapt")
+        print("         without the model. Fix this before starting SWIM.")
+        return 1
+
+    print(f"\nprompt       {len(result.prompt or '')} chars, "
+          f"{len(result.options)} options")
+    if result.reasoning is not None:
+        text = result.reasoning.strip()
+        print(f"reasoning    {len(text)} chars")
+        for line in text.splitlines()[:6]:
+            print(f"  | {line}")
+    print(f"\nlatency      {elapsed:.2f}s"
+          + ("   WARNING: exceeds the 60s period" if elapsed > 60 else ""))
+
+    fallback = getattr(backend, "last_fallback_ids", None)
+    if fallback is None:
+        pass                      # backend does not do top-k scoring (e.g. the stub)
+    elif fallback:
+        print(f"echo fallback used for {fallback} -- these were absent from the "
+              f"endpoint's top-{getattr(backend, 'top_logprobs', '?')}; each costs "
+              f"an extra round trip")
+    else:
+        print("echo fallback not needed: every option was in the endpoint's top-k")
+
+    print("\naction distribution   (* = legal this period)")
+    by_id = dict(builder.options_for(obs))
+    for oid, label in builder.legend_entries(builder.options_for(obs)):
+        raw = result.raw_distribution.get(oid, 0.0)
+        masked = result.distribution.get(oid)
+        mark = "*" if is_legal(by_id[oid], obs) else " "
+        chosen = "  <-- chosen" if by_id[oid] == result.action else ""
+        masked_s = f"{masked:.4f}" if masked is not None else "  masked"
+        print(f"  {mark} {oid}  {label:<26} raw={raw:.4f}  legal={masked_s}{chosen}")
+
+    print(f"\nOK       chose {result.action}. SWIM can be started now.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     logging.basicConfig(
@@ -95,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     client = SwimClient(host=args.host, port=args.port, timeout=args.timeout)
+
+    # -- backend check: deliberately before any SWIM contact ---------------
+    if args.check_backend:
+        return check_backend(args)
 
     # -- one-shot modes ----------------------------------------------------
     if args.probe or args.print_prompt:

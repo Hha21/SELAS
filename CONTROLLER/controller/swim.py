@@ -136,6 +136,40 @@ class Observation:
         }
 
 
+def synthetic_observation(
+    *,
+    servers: int = 2,
+    active_servers: int = 2,
+    max_servers: int = 3,
+    dimmer: float = 0.5,
+    avg_rt: float = 0.91,
+    utilisation_each: float = 0.88,
+    arrival_rate: float = 42.1,
+) -> Observation:
+    """A plausible observation with no simulator attached.
+
+    Exists so the model endpoint can be exercised end to end -- prompt, reasoning
+    pass, scoring -- *before* SWIM is started. SWIM is the only component with a
+    clock, so anything that can be verified without it should be.
+
+    Named `synthetic_` rather than `example_` or `default_` so it can never be
+    mistaken for telemetry in a log or a trace.
+    """
+    utils = tuple([utilisation_each] * active_servers)
+    return Observation(
+        servers=servers,
+        active_servers=active_servers,
+        max_servers=max_servers,
+        dimmer=dimmer,
+        basic_rt=avg_rt,
+        opt_rt=avg_rt,
+        basic_throughput=arrival_rate,
+        opt_throughput=0.0,
+        arrival_rate=arrival_rate,
+        utilizations=utils,
+    )
+
+
 class SwimClient:
     """Persistent line-oriented connection to SWIM, with reconnect.
 
