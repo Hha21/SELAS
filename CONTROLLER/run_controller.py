@@ -23,6 +23,7 @@ from controller import (
     ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
     ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
+from controller import NullPolicy
 from controller.actions import is_legal
 
 ROOT = Path(__file__).resolve().parent
@@ -40,7 +41,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     swim.add_argument("--timeout", type=float, default=10.0)
 
     ctrl = p.add_argument_group("controller")
-    ctrl.add_argument("--policy", choices=["reactive", "reactive2", "llm"], default="reactive")
+    ctrl.add_argument("--policy", choices=["reactive", "reactive2", "llm", "null"],
+                      default="reactive",
+                      help="null never acts -- the control for whether acting helped at all")
     ctrl.add_argument("--sla", type=float, default=0.75)
     ctrl.add_argument("--period", type=float, default=60.0)
     ctrl.add_argument("--max-periods", type=int, default=None)
@@ -200,7 +203,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- policy ------------------------------------------------------------
     reactive = ReactivePolicy(sla=args.sla, require_spare=(args.policy != "reactive2"))
-    if args.policy in ("reactive", "reactive2"):
+    if args.policy == "null":
+        policy = NullPolicy()
+    elif args.policy in ("reactive", "reactive2"):
         policy = reactive
     else:
         backend = build_backend(

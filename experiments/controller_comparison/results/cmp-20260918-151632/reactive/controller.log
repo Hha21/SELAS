@@ -1,0 +1,114 @@
+16:20:26 INFO    controller.swim    connected to SWIM at localhost:4242
+16:20:26 INFO    controller.loop    run reactive -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260918-151632/reactive/reactive
+16:20:26 INFO    controller.loop    period 0   rt=0.096 util=0.02 srv=3/3 dim=0.90 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+16:21:26 INFO    controller.loop    period 1   rt=3.188 util=2.89 srv=3/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+16:22:26 INFO    controller.loop    period 2   rt=0.303 util=1.76 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+16:23:26 INFO    controller.loop    period 3   rt=0.170 util=1.66 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:24:26 INFO    controller.loop    period 4   rt=2.302 util=1.93 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:25:26 INFO    controller.loop    period 5   rt=0.362 util=1.35 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:26:26 INFO    controller.loop    period 6   rt=0.071 util=1.17 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:27:26 INFO    controller.loop    period 7   rt=0.108 util=1.14 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:28:26 INFO    controller.loop    period 8   rt=0.119 util=1.03 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:29:26 INFO    controller.loop    period 9   rt=0.083 util=1.04 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:30:26 INFO    controller.loop    period 10  rt=0.117 util=1.05 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:31:26 INFO    controller.loop    period 11  rt=0.069 util=0.93 srv=2/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:32:26 INFO    controller.loop    period 12  rt=1.122 util=0.94 srv=1/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:33:26 INFO    controller.loop    period 13  rt=5.288 util=0.97 srv=1/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+16:34:26 INFO    controller.loop    period 14  rt=0.553 util=0.67 srv=2/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+16:35:27 INFO    controller.loop    period 15  rt=0.068 util=0.83 srv=2/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:36:26 INFO    controller.loop    period 16  rt=0.596 util=0.83 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:37:26 INFO    controller.loop    period 17  rt=2.217 util=0.85 srv=1/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:38:26 INFO    controller.loop    period 18  rt=3.155 util=0.88 srv=1/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+16:39:26 INFO    controller.loop    period 19  rt=0.058 util=0.44 srv=2/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+16:40:26 INFO    controller.loop    period 20  rt=0.078 util=0.83 srv=2/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:41:26 INFO    controller.loop    period 21  rt=0.544 util=0.60 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:42:26 INFO    controller.loop    period 22  rt=0.381 util=0.66 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:43:26 INFO    controller.loop    period 23  rt=0.509 util=0.60 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:44:26 INFO    controller.loop    period 24  rt=0.390 util=0.61 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:45:26 INFO    controller.loop    period 25  rt=0.336 util=0.66 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:46:26 INFO    controller.loop    period 26  rt=2.267 util=0.96 srv=1/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:47:26 INFO    controller.loop    period 27  rt=0.548 util=0.77 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:48:26 INFO    controller.loop    period 28  rt=0.119 util=0.74 srv=2/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:49:26 INFO    controller.loop    period 29  rt=0.379 util=0.68 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:50:26 INFO    controller.loop    period 30  rt=0.446 util=0.72 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:51:26 INFO    controller.loop    period 31  rt=0.702 util=0.74 srv=1/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+16:52:27 INFO    controller.loop    period 32  rt=1.375 util=0.88 srv=1/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:53:26 INFO    controller.loop    period 33  rt=0.927 util=0.80 srv=1/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+16:54:26 INFO    controller.loop    period 34  rt=0.706 util=0.80 srv=2/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+16:55:26 INFO    controller.loop    period 35  rt=0.074 util=0.90 srv=2/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+16:56:26 INFO    controller.loop    period 36  rt=4.165 util=0.95 srv=1/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+16:57:26 INFO    controller.loop    period 37  rt=7.922 util=1.00 srv=1/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+16:58:26 INFO    controller.loop    period 38  rt=0.349 util=1.01 srv=2/3 dim=0.75 -> no_op                (reactive: no_op) 0.00s
+16:59:26 INFO    controller.loop    period 39  rt=0.045 util=0.81 srv=2/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:00:26 INFO    controller.loop    period 40  rt=0.198 util=1.40 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:01:26 INFO    controller.loop    period 41  rt=0.105 util=1.19 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:02:26 INFO    controller.loop    period 42  rt=0.162 util=1.35 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:03:26 INFO    controller.loop    period 43  rt=0.541 util=1.42 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:04:26 INFO    controller.loop    period 44  rt=0.268 util=1.48 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:05:26 INFO    controller.loop    period 45  rt=0.285 util=1.56 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:06:26 INFO    controller.loop    period 46  rt=4.131 util=1.98 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:07:26 INFO    controller.loop    period 47  rt=1.297 util=1.92 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:08:26 INFO    controller.loop    period 48  rt=0.420 util=1.56 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:09:26 INFO    controller.loop    period 49  rt=0.586 util=2.29 srv=3/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:10:26 INFO    controller.loop    period 50  rt=0.220 util=2.17 srv=3/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:11:26 INFO    controller.loop    period 51  rt=0.220 util=2.07 srv=3/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:12:26 INFO    controller.loop    period 52  rt=0.119 util=1.93 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:13:26 INFO    controller.loop    period 53  rt=3.395 util=1.96 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:14:26 INFO    controller.loop    period 54  rt=7.809 util=2.00 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:15:26 INFO    controller.loop    period 55  rt=2.231 util=1.82 srv=3/3 dim=0.75 -> set_dimmer 0.5       (reactive: set_dimmer 0.5) 0.00s
+17:16:26 INFO    controller.loop    period 56  rt=0.029 util=1.10 srv=3/3 dim=0.50 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:17:26 INFO    controller.loop    period 57  rt=0.072 util=1.67 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:18:26 INFO    controller.loop    period 58  rt=0.379 util=2.46 srv=3/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:19:26 INFO    controller.loop    period 59  rt=0.288 util=2.25 srv=3/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:20:26 INFO    controller.loop    period 60  rt=0.100 util=1.65 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:21:26 INFO    controller.loop    period 61  rt=2.362 util=1.96 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:22:26 INFO    controller.loop    period 62  rt=9.144 util=2.00 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:23:26 INFO    controller.loop    period 63  rt=4.313 util=1.90 srv=3/3 dim=0.75 -> set_dimmer 0.5       (reactive: set_dimmer 0.5) 0.00s
+17:24:26 INFO    controller.loop    period 64  rt=0.033 util=1.37 srv=3/3 dim=0.50 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:25:26 INFO    controller.loop    period 65  rt=0.073 util=1.70 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:26:26 INFO    controller.loop    period 66  rt=0.223 util=1.92 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:27:26 INFO    controller.loop    period 67  rt=8.894 util=2.00 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:28:26 INFO    controller.loop    period 68  rt=12.583 util=2.00 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:29:26 INFO    controller.loop    period 69  rt=3.356 util=2.32 srv=3/3 dim=0.75 -> set_dimmer 0.5       (reactive: set_dimmer 0.5) 0.00s
+17:30:26 INFO    controller.loop    period 70  rt=0.033 util=1.30 srv=3/3 dim=0.50 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:31:26 INFO    controller.loop    period 71  rt=0.253 util=1.78 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:32:26 INFO    controller.loop    period 72  rt=1.004 util=2.73 srv=3/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:33:26 INFO    controller.loop    period 73  rt=0.073 util=1.72 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:34:26 INFO    controller.loop    period 74  rt=0.192 util=1.98 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:35:26 INFO    controller.loop    period 75  rt=8.137 util=2.00 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:36:26 INFO    controller.loop    period 76  rt=13.028 util=2.00 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:37:26 INFO    controller.loop    period 77  rt=3.074 util=1.96 srv=3/3 dim=0.75 -> set_dimmer 0.5       (reactive: set_dimmer 0.5) 0.00s
+17:38:26 INFO    controller.loop    period 78  rt=0.026 util=1.08 srv=3/3 dim=0.50 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:39:26 INFO    controller.loop    period 79  rt=0.116 util=1.49 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:40:26 INFO    controller.loop    period 80  rt=0.157 util=1.88 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:41:26 INFO    controller.loop    period 81  rt=6.491 util=2.00 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:42:26 INFO    controller.loop    period 82  rt=10.039 util=2.00 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:43:26 INFO    controller.loop    period 83  rt=1.655 util=1.52 srv=3/3 dim=0.75 -> set_dimmer 0.5       (reactive: set_dimmer 0.5) 0.00s
+17:44:26 INFO    controller.loop    period 84  rt=0.027 util=0.87 srv=3/3 dim=0.50 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:45:26 INFO    controller.loop    period 85  rt=0.100 util=1.66 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:46:26 INFO    controller.loop    period 86  rt=0.106 util=1.96 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:47:26 INFO    controller.loop    period 87  rt=1.609 util=1.62 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:48:26 INFO    controller.loop    period 88  rt=0.555 util=1.64 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:49:26 INFO    controller.loop    period 89  rt=0.079 util=1.59 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:50:26 INFO    controller.loop    period 90  rt=0.745 util=1.75 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:51:26 INFO    controller.loop    period 91  rt=0.853 util=1.47 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:52:26 INFO    controller.loop    period 92  rt=0.337 util=1.58 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+17:53:26 INFO    controller.loop    period 93  rt=0.157 util=1.68 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:54:26 INFO    controller.loop    period 94  rt=2.202 util=1.85 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:55:26 INFO    controller.loop    period 95  rt=1.496 util=1.67 srv=2/3 dim=1.00 -> set_dimmer 0.75      (reactive: set_dimmer 0.75) 0.00s
+17:56:26 INFO    controller.loop    period 96  rt=0.054 util=1.25 srv=3/3 dim=0.75 -> set_dimmer 1         (reactive: set_dimmer 1) 0.00s
+17:57:26 INFO    controller.loop    period 97  rt=0.079 util=1.57 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+17:58:26 INFO    controller.loop    period 98  rt=1.135 util=1.83 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+17:59:26 INFO    controller.loop    period 99  rt=0.215 util=1.37 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+18:00:26 INFO    controller.loop    period 100 rt=0.090 util=1.63 srv=3/3 dim=1.00 -> remove_server        (reactive: remove_server) 0.00s
+18:01:26 INFO    controller.loop    period 101 rt=0.199 util=1.55 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+18:02:26 INFO    controller.loop    period 102 rt=0.668 util=1.41 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+18:03:26 INFO    controller.loop    period 103 rt=1.716 util=1.80 srv=2/3 dim=1.00 -> add_server           (reactive: add_server) 0.00s
+18:04:26 INFO    controller.loop    period 104 rt=0.649 util=1.75 srv=2/3 dim=1.00 -> no_op                (reactive: no_op) 0.00s
+18:05:27 WARNING controller.swim    SWIM exchange failed (attempt 1/4): [Errno 104] Connection reset by peer
+18:05:28 WARNING controller.swim    SWIM exchange failed (attempt 2/4): [Errno 111] Connection refused
+18:05:30 WARNING controller.swim    SWIM exchange failed (attempt 3/4): [Errno 111] Connection refused
+18:05:34 WARNING controller.swim    SWIM exchange failed (attempt 4/4): [Errno 111] Connection refused
+18:05:34 ERROR   controller.loop    sense failed in period 105: SWIM unreachable at localhost:4242
+18:05:42 INFO    controller.loop    stop requested; finishing the current period
+18:05:43 INFO    controller.loop    stopped after 106 periods, 105 records -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260918-151632/reactive/reactive/decisions.jsonl

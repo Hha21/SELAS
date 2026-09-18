@@ -1,0 +1,4 @@
+{"run_id": "cmp-20260918-151632", "job_id": "20846059", "node": "node823.csf3.man.alces.network",
+ "model": "google/gemma-3-27b-it", "run_index": 6, "seed_set": 1,
+ "sim_time_limit": "default", "period_s": 60,
+ "finished": "2026-09-18T17:05:49+00:00"}

@@ -15,7 +15,7 @@ from .actions import Action, DimmerMode, Kind
 from .backends import Backend, OpenAICompatBackend, StubBackend, build_backend
 from .context import ContextBuilder, ReasoningStyle
 from .loop import ControlLoop
-from .policies import LLMPolicy, PolicyResult, ReactivePolicy
+from .policies import LLMPolicy, NullPolicy, PolicyResult, ReactivePolicy
 from .swim import Observation, SwimClient, SwimError, synthetic_observation
 from .trajectory import Trajectory
 
@@ -24,7 +24,7 @@ __all__ = [
     "Backend", "OpenAICompatBackend", "StubBackend", "build_backend",
     "ContextBuilder", "ReasoningStyle",
     "ControlLoop",
-    "LLMPolicy", "PolicyResult", "ReactivePolicy",
+    "LLMPolicy", "NullPolicy", "PolicyResult", "ReactivePolicy",
     "Observation", "SwimClient", "SwimError", "synthetic_observation",
     "Trajectory",
 ]

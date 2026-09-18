@@ -98,6 +98,30 @@ class ReactivePolicy:
         )
 
 
+class NullPolicy:
+    """Never acts. The control that says whether acting helped at all.
+
+    SWIM starts at `initialServers = 3` with the dimmer already high, so a
+    controller that does nothing holds maximum capacity for the whole run and
+    never pays the 60 s boot delay. That is not obviously bad: the first full
+    gemma-3-27b-it run chose no_op on 91 of 105 periods, never touched the server
+    count, and still beat the reactive rule by 105% -- which is equally
+    consistent with good judgement and with inertia.
+
+    Without this arm the two are indistinguishable, and "the LLM beat the
+    baseline" would rest on a comparison that a constant function might also
+    win.
+    """
+
+    name = "null"
+
+    def decide(self, obs: Observation, traj: Trajectory | None = None) -> Action:
+        return NO_OP
+
+    def __call__(self, period: int, obs: Observation, traj: Trajectory) -> PolicyResult:
+        return PolicyResult(action=NO_OP, policy=self.name, latency_s=0.0)
+
+
 class LLMPolicy:
     """One LLM call chain per period: reason, then score the action space."""
 
