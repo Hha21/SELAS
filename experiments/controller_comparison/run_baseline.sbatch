@@ -22,7 +22,11 @@ set -uo pipefail
 : "${SLURM_JOB_ID:=$$}"
 : "${SLURM_CPUS_PER_TASK:=2}"
 
-REPO="${SELAS_REPO:-$HOME/h200-scratch/SELAS}"
+# $HOME, not h200-scratch. h200-scratch is mounted on H200 and login nodes only,
+# so a CPU node cannot see the repository, cannot open the -o/-e files Slurm
+# opens before the body runs, and the job fails instantly with no output at all
+# -- which is exactly how this failed the first time.
+REPO="${SELAS_REPO:-$HOME/SELAS}"
 SIF="${SELAS_SIF:-$HOME/scratch/selas-images/swim.sif}"
 POLICY="${SELAS_POLICY:-null}"
 RUN_INDEX="${SELAS_RUN_INDEX:-6}"
