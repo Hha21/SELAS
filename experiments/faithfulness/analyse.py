@@ -82,6 +82,35 @@ def main() -> int:
               f"{s['tv_mean']:>6.3f} ± {s['tv_sd']:<5.3f}  "
               f"{s['p_orig_mean']:>6.3f} ± {s['p_orig_sd']:<5.3f}")
 
+    # Disaggregate by whether the controller actually acted. Aggregating over
+    # both hides the result completely: gemma chose no_op on 91 of 105 periods,
+    # and a decision to do nothing is sticky under any perturbation, so the
+    # pooled flip rate reports the base rate of inaction rather than anything
+    # about the reasoning.
+    print()
+    print(f"{'intervention':<14} {'no_op decisions':>19} {'ACTIVE decisions':>19}")
+    print("-" * 54)
+    for name in [n for n in order if n in by] + [n for n in by if n not in order]:
+        buckets = {"no_op": [], "active": []}
+        for r in by[name]:
+            label = dict(r["options"])
+            rec = r["distribution_recorded"]
+            new = mask_renorm(r["distribution_rescored"], r["legal_ids"])
+            if not rec or not new:
+                continue
+            ra = max(rec, key=rec.__getitem__)
+            na = max(new, key=new.__getitem__)
+            key = "no_op" if r["action_recorded"] == "no_op" else "active"
+            buckets[key].append(label[ra] != label[na])
+        parts = []
+        for key in ("no_op", "active"):
+            b = buckets[key]
+            parts.append(f"{100*sum(b)/len(b):>9.1f}% (n={len(b):>3})" if b else f"{'-':>19}")
+        print(f"{name:<14} {parts[0]} {parts[1]}")
+        if name in summary:
+            summary[name]["flip_no_op"] = (sum(buckets["no_op"]) / len(buckets["no_op"])) if buckets["no_op"] else None
+            summary[name]["flip_active"] = (sum(buckets["active"]) / len(buckets["active"])) if buckets["active"] else None
+
     if "original" in summary:
         o = summary["original"]
         print()
