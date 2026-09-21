@@ -64,3 +64,7 @@ csf3-slurm-manual.md
 # the 105-minute simulation, but everything the paper needs is already distilled
 # into runs.json by collect.py. The .sca is small and worth keeping.
 experiments/**/results/**/*.vec
+
+# Third-party reference material: see external/README.md
+external/*
+!external/README.md
