@@ -28,7 +28,8 @@
 
 set -uo pipefail
 
-REPO="${SELAS_REPO:-$HOME/h200-scratch/SELAS}"
+# $HOME/SELAS, which every node mounts -- h200-scratch is invisible to CPU nodes
+REPO="${SELAS_REPO:-$HOME/SELAS}"
 SIF="${SELAS_SIF:-$HOME/h200-scratch/images/swim.sif}"
 MODEL="${SELAS_MODEL:-meta-llama/Llama-3.3-70B-Instruct}"
 SERVED=csf-llm
@@ -77,6 +78,19 @@ declare -A ARM_POLICY=( [reactive]=reactive [llm]=llm [null]=null )
 
 source "$HOME/selas-env.sh"
 export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
+
+# initialServers cannot be set on the OMNeT++ command line: --<option>=<value>
+# takes *configuration options* (which is why --sim-time-limit works) and not
+# NED parameter assignments, so `--*.initialServers=1` is rejected outright with
+# "Unknown command-line configuration option" and the simulation never starts.
+# Instead, edit a copy of the ini and bind-mount it over the container's own --
+# the container is read-only, and this keeps the change visible in the run
+# directory rather than hidden in the image.
+SWIM_INI="$OUT/swim.ini"
+mkdir -p "$OUT"
+sed "s/^\*\.initialServers *=.*/*.initialServers = $INITIAL_SERVERS/" \
+    "$REPO/SWIM/simulations/swim/swim.ini" > "$SWIM_INI"
+grep -E "^\*\.(initialServers|maxServers)" "$SWIM_INI" | sed "s/^/  ini: /"
 export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 mkdir -p "$OUT"
 
@@ -107,6 +121,24 @@ collect_results() {
         --title "SWIM run $RUN_INDEX, seed-set $SEED_SET, $MODEL" 2>&1 \
         || echo "plot.py failed"
     ls -la "$OUT" 2>/dev/null
+
+    # A run that produced nothing must not look like a run that succeeded.
+    # The first three-arm attempt exited 0 after 3 minutes with no .sca, no
+    # decisions and a tidy set of empty directories, because every simulation
+    # had died on a rejected command-line option -- and nothing in the job
+    # noticed. Slurm reported COMPLETED.
+    local n_sca n_dec
+    n_sca=$(find "$OUT" -name "*.sca" 2>/dev/null | wc -l)
+    n_dec=$(find "$OUT" -name decisions.jsonl 2>/dev/null | wc -l)
+    if [ "$n_sca" -eq 0 ] || [ "$n_dec" -eq 0 ]; then
+        echo "FAILED: $n_sca .sca files and $n_dec decision logs across $ARMS." >&2
+        echo "        The simulations did not run. Check */swim.log." >&2
+        for a in $ARMS; do
+            echo "        --- $a ---" >&2
+            tail -4 "$OUT/$a/swim.log" 2>/dev/null | sed "s/^/        /" >&2
+        done
+        COLLECT_FAILED=1
+    fi
 }
 
 cleanup() {
@@ -152,13 +184,15 @@ for arm in $ARMS; do
     res="$OUT/$arm"; mkdir -p "$res"
 
     echo "starting SWIM for '$arm' on :$port"
-    apptainer exec --bind "$res":/headless/seams-swim/results "$SIF" bash -lc "
+    apptainer exec \
+        --bind "$res":/headless/seams-swim/results \
+        --bind "$SWIM_INI":/headless/seams-swim/swim/simulations/swim/swim.ini \
+        "$SIF" bash -lc "
         cd /headless/seams-swim/swim/simulations/swim
         export PATH=/opt/omnetpp-5.4.1/bin:\$PATH
         export LD_LIBRARY_PATH=/opt/omnetpp-5.4.1/lib:\$LD_LIBRARY_PATH
         ../../src/swim swim.ini -u Cmdenv -c sim -r $RUN_INDEX --seed-set=$SEED_SET \
-            --socketrtscheduler-port=$port --*.initialServers=$INITIAL_SERVERS \
-            ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
+            --socketrtscheduler-port=$port ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
             -n ..:../../src:../../../queueinglib -l ../../../queueinglib/libqueueinglib.so
     " > "$res/swim.log" 2>&1 &
     SWIM_PIDS="$SWIM_PIDS $!"
@@ -182,7 +216,7 @@ for arm in $ARMS; do
     echo "  controller '$arm' started (pid $!)"
 done
 
-echo "waiting for both simulations to finish..."
+echo "waiting for all simulations to finish..."
 wait $SWIM_PIDS
 echo "simulations done; giving controllers a moment to flush"
 sleep 15
@@ -202,4 +236,8 @@ cat > "$OUT/manifest.json" <<JSON
  "initial_servers": $INITIAL_SERVERS, "arms": "$ARMS", "prompt_format": "$PROMPT_FORMAT",
  "finished": "$(date -uIseconds)"}
 JSON
+if [ -n "${COLLECT_FAILED:-}" ]; then
+    echo "run produced no usable output -> $OUT"
+    exit 1
+fi
 echo "done -> $OUT"
