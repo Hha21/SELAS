@@ -64,6 +64,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      default=ReasoningStyle.SCAFFOLD.value)
     llm.add_argument("--temperature", type=float, default=0.7)
     llm.add_argument("--max-reasoning-tokens", type=int, default=200)
+    llm.add_argument("--prompt-format", choices=["chat", "completion"], default="chat",
+                     help="chat uses system/user/assistant turns, which is the format "
+                          "these instruction-tuned checkpoints were post-trained on and "
+                          "the one the released NLA pairs saw. completion is the earlier "
+                          "flat few-shot form, kept so older runs remain reproducible.")
 
     out = p.add_argument_group("output")
     out.add_argument("--run-dir", default=str(ROOT / "runs"))
@@ -115,8 +120,10 @@ def check_backend(args: argparse.Namespace) -> int:
     policy = LLMPolicy(
         backend=backend, builder=builder, dimmer_mode=DimmerMode(args.dimmer_mode),
         max_reasoning_tokens=args.max_reasoning_tokens, temperature=args.temperature,
+        chat=(args.prompt_format == "chat"),
     )
 
+    print(f"format       {args.prompt_format}")
     print(f"backend      {backend.name}"
           + (f" -> {args.llm_base_url} ({args.llm_model})" if args.llm_base_url else ""))
     print(f"state        synthetic: rt={obs.avg_rt:.3f}s util={obs.total_utilization:.2f} "
@@ -132,8 +139,13 @@ def check_backend(args: argparse.Namespace) -> int:
         print("         without the model. Fix this before starting SWIM.")
         return 1
 
-    print(f"\nprompt       {len(result.prompt or '')} chars, "
-          f"{len(result.options)} options")
+    if result.messages:
+        print(f"\nprompt       {len(result.messages)} chat turns "
+              f"({sum(len(m['content']) for m in result.messages)} chars), "
+              f"{len(result.options)} options")
+    else:
+        print(f"\nprompt       {len(result.prompt or '')} chars, "
+              f"{len(result.options)} options")
     if result.reasoning is not None:
         text = result.reasoning.strip()
         print(f"reasoning    {len(text)} chars")
@@ -190,15 +202,25 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             traj = Trajectory(window=args.window)
             traj.record_observation(0, obs)
-            prompt = build_builder(args).build(0, traj)
-            print(prompt.text)
-            print()
-            print("-- options ------------------------------------------")
-            for oid, action in prompt.options:
+            builder = build_builder(args)
+            if args.prompt_format == "chat":
+                messages, options = builder.build_messages(0, traj)
+                for m in messages:
+                    print(f"----- {m['role']} " + "-" * (58 - len(m['role'])))
+                    print(m["content"])
+                print("-" * 64)
+                print("(the model generates the next assistant turn; it is then re-sent")
+                print(" with 'Action:' appended, and one token is scored there)")
+            else:
+                prompt = builder.build(0, traj)
+                print(prompt.text)
+                options = prompt.options
+                print("\n-- probe offsets ------------------------------------")
+                for name, offset in prompt.probes.items():
+                    print(f"  {name:20} char {offset}")
+            print("\n-- options ------------------------------------------")
+            for oid, action in options:
                 print(f"  {oid}  {action}")
-            print("-- probe offsets ------------------------------------")
-            for name, offset in prompt.probes.items():
-                print(f"  {name:20} char {offset}")
             return 0
 
     # -- policy ------------------------------------------------------------
@@ -221,6 +243,7 @@ def main(argv: list[str] | None = None) -> int:
             max_reasoning_tokens=args.max_reasoning_tokens,
             temperature=args.temperature,
             fallback=ReactivePolicy(sla=args.sla),
+            chat=(args.prompt_format == "chat"),
         )
 
     run_id = args.run_id or datetime.now(timezone.utc).strftime("run-%Y%m%d-%H%M%S")

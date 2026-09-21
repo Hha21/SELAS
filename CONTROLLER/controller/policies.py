@@ -49,6 +49,7 @@ class PolicyResult:
     policy: str
     reasoning: str | None = None
     prompt: str | None = None
+    messages: list[dict] | None = None      # chat form; None on the completion path
     probes: dict[str, int] = field(default_factory=dict)
     distribution: dict[str, float] = field(default_factory=dict)          # masked
     raw_distribution: dict[str, float] = field(default_factory=dict)      # unmasked
@@ -136,10 +137,18 @@ class LLMPolicy:
         max_reasoning_tokens: int = 200,
         temperature: float = 0.7,
         fallback: ReactivePolicy | None = None,
+        chat: bool = True,
     ) -> None:
         self.backend = backend
         self.builder = builder
         self.dimmer_mode = dimmer_mode
+        # Chat by default: these are instruction-tuned checkpoints, and driving
+        # them as raw few-shot completions puts them outside the format their
+        # post-training optimised. It also matters downstream -- the released
+        # NLA pairs were trained on chat-template activations, so a
+        # raw-completion runtime would stack a format shift on top of the domain
+        # shift the interpretability results are trying to measure.
+        self.chat = chat
         self.max_reasoning_tokens = max_reasoning_tokens
         self.temperature = temperature
         # Only reached if every option is masked out or the backend fails --
@@ -152,32 +161,54 @@ class LLMPolicy:
         notes: dict[str, Any] = {}
 
         reasoning_text: str | None = None
-        if self.builder.reasoning is not ReasoningStyle.NONE:
-            reasoning_prompt = self.builder.build(period, traj)
-            try:
-                reasoning_text = self.backend.generate(
-                    reasoning_prompt.text,
-                    max_tokens=self.max_reasoning_tokens,
-                    temperature=self.temperature,
-                    stop=["\nAction:", "\n---"],
-                )
-            except Exception as exc:
-                log.warning("reasoning pass failed (%s); scoring without it", exc)
-                notes["reasoning_error"] = str(exc)
-                reasoning_text = ""
+        messages = None
 
-        prompt = self.builder.build(period, traj, reasoning_text=reasoning_text)
+        if self.chat:
+            gen_messages, options = self.builder.build_messages(period, traj)
+            if self.builder.reasoning is not ReasoningStyle.NONE:
+                try:
+                    reasoning_text = self.backend.generate_chat(
+                        gen_messages,
+                        max_tokens=self.max_reasoning_tokens,
+                        temperature=self.temperature,
+                        stop=["\nAction:", "\n---"],
+                    )
+                except Exception as exc:
+                    log.warning("reasoning pass failed (%s); scoring without it", exc)
+                    notes["reasoning_error"] = str(exc)
+                    reasoning_text = ""
+            messages, options = self.builder.build_messages(
+                period, traj, reasoning=reasoning_text or "")
+            prompt = None
+        else:
+            if self.builder.reasoning is not ReasoningStyle.NONE:
+                reasoning_prompt = self.builder.build(period, traj)
+                try:
+                    reasoning_text = self.backend.generate(
+                        reasoning_prompt.text,
+                        max_tokens=self.max_reasoning_tokens,
+                        temperature=self.temperature,
+                        stop=["\nAction:", "\n---"],
+                    )
+                except Exception as exc:
+                    log.warning("reasoning pass failed (%s); scoring without it", exc)
+                    notes["reasoning_error"] = str(exc)
+                    reasoning_text = ""
+            prompt = self.builder.build(period, traj, reasoning_text=reasoning_text)
+            options = prompt.options
 
         # The stub has no view of the state, so give it the reactive answer to
         # concentrate mass on; a served model ignores this entirely.
         if isinstance(self.backend, StubBackend):
             preferred = self.fallback.decide(obs, traj)
             self.backend.preferred = next(
-                (oid for oid, a in prompt.options if a == preferred), None
+                (oid for oid, a in options if a == preferred), None
             )
 
+        option_ids = [oid for oid, _ in options]
         try:
-            raw = self.backend.score(prompt.text, prompt.option_ids)
+            raw = (self.backend.score_chat(messages, option_ids) if self.chat
+                   else self.backend.score(prompt.text, option_ids))
         except Exception as exc:
             log.error("scoring failed (%s); falling back to the reactive rule", exc)
             result = self.fallback(period, obs, traj)
@@ -186,7 +217,7 @@ class LLMPolicy:
             result.notes = {"score_error": str(exc)}
             return result
 
-        legal_ids = [oid for oid, a in prompt.options if is_legal(a, obs)]
+        legal_ids = [oid for oid, a in options if is_legal(a, obs)]
         masked = {oid: p for oid, p in raw.items() if oid in legal_ids}
         total = sum(masked.values())
         if total > 0:
@@ -195,11 +226,11 @@ class LLMPolicy:
             # Every legal option scored zero -- degenerate, so take the safe
             # option rather than an arbitrary argmax over nothing.
             log.warning("period %d: no probability mass on any legal action", period)
-            masked = {oid: 1.0 for oid, a in prompt.options if a == NO_OP}
+            masked = {oid: 1.0 for oid, a in options if a == NO_OP}
             notes["degenerate_distribution"] = True
 
         chosen_id = max(masked, key=masked.__getitem__)
-        action = prompt.action_for(chosen_id)
+        action = dict(options)[chosen_id]
 
         try:
             validate(action, obs)
@@ -212,11 +243,12 @@ class LLMPolicy:
             action=action,
             policy=self.name,
             reasoning=reasoning_text,
-            prompt=prompt.text,
-            probes=prompt.probes,
+            prompt=None if self.chat else prompt.text,
+            messages=messages,
+            probes={} if self.chat else prompt.probes,
             distribution=masked,
             raw_distribution=raw,
-            options=self.builder.legend_entries(prompt.options),
+            options=self.builder.legend_entries(options),
             latency_s=time.perf_counter() - start,
             notes=notes,
         )

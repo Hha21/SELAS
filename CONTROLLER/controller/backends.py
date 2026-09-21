@@ -80,6 +80,12 @@ class StubBackend:
             "  Therefore: stub backend, the scored distribution is what matters."
         )
 
+    def generate_chat(self, messages, **kw) -> str:
+        return self.generate("", **kw)
+
+    def score_chat(self, messages, options: list[str]) -> dict[str, float]:
+        return self.score("", options)
+
     def score(self, prompt: str, options: list[str]) -> dict[str, float]:
         logits = {oid: self._rng.gauss(0.0, 0.5) for oid in options}
         if self.preferred in logits:
@@ -115,6 +121,9 @@ class OpenAICompatBackend:
         # request. Worth surfacing: if it is most of them every period, the
         # endpoint's top-k is too small and each decision costs N+1 round trips.
         self.last_fallback_ids: list[str] = []
+        # Options absent from the chat endpoint's top-k, where no echo fallback
+        # exists. Empty on every completions-path call.
+        self.last_missing_ids: list[str] = []
         # vLLM has rejected max_tokens=0 on some versions. Settled on first use
         # rather than assumed, then remembered for the rest of the run.
         self._echo_max_tokens: int | None = None
@@ -132,7 +141,66 @@ class OpenAICompatBackend:
         resp.raise_for_status()
         return resp.json()
 
-    # -- interface ---------------------------------------------------------
+    # -- chat interface ----------------------------------------------------
+    def generate_chat(
+        self, messages: list[dict], *, max_tokens: int = 200,
+        temperature: float = 0.7, stop: list[str] | None = None,
+    ) -> str:
+        data = self._post("/chat/completions", {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stop": stop or ["\nAction:", "\n---"],
+        })
+        return data["choices"][0]["message"]["content"] or ""
+
+    def score_chat(self, messages: list[dict], options: list[str]) -> dict[str, float]:
+        """Distribution over the next token, continuing the final assistant turn.
+
+        `continue_final_message` is what makes the action land at a position we
+        control: without it the server starts a fresh assistant turn and the
+        scored token is whatever opens a reply, not the action letter. It is
+        mutually exclusive with `add_generation_prompt`, hence both being sent.
+
+        There is no echo fallback here -- the chat API cannot score an arbitrary
+        continuation the way `echo` can on /completions. An option missing from
+        the endpoint's top-k is therefore reported rather than silently dropped,
+        because a missing option is not the same as an unlikely one and the
+        difference matters when the mass is being renormalised.
+        """
+        data = self._post("/chat/completions", {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": 1,
+            "temperature": 0.0,
+            "logprobs": True,
+            "top_logprobs": self.top_logprobs,
+            "continue_final_message": True,
+            "add_generation_prompt": False,
+        })
+        content = (data["choices"][0].get("logprobs") or {}).get("content") or []
+        table: dict[str, float] = {}
+        if content:
+            for alt in content[0].get("top_logprobs", []):
+                tok = alt.get("token", "")
+                table[tok] = alt.get("logprob", -99.0)
+
+        logprobs: dict[str, float] = {}
+        self.last_missing_ids = []
+        for oid in options:
+            found = [table[k] for k in (oid, f" {oid}") if k in table]
+            if found:
+                logprobs[oid] = max(found)
+            else:
+                self.last_missing_ids.append(oid)
+        if not logprobs:
+            raise RuntimeError(
+                f"no option token appeared in the endpoint's top-{self.top_logprobs}; "
+                f"saw {sorted(table)[:12]}")
+        return _softmax(logprobs)
+
+    # -- completion interface ----------------------------------------------
     def generate(
         self, prompt: str, *, max_tokens: int = 160, temperature: float = 0.7,
         stop: list[str] | None = None,

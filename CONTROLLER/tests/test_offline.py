@@ -340,19 +340,38 @@ def test_effects_are_attributed_a_period_later():
 # --------------------------------------------------------------------------
 # the LLM policy, end to end, with no model
 # --------------------------------------------------------------------------
-def test_llm_policy_produces_a_legal_action_and_two_distributions():
+@pytest.mark.parametrize("chat", [False, True])
+def test_llm_policy_produces_a_legal_action_and_two_distributions(chat):
     obs = _obs(basic_rt=1.0, opt_rt=1.0)
-    policy = LLMPolicy(backend=StubBackend(seed=1), builder=ContextBuilder())
+    policy = LLMPolicy(backend=StubBackend(seed=1), builder=ContextBuilder(), chat=chat)
     result = policy(0, obs, _trajectory(obs))
 
     assert is_legal(result.action, obs)
-    assert result.prompt and result.prompt.endswith("Action:")
+    if chat:
+        # The scored position is the end of the final assistant turn, so that
+        # turn must carry the action cue -- otherwise the next token is whatever
+        # opens a reply rather than the action letter.
+        assert result.messages and result.messages[-1]["role"] == "assistant"
+        assert result.messages[-1]["content"].endswith("Action:")
+        assert result.prompt is None
+    else:
+        assert result.prompt and result.prompt.endswith("Action:")
     assert set(result.distribution) <= set(result.raw_distribution)
     assert sum(result.distribution.values()) == pytest.approx(1.0)
     # every option surviving the mask must itself be legal
     by_id = dict(ContextBuilder().options_for(obs))
     for oid in result.distribution:
         assert is_legal(by_id[oid], obs)
+
+
+def test_chat_and_completion_agree_on_the_action_space():
+    """Both formats must offer the same options, or results are incomparable."""
+    obs = _obs()
+    b = ContextBuilder()
+    flat = b.build(0, _trajectory(obs)).options
+    msgs_opts = b.build_messages(0, _trajectory(obs))[1]
+    assert [o for o, _ in flat] == [o for o, _ in msgs_opts]
+    assert [str(a) for _, a in flat] == [str(a) for _, a in msgs_opts]
 
 
 def test_illegal_options_are_masked_out():

@@ -166,6 +166,7 @@ class ControlLoop:
                 },
                 "reasoning": result.reasoning,
                 "prompt": result.prompt,
+                "messages": result.messages,
                 "shadow_reactive": str(shadow_action) if shadow_action else None,
                 "agrees_with_reactive": (
                     None if shadow_action is None else shadow_action == result.action

@@ -52,6 +52,11 @@ SCAFFOLD_FIELDS = ("SLA", "Capacity", "Trend", "Therefore")
 P0 = "P0_state_end"
 P_ACTION = "P_action"
 
+# The literal the action is scored after, in both formats. Kept as a constant
+# because the scorer, the chat prefill and the intervention replay must all use
+# the same string -- a mismatch there shifts the scored position silently.
+ACTION_CUE = "Action:"
+
 
 class ReasoningStyle(str, Enum):
     NONE = "none"           # state -> Action:   (single forward pass)
@@ -130,7 +135,74 @@ class ContextBuilder:
             raise ValueError(f"{len(actions)} actions exceeds the {len(OPTION_IDS)} option ids")
         return list(zip(OPTION_IDS, actions))
 
-    # -- segment A ---------------------------------------------------------
+    # -- chat form ---------------------------------------------------------
+    def system_text(self, options: list[tuple[str, Action]]) -> str:
+        """Role, constraints and the action legend -- no examples.
+
+        In chat form the worked examples become real user/assistant turns
+        instead of prose inside one blob, which is how an instruction-tuned
+        model was actually trained to consume them. Everything else is
+        identical to the flat prefix, so the two formats differ in framing
+        rather than content.
+        """
+        legend = "\n".join(f"  {oid}  {label}" for oid, label in self.legend_entries(options))
+        return "\n".join([
+            "You are the adaptation controller for a web application served by a pool",
+            "of servers. Each period you observe the system and choose exactly one action.",
+            "",
+            "Constraints:",
+            f"  servers   1..3; a new server takes {self.boot_delay} s to boot; one at a time;",
+            "            no scaling while a server is booting",
+            "  dimmer    0.0..1.0, the fraction of responses served with optional content.",
+            "            Higher dimmer means richer responses and higher response time.",
+            f"  SLA       average response time below {self.sla:g} s",
+            f"  period    one decision every {self.period_seconds} s",
+            "",
+            "Actions:",
+            legend,
+            "",
+            "Reply with the reasoning fields, then a line 'Action: <letter>'.",
+        ])
+
+    def build_messages(
+        self,
+        period: int,
+        traj: Trajectory,
+        reasoning: str | None = None,
+    ) -> tuple[list[dict[str, str]], list[tuple[str, Action]]]:
+        """Messages for one decision.
+
+        Called twice per decision. With ``reasoning=None`` the list ends on the
+        live user turn and the model generates the assistant turn. With the
+        generated reasoning passed back, the final assistant turn carries it
+        plus the ``Action:`` cue, so the next token the model would emit is the
+        action letter -- the position the scorer reads.
+        """
+        entry = traj.latest
+        if entry is None:
+            raise ValueError("trajectory has no observation to describe")
+        _, obs = entry
+        options = self.options_for(obs)
+
+        messages: list[dict[str, str]] = [
+            {"role": "system", "content": self.system_text(options)}
+        ]
+        for state, reason, answer in self.exemplars:
+            messages.append({"role": "user", "content": state.strip()})
+            body = reason.rstrip() + "\n" if (reason and self.reasoning is not ReasoningStyle.NONE) else ""
+            messages.append({"role": "assistant", "content": f"{body}Action: {answer}"})
+
+        messages.append({"role": "user", "content": self.state_block(period, traj).strip()})
+
+        if reasoning is not None:
+            scaffold = self.decision_scaffold().lstrip("\n")
+            messages.append({
+                "role": "assistant",
+                "content": f"{scaffold}{reasoning.rstrip()}\n{ACTION_CUE}",
+            })
+        return messages, options
+
+    # -- segment A (flat form, retained so earlier runs still parse) --------
     def static_prefix(self, options: list[tuple[str, Action]]) -> str:
         legend = "\n".join(f"  {oid}  {label}" for oid, label in self.legend_entries(options))
         lines = [
@@ -256,7 +328,7 @@ class ContextBuilder:
             text += scaffold + reasoning_text.rstrip() + "\n"
             probes.update(_locate_scaffold_probes(text, len(prefix) + len(state)))
 
-        text += "Action:"
+        text += ACTION_CUE
         probes[P_ACTION] = len(text)
         return Prompt(text=text, options=options, probes=probes)
 
