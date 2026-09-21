@@ -20,8 +20,27 @@ if ! command -v module >/dev/null 2>&1; then
     done
 fi
 
-module load apps/binapps/anaconda3/2024.10   # python 3.12.7; vllm is in its user site
+module load apps/binapps/anaconda3/2024.10   # python 3.12.7, the venv's base interpreter
 module load libs/cuda/12.8.1                 # pinned: bare `libs/cuda` resolves to 11.6.2, pre-Hopper
+
+# A dedicated venv, not the shared user site.
+#
+# torch, vllm, transformers, accelerate and huggingface_hub all vanished from
+# ~/.local on 18 Sept, mid-session, taking the pipeline with them: their
+# dependencies were left behind, which is the signature of a pip install from an
+# unrelated project that was interrupted after the uninstall step. The user site
+# is shared by everything this account runs, so that will happen again.
+#
+# On ~/scratch rather than ~/h200-scratch because scratch is cluster-wide: CPU
+# nodes cannot see h200-scratch, which is what silently killed the first
+# null-baseline job.
+SELAS_VENV="${SELAS_VENV:-$HOME/scratch/selas-venv}"
+if [ -x "$SELAS_VENV/bin/python" ]; then
+    # shellcheck disable=SC1091
+    . "$SELAS_VENV/bin/activate"
+else
+    echo "selas-env.sh: no venv at $SELAS_VENV; falling back to the shared user site" >&2
+fi
 
 export HF_HOME="$HOME/h200-scratch/hf"       # token and weight cache together, on the volume the H200 nodes mount
 export SELAS_ENDPOINTS="$HOME/h200-scratch/endpoints"
