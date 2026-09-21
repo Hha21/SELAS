@@ -78,22 +78,32 @@ def rebuild_messages(messages: list[dict], reasoning: str | None) -> list[dict]:
     the action letter.
     """
     out = [dict(m) for m in messages[:-1]]
-    if reasoning is None:                       # ablation: no reasoning at all
-        out.append({"role": "assistant", "content": ACTION_CUE})
-    else:
-        out.append({
-            "role": "assistant",
-            "content": f"{SCAFFOLD.lstrip(chr(10))}{reasoning.rstrip()}\n{ACTION_CUE}",
-        })
+    out.append({"role": "assistant", "content": assistant_turn(reasoning)})
     return out
+
+
+def assistant_turn(reasoning: str | None) -> str:
+    """Identical to controller.context.assistant_turn.
+
+    Duplicated rather than imported so this package stays independent of the
+    controller's import path, but it must not drift: a turn built differently
+    here scores a different prompt from the one the run recorded, and the
+    control arm would silently stop reproducing the original decision.
+    """
+    body = (reasoning or "").strip()
+    if not body:
+        return ACTION_CUE
+    if not body.startswith("Reasoning:"):
+        body = "Reasoning:\n" + body
+    return f"{body}\n{ACTION_CUE}"
 
 
 def reasoning_from_messages(messages: list[dict]) -> str:
     """Recover just the reasoning from a recorded final assistant turn."""
     content = messages[-1]["content"]
-    body = content[len(SCAFFOLD.lstrip(chr(10))):] if content.startswith(
-        SCAFFOLD.lstrip(chr(10))) else content
-    return body[: -len(ACTION_CUE)].rstrip() if body.rstrip().endswith(ACTION_CUE) else body
+    if content.rstrip().endswith(ACTION_CUE):
+        content = content.rstrip()[: -len(ACTION_CUE)]
+    return content.rstrip()
 
 
 # -- flat form ---------------------------------------------------------------

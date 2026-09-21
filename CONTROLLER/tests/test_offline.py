@@ -364,6 +364,35 @@ def test_llm_policy_produces_a_legal_action_and_two_distributions(chat):
         assert is_legal(by_id[oid], obs)
 
 
+@pytest.mark.parametrize("model_output,label", [
+    ("Reasoning:\n  SLA: breached.\n  Therefore: add one.", "model emits the header"),
+    ("  SLA: breached.\n  Therefore: add one.",             "model omits the header"),
+])
+def test_chat_turn_carries_exactly_one_scaffold(model_output, label):
+    """The header must appear once, whatever the model returned.
+
+    On the completion path the prompt stops mid-line at "  SLA:" and the model
+    continues it. In chat form the model writes the whole turn and emits the
+    header itself, so prepending the scaffold as well left an empty "  SLA:"
+    line ahead of the real one -- still scoreable, but every field probe would
+    anchor on the blank line and every captured activation would be about the
+    wrong position.
+    """
+    b = ContextBuilder()
+    msgs, _ = b.build_messages(0, _trajectory(_obs()), reasoning=model_output)
+    content = msgs[-1]["content"]
+    assert content.count("Reasoning:") == 1, label
+    assert content.count("SLA:") == 1, label
+    assert content.endswith("Action:")
+    assert "SLA:Reasoning:" not in content
+
+
+def test_ablated_chat_turn_is_just_the_action_cue():
+    b = ContextBuilder()
+    msgs, _ = b.build_messages(0, _trajectory(_obs()), reasoning="")
+    assert msgs[-1]["content"] == "Action:"
+
+
 def test_chat_and_completion_agree_on_the_action_space():
     """Both formats must offer the same options, or results are incomparable."""
     obs = _obs()

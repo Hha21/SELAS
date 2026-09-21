@@ -81,6 +81,32 @@ class Prompt:
         raise KeyError(option_id)
 
 
+def assistant_turn(reasoning: str | None) -> str:
+    """The assistant turn that gets scored: reasoning, then the action cue.
+
+    The scaffold is NOT prepended here. On the completion path the prompt stops
+    mid-line at "  SLA:" and the model continues it, so the header exists only
+    once. In chat form the model writes the whole turn and emits "Reasoning:"
+    itself -- prepending the scaffold as well produced
+
+        Reasoning:\n  SLA:Reasoning:\n  SLA: breached, 0.910 s...
+
+    which still scores, because the action cue is still last, but puts an empty
+    "  SLA:" line ahead of the real one. Every field probe would then anchor on
+    the blank scaffold rather than the model's text, and every captured
+    activation would be silently about the wrong position.
+
+    The header is added only when the model omitted it, so the structure is the
+    same either way.
+    """
+    body = (reasoning or "").strip()
+    if not body:
+        return ACTION_CUE                      # the ablation: no reasoning at all
+    if not body.startswith("Reasoning:"):
+        body = "Reasoning:\n" + body
+    return f"{body}\n{ACTION_CUE}"
+
+
 def _fmt_series(values: list[float], width: int = 6, places: int = 2) -> str:
     return " ".join(f"{v:>{width}.{places}f}" for v in values)
 
@@ -195,10 +221,9 @@ class ContextBuilder:
         messages.append({"role": "user", "content": self.state_block(period, traj).strip()})
 
         if reasoning is not None:
-            scaffold = self.decision_scaffold().lstrip("\n")
             messages.append({
                 "role": "assistant",
-                "content": f"{scaffold}{reasoning.rstrip()}\n{ACTION_CUE}",
+                "content": assistant_turn(reasoning),
             })
         return messages, options
 
