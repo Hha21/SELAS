@@ -41,6 +41,55 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "NLA"))
 from src.model import decoder_layers, load_tokenizer   # noqa: E402
 
 
+SCAFFOLD_FIELDS = ("SLA", "Capacity", "Trend", "Therefore")
+ACTION_CUE = "Action:"
+
+
+def render_chat(tok, messages: list[dict]) -> str:
+    """Rebuild the exact string the server scored, from the recorded messages.
+
+    Built as ``template(all but the final assistant turn, add_generation_prompt)
+    + that turn's content`` rather than by handing the whole list to the
+    template. That is what `continue_final_message` does server-side -- open the
+    assistant turn, then place our text inside it -- but done explicitly, so it
+    does not depend on a template flag behaving identically across transformers
+    versions. The alternative, rendering the final assistant turn normally,
+    appends an end-of-turn marker that the scored sequence does not contain, and
+    would shift every probe position by a token.
+    """
+    head = tok.apply_chat_template(messages[:-1], tokenize=False,
+                                   add_generation_prompt=True)
+    return head + messages[-1]["content"]
+
+
+def locate_probes(rendered: str, messages: list[dict]) -> dict[str, int]:
+    """Character offsets of the positions worth explaining.
+
+    Recomputed here rather than carried from the controller: in chat form the
+    controller never sees the rendered string, so offsets it emitted would be
+    into a different text.
+    """
+    probes: dict[str, int] = {}
+    live_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), None)
+    if live_user:
+        idx = rendered.rfind(live_user)
+        if idx != -1:
+            probes["P0_state_end"] = idx + len(live_user)
+
+    tail_start = len(rendered) - len(messages[-1]["content"])
+    for name in SCAFFOLD_FIELDS:
+        marker = f"\n  {name}:"
+        idx = rendered.find(marker, tail_start)
+        if idx == -1:
+            continue
+        end = rendered.find("\n", idx + len(marker))
+        probes[f"P_{name.lower()}"] = end if end != -1 else len(rendered)
+
+    if rendered.rstrip().endswith(ACTION_CUE):
+        probes["P_action"] = len(rendered)
+    return probes
+
+
 def load_decisions(run_dir: Path) -> list[dict]:
     f = next(iter(sorted(run_dir.rglob("decisions.jsonl"))), None)
     if f is None:
@@ -82,6 +131,8 @@ def main() -> int:
 
     from transformers import AutoModelForCausalLM
     tok = load_tokenizer(args.model)
+    if not getattr(tok, "chat_template", None):
+        print("  note: tokenizer has no chat template; chat-format runs cannot be rendered")
     model = AutoModelForCausalLM.from_pretrained(
         args.model, dtype=torch.bfloat16, device_map=args.device)
     model.eval().requires_grad_(False)
@@ -96,11 +147,16 @@ def main() -> int:
 
     try:
         for i, r in enumerate(rows):
-            # Prompt plus what the model actually produced: the reasoning is part
-            # of the stream the decision was read from, so its activations matter
-            # as much as the prompt's.
-            text = r["prompt"]
-            ids = tok(text, return_tensors="pt").to(model.device)
+            # The sequence whose final token the action was read from: prompt,
+            # the reasoning the model produced, and the Action cue. Chat runs
+            # store messages and no flat prompt; completion runs the reverse.
+            if r.get("messages"):
+                text = render_chat(tok, r["messages"])
+                probes_char = locate_probes(text, r["messages"])
+            else:
+                text = r["prompt"]
+                probes_char = r["decision"].get("probes") or {}
+            ids = tok(text, return_tensors="pt", add_special_tokens=False).to(model.device)
             with torch.no_grad():
                 model(**ids)
             acts = captured["h"][0].to(torch.float16).cpu().numpy()
@@ -122,11 +178,12 @@ def main() -> int:
                 "activations_shape": list(acts.shape),
                 # Character offsets from the controller, mapped to token indices
                 # so the inspector can jump straight to the decision position.
-                "probes_char": r["decision"]["probes"],
+                "probes_char": probes_char,
                 "probes_token": {
-                    name: len(tok(text[:off])["input_ids"]) - 1
-                    for name, off in r["decision"]["probes"].items()
+                    name: max(0, len(tok(text[:off], add_special_tokens=False)["input_ids"]) - 1)
+                    for name, off in probes_char.items()
                 },
+                "format": "chat" if r.get("messages") else "completion",
                 "decision": {
                     "action": r["decision"]["action"],
                     "distribution": r["decision"]["distribution"],
