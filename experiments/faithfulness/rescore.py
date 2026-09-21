@@ -62,6 +62,14 @@ def main() -> int:
                                   api_key=args.llm_api_key)
     rng = random.Random(args.seed)
 
+    def paraphraser(prompt: str) -> str:
+        """Reword via the same endpoint. Low temperature: the task is to restate,
+        not to elaborate, and a creative paraphrase changes the meaning it is
+        supposed to preserve."""
+        return backend.generate_chat(
+            [{"role": "user", "content": prompt}], max_tokens=300, temperature=0.3,
+            stop=["\nAction:"])
+
     print(f"{len(rows)} decisions x {len(names)} interventions "
           f"= {len(rows)*len(names)} scoring calls")
     started = time.time()
@@ -86,7 +94,11 @@ def main() -> int:
             legal_ids = list(r["decision"]["distribution"])
 
             for name in names:
-                modified = iv.INTERVENTIONS[name](reasoning, pool=pool, rng=rng)
+                modified = iv.INTERVENTIONS[name](
+                    reasoning, pool=pool, rng=rng, paraphraser=paraphraser)
+                # A paraphrase that came back unchanged is not a paraphrase.
+                if name == "paraphrase" and (modified or "").strip() == reasoning.strip():
+                    continue
                 # A corruption that matched nothing is not a corruption; recording
                 # it as one would dilute the effect with untouched decisions.
                 if name.startswith("corrupt") and modified is not None \
