@@ -61,8 +61,19 @@ OUT="${SELAS_RESULTS:-$HOME/selas-results}/$RUN_ID"
 : "${SLURM_GPUS:=1}"
 : "${CUDA_VISIBLE_DEVICES:=unset}"
 
+# initialServers: swim.ini ships initialServers = maxServers = 3, so the run
+# starts at the ceiling and every available move is downward. On that
+# configuration doing nothing scored 5431 against the reactive rule's 2417 and
+# gemma's 4959 -- the optimal policy was inaction, which makes it a poor test of
+# adaptation. Starting at 1 forces scaling up to be necessary.
+INITIAL_SERVERS="${SELAS_INITIAL_SERVERS:-1}"
+PROMPT_FORMAT="${SELAS_PROMPT_FORMAT:-chat}"
+
 VLLM_PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
-declare -A ARM_PORT=( [reactive]=4242 [llm]=4243 )
+# null costs nothing and is the control that says whether acting helped at all.
+ARMS="${SELAS_ARMS:-reactive null llm}"
+declare -A ARM_PORT=( [reactive]=4242 [llm]=4243 [null]=4244 )
+declare -A ARM_POLICY=( [reactive]=reactive [llm]=llm [null]=null )
 
 source "$HOME/selas-env.sh"
 export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
@@ -72,7 +83,8 @@ mkdir -p "$OUT"
 echo "run       $RUN_ID"
 echo "node      $(hostname)   gpus=$CUDA_VISIBLE_DEVICES   cores=$SLURM_CPUS_PER_TASK"
 echo "model     $MODEL  (vllm :$VLLM_PORT)"
-echo "swim      run $RUN_INDEX, seed-set $SEED_SET${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
+echo "swim      run $RUN_INDEX, seed-set $SEED_SET, initialServers $INITIAL_SERVERS${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
+echo "arms      $ARMS   (llm in $PROMPT_FORMAT format)"
 echo "out       $OUT"
 
 # Collection runs from the EXIT trap, not only inline. The dry run reached the
@@ -88,9 +100,10 @@ collect_results() {
     COLLECTED=1
     echo "=== collecting results ==="
     cd "$REPO/experiments/controller_comparison" || { echo "cannot cd to collect"; return 1; }
-    python collect.py "$OUT/reactive" "$OUT/llm" -o "$OUT/runs.json" 2>&1 | tee "$OUT/collect.txt" \
+    local dirs=(); for a in $ARMS; do dirs+=("$OUT/$a"); done
+    python collect.py "${dirs[@]}" -o "$OUT/runs.json" 2>&1 | tee "$OUT/collect.txt" \
         || echo "collect.py failed"
-    python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels Reactive LLM \
+    python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels $ARMS \
         --title "SWIM run $RUN_INDEX, seed-set $SEED_SET, $MODEL" 2>&1 \
         || echo "plot.py failed"
     ls -la "$OUT" 2>/dev/null
@@ -126,6 +139,7 @@ echo "vLLM healthy"
 # Prove it can actually score before any simulated time is spent.
 cd "$REPO/CONTROLLER"
 python run_controller.py --check-backend --backend openai \
+    --prompt-format "$PROMPT_FORMAT" \
     --llm-base-url "http://127.0.0.1:$VLLM_PORT/v1" --llm-model "$SERVED" \
     | tee "$OUT/check_backend.txt"
 [ "${PIPESTATUS[0]}" -eq 0 ] || { echo "backend check failed; not starting SWIM"; exit 1; }
@@ -133,7 +147,7 @@ python run_controller.py --check-backend --backend openai \
 # ------------------------------------------------------- 2. simulations + arms
 SWIM_PIDS=""
 CTL_PIDS=""
-for arm in reactive llm; do
+for arm in $ARMS; do
     port="${ARM_PORT[$arm]}"
     res="$OUT/$arm"; mkdir -p "$res"
 
@@ -143,7 +157,8 @@ for arm in reactive llm; do
         export PATH=/opt/omnetpp-5.4.1/bin:\$PATH
         export LD_LIBRARY_PATH=/opt/omnetpp-5.4.1/lib:\$LD_LIBRARY_PATH
         ../../src/swim swim.ini -u Cmdenv -c sim -r $RUN_INDEX --seed-set=$SEED_SET \
-            --socketrtscheduler-port=$port ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
+            --socketrtscheduler-port=$port --*.initialServers=$INITIAL_SERVERS \
+            ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
             -n ..:../../src:../../../queueinglib -l ../../../queueinglib/libqueueinglib.so
     " > "$res/swim.log" 2>&1 &
     SWIM_PIDS="$SWIM_PIDS $!"
@@ -155,10 +170,10 @@ for arm in reactive llm; do
     done
 
     if [ "$arm" = "llm" ]; then
-        extra=(--policy llm --backend openai
+        extra=(--policy llm --backend openai --prompt-format "$PROMPT_FORMAT"
                --llm-base-url "http://127.0.0.1:$VLLM_PORT/v1" --llm-model "$SERVED")
     else
-        extra=(--policy reactive)
+        extra=(--policy "${ARM_POLICY[$arm]}")
     fi
     python run_controller.py --port "$port" --period "$PERIOD" \
         --run-dir "$res" --run-id "$arm" "${extra[@]}" \
@@ -184,6 +199,7 @@ cat > "$OUT/manifest.json" <<JSON
 {"run_id": "$RUN_ID", "job_id": "$SLURM_JOB_ID", "node": "$(hostname)",
  "model": "$MODEL", "run_index": $RUN_INDEX, "seed_set": $SEED_SET,
  "sim_time_limit": "${SIM_LIMIT:-default}", "period_s": $PERIOD,
+ "initial_servers": $INITIAL_SERVERS, "arms": "$ARMS", "prompt_format": "$PROMPT_FORMAT",
  "finished": "$(date -uIseconds)"}
 JSON
 echo "done -> $OUT"

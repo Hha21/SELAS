@@ -25,9 +25,13 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 # Reference categorical palette, slots 1-2, light mode.
+# Reference categorical palette, slots 1-3, light mode, taken in fixed order.
+# Line style repeats identity so the figure survives greyscale printing and
+# colour-vision deficiency, since a paper figure has no hover layer.
 SERIES = [
-    {"color": "#2a78d6", "linestyle": "-",  "label": "Reactive"},
-    {"color": "#eb6834", "linestyle": "--", "label": "LLM"},
+    {"color": "#2a78d6", "linestyle": "-",   "label": "Reactive"},
+    {"color": "#eb6834", "linestyle": "--",  "label": "LLM"},
+    {"color": "#1baf7a", "linestyle": "-.",  "label": "Null"},
 ]
 INK_PRIMARY = "#1a1a19"
 INK_SECONDARY = "#5c5b55"
@@ -65,6 +69,13 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
     fig, axes = plt.subplots(4, 1, figsize=(7.0, 8.0), sharex=True,
                              gridspec_kw={"hspace": 0.18})
     ax_srv, ax_dim, ax_rt, ax_util = axes
+
+    if len(results) > len(SERIES):
+        # zip() would silently drop the extras, and a missing arm in a
+        # comparison figure is worse than no figure.
+        raise SystemExit(
+            f"{len(results)} runs but only {len(SERIES)} series defined; "
+            f"add palette slots before plotting this many arms")
 
     for result, style in zip(results, SERIES):
         label = result.get("label", style["label"])
