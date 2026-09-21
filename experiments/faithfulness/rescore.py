@@ -72,12 +72,15 @@ def main() -> int:
             if not reasoning:
                 skipped += 1
                 continue
-            try:
-                head = iv.split_prompt(r["prompt"], reasoning)
-            except ValueError as exc:
-                print(f"  period {r['period']}: {exc}; skipped")
-                skipped += 1
-                continue
+            chat = bool(r.get("messages"))
+            head = None
+            if not chat:
+                try:
+                    head = iv.split_prompt(r["prompt"], reasoning)
+                except ValueError as exc:
+                    print(f"  period {r['period']}: {exc}; skipped")
+                    skipped += 1
+                    continue
 
             option_ids = [oid for oid, _ in r["decision"]["options"]]
             legal_ids = list(r["decision"]["distribution"])
@@ -89,9 +92,12 @@ def main() -> int:
                 if name.startswith("corrupt") and modified is not None \
                         and iv.corrupt(reasoning) == reasoning:
                     continue
-                prompt = iv.rebuild(head, modified)
                 try:
-                    dist = backend.score(prompt, option_ids)
+                    if chat:
+                        dist = backend.score_chat(
+                            iv.rebuild_messages(r["messages"], modified), option_ids)
+                    else:
+                        dist = backend.score(iv.rebuild(head, modified), option_ids)
                 except Exception as exc:
                     print(f"  period {r['period']} / {name}: scoring failed ({exc})")
                     continue
@@ -104,6 +110,7 @@ def main() -> int:
                     "legal_ids": legal_ids,
                     "options": r["decision"]["options"],
                     "reasoning_chars": 0 if modified is None else len(modified),
+                    "format": "chat" if chat else "completion",
                 }) + "\n")
                 written += 1
             if (i + 1) % 20 == 0:

@@ -63,6 +63,40 @@ def split_prompt(prompt: str, reasoning: str) -> str:
     return prompt[: len(prompt) - len(marker)]
 
 
+# -- chat form ---------------------------------------------------------------
+# Interventions are markedly simpler here than on the flat path: the reasoning
+# occupies its own message, so perturbing it is a substitution rather than
+# surgery on a concatenated string. Nothing has to be matched, sliced, or
+# re-derived, and there is no way to silently rebuild a prompt that differs from
+# what the model saw.
+
+def rebuild_messages(messages: list[dict], reasoning: str | None) -> list[dict]:
+    """Replace the final assistant turn with (possibly modified) reasoning.
+
+    Mirrors ContextBuilder.build_messages exactly: the turn carries the scaffold,
+    the reasoning, and the action cue, and ends open so the next token scored is
+    the action letter.
+    """
+    out = [dict(m) for m in messages[:-1]]
+    if reasoning is None:                       # ablation: no reasoning at all
+        out.append({"role": "assistant", "content": ACTION_CUE})
+    else:
+        out.append({
+            "role": "assistant",
+            "content": f"{SCAFFOLD.lstrip(chr(10))}{reasoning.rstrip()}\n{ACTION_CUE}",
+        })
+    return out
+
+
+def reasoning_from_messages(messages: list[dict]) -> str:
+    """Recover just the reasoning from a recorded final assistant turn."""
+    content = messages[-1]["content"]
+    body = content[len(SCAFFOLD.lstrip(chr(10))):] if content.startswith(
+        SCAFFOLD.lstrip(chr(10))) else content
+    return body[: -len(ACTION_CUE)].rstrip() if body.rstrip().endswith(ACTION_CUE) else body
+
+
+# -- flat form ---------------------------------------------------------------
 def rebuild(head: str, reasoning: str | None) -> str:
     """Reassemble a promptable string with (possibly modified) reasoning."""
     if reasoning is None:                       # the ablation: no CoT at all
