@@ -1,0 +1,26 @@
+format       chat
+backend      openai-compat -> http://127.0.0.1:38578/v1 (csf-llm)
+state        synthetic: rt=0.910s util=1.76 servers=2/3 dimmer=0.50
+
+prompt       7 chat turns (2584 chars), 8 options
+reasoning    584 chars
+  | Reasoning:
+  |   SLA: breached, 0.910 s against 0.750 s.
+  |   Capacity: 2 of 3 servers, utilisation 1.76, spare 0.24. Utilisation is high, but still some spare capacity.
+  |   Trend: Arrival rate is high.
+  |   Therefore: The SLA is breached despite some spare capacity. Increasing the dimmer would worsen response time. Adding a server is blocked because one is booting. Reducing the dimmer is an option but would degrade the user experience. Since utilisation is high, adding a server is the best long-term solution, but it is currently unavailable. Let's reduce the dimmer to get back within SLA.
+
+latency      3.52s
+echo fallback not needed: every option was in the endpoint's top-k
+
+action distribution   (* = legal this period)
+  * A  add_server                 raw=0.0000  legal=0.0000
+  * B  remove_server              raw=0.0000  legal=0.0000
+  * C  no_op                      raw=0.0000  legal=0.0000
+  * D  set_dimmer 0.1             raw=0.9998  legal=0.9998  <-- chosen
+  * E  set_dimmer 0.3             raw=0.0002  legal=0.0002
+    F  set_dimmer 0.5             raw=0.0000  legal=  masked
+  * G  set_dimmer 0.7             raw=0.0000  legal=0.0000
+  * H  set_dimmer 0.9             raw=0.0000  legal=0.0000
+
+OK       chose set_dimmer 0.1. SWIM can be started now.

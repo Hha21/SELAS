@@ -1,0 +1,20 @@
+/mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/reactive
+  sca/vec:        sim-6.sca / sim-6.vec
+  vectors found:  ['active_servers', 'brownout_factor', 'server_cost', 'utility_period']
+  utility total:  2191.8915835974603
+  decisions:      105
+  SLA violations: 39 (37.1% of periods)
+/mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/null
+  sca/vec:        sim-6.sca / sim-6.vec
+  vectors found:  ['active_servers', 'brownout_factor', 'server_cost', 'utility_period']
+  utility total:  -1976.8616504308732
+  decisions:      105
+  SLA violations: 86 (81.9% of periods)
+/mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/llm
+  sca/vec:        sim-6.sca / sim-6.vec
+  vectors found:  ['active_servers', 'brownout_factor', 'server_cost', 'utility_period']
+  utility total:  5155.239054712261
+  decisions:      105
+  SLA violations: 6 (5.7% of periods)
+
+wrote /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/runs.json

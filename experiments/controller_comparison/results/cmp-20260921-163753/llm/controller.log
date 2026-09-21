@@ -1,0 +1,114 @@
+17:39:30 INFO    controller.swim    connected to SWIM at localhost:4243
+17:39:30 INFO    controller.loop    run llm -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/llm/llm
+17:39:31 INFO    controller.loop    period 0   rt=0.166 util=0.01 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 1.27s
+17:40:32 INFO    controller.loop    period 1   rt=11.797 util=1.00 srv=1/3 dim=0.90 -> add_server           (reactive: add_server) 2.02s
+17:41:32 INFO    controller.loop    period 2   rt=13.089 util=1.00 srv=1/3 dim=0.90 -> set_dimmer 0.1       (reactive: set_dimmer 0.65 DIFFERS) 2.20s
+17:42:32 INFO    controller.loop    period 3   rt=2.235 util=0.36 srv=2/3 dim=0.10 -> set_dimmer 0.3       (reactive: add_server DIFFERS) 2.47s
+17:43:32 INFO    controller.loop    period 4   rt=0.028 util=0.61 srv=2/3 dim=0.30 -> set_dimmer 0.5       (reactive: set_dimmer 0.55 DIFFERS) 2.56s
+17:44:32 INFO    controller.loop    period 5   rt=0.043 util=0.71 srv=2/3 dim=0.50 -> set_dimmer 0.9       (reactive: set_dimmer 0.75 DIFFERS) 2.00s
+17:45:32 INFO    controller.loop    period 6   rt=0.098 util=0.99 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.61s
+17:46:32 INFO    controller.loop    period 7   rt=0.109 util=1.05 srv=2/3 dim=0.90 -> no_op                (reactive: no_op) 2.14s
+17:47:31 INFO    controller.loop    period 8   rt=0.091 util=0.93 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.57s
+17:48:32 INFO    controller.loop    period 9   rt=0.067 util=0.90 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+17:49:32 INFO    controller.loop    period 10  rt=0.083 util=0.98 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+17:50:32 INFO    controller.loop    period 11  rt=0.061 util=0.85 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.98s
+17:51:32 INFO    controller.loop    period 12  rt=0.056 util=0.80 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.87s
+17:52:32 INFO    controller.loop    period 13  rt=0.068 util=0.94 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.85s
+17:53:32 INFO    controller.loop    period 14  rt=0.056 util=0.77 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.65s
+17:54:32 INFO    controller.loop    period 15  rt=0.059 util=0.75 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.60s
+17:55:31 INFO    controller.loop    period 16  rt=0.055 util=0.76 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.57s
+17:56:32 INFO    controller.loop    period 17  rt=0.077 util=0.89 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.81s
+17:57:32 INFO    controller.loop    period 18  rt=0.048 util=0.67 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.92s
+17:58:32 INFO    controller.loop    period 19  rt=0.048 util=0.53 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.02s
+17:59:32 INFO    controller.loop    period 20  rt=0.062 util=0.77 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.85s
+18:00:32 INFO    controller.loop    period 21  rt=0.047 util=0.55 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.71s
+18:01:32 INFO    controller.loop    period 22  rt=0.044 util=0.58 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+18:02:32 INFO    controller.loop    period 23  rt=0.059 util=0.57 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.65s
+18:03:32 INFO    controller.loop    period 24  rt=0.048 util=0.53 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.75s
+18:04:32 INFO    controller.loop    period 25  rt=0.048 util=0.62 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.76s
+18:05:32 INFO    controller.loop    period 26  rt=0.065 util=0.91 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.73s
+18:06:32 INFO    controller.loop    period 27  rt=0.046 util=0.64 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.09s
+18:07:32 INFO    controller.loop    period 28  rt=0.079 util=0.68 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.04s
+18:08:32 INFO    controller.loop    period 29  rt=0.062 util=0.61 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.64s
+18:09:32 INFO    controller.loop    period 30  rt=0.057 util=0.63 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.70s
+18:10:31 INFO    controller.loop    period 31  rt=0.063 util=0.74 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.58s
+18:11:32 INFO    controller.loop    period 32  rt=0.053 util=0.73 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+18:12:32 INFO    controller.loop    period 33  rt=0.069 util=0.80 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.06s
+18:13:32 INFO    controller.loop    period 34  rt=0.116 util=0.85 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.32s
+18:14:32 INFO    controller.loop    period 35  rt=0.064 util=0.83 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.82s
+18:15:32 INFO    controller.loop    period 36  rt=0.112 util=0.95 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.85s
+18:16:32 INFO    controller.loop    period 37  rt=0.068 util=0.84 srv=2/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+18:17:32 INFO    controller.loop    period 38  rt=0.121 util=1.15 srv=2/3 dim=0.90 -> add_server           (reactive: no_op DIFFERS) 2.32s
+18:18:32 INFO    controller.loop    period 39  rt=0.099 util=1.02 srv=2/3 dim=0.90 -> no_op                (reactive: no_op) 1.97s
+18:19:33 INFO    controller.loop    period 40  rt=0.296 util=1.66 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.89s
+18:20:32 INFO    controller.loop    period 41  rt=0.099 util=1.40 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.20s
+18:21:32 INFO    controller.loop    period 42  rt=0.087 util=1.43 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.28s
+18:22:33 INFO    controller.loop    period 43  rt=0.248 util=1.50 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.78s
+18:23:32 INFO    controller.loop    period 44  rt=0.070 util=1.49 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.73s
+18:24:32 INFO    controller.loop    period 45  rt=0.079 util=1.54 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.32s
+18:25:32 INFO    controller.loop    period 46  rt=0.123 util=1.87 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.18s
+18:26:32 INFO    controller.loop    period 47  rt=0.118 util=1.88 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.06s
+18:27:32 INFO    controller.loop    period 48  rt=0.128 util=1.61 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.75s
+18:28:32 INFO    controller.loop    period 49  rt=0.127 util=1.97 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.14s
+18:29:32 INFO    controller.loop    period 50  rt=0.122 util=1.88 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.76s
+18:30:31 INFO    controller.loop    period 51  rt=0.132 util=1.83 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.54s
+18:31:32 INFO    controller.loop    period 52  rt=0.076 util=1.69 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.35s
+18:32:32 INFO    controller.loop    period 53  rt=0.162 util=1.80 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.34s
+18:33:32 INFO    controller.loop    period 54  rt=0.194 util=2.09 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 1.87s
+18:34:32 INFO    controller.loop    period 55  rt=0.095 util=1.80 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.20s
+18:35:32 INFO    controller.loop    period 56  rt=0.133 util=1.93 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.21s
+18:36:32 INFO    controller.loop    period 57  rt=0.125 util=1.99 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.68s
+18:37:35 INFO    controller.loop    period 58  rt=0.230 util=2.21 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 4.70s
+18:38:32 INFO    controller.loop    period 59  rt=0.184 util=2.07 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 1.95s
+18:39:32 INFO    controller.loop    period 60  rt=0.071 util=1.49 srv=3/3 dim=0.90 -> remove_server        (reactive: set_dimmer 1 DIFFERS) 1.87s
+18:40:32 INFO    controller.loop    period 61  rt=0.769 util=1.86 srv=2/3 dim=0.90 -> add_server           (reactive: add_server) 1.96s
+18:41:33 INFO    controller.loop    period 62  rt=3.215 util=1.99 srv=2/3 dim=0.90 -> set_dimmer 0.1       (reactive: set_dimmer 0.65 DIFFERS) 2.84s
+18:42:33 INFO    controller.loop    period 63  rt=0.790 util=0.45 srv=3/3 dim=0.10 -> set_dimmer 0.5       (reactive: set_dimmer 0 DIFFERS) 2.67s
+18:43:35 INFO    controller.loop    period 64  rt=0.030 util=1.27 srv=3/3 dim=0.50 -> set_dimmer 0.9       (reactive: set_dimmer 0.75 DIFFERS) 4.96s
+18:44:40 INFO    controller.loop    period 65  rt=0.173 util=1.99 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 10.59s
+18:45:32 INFO    controller.loop    period 66  rt=0.140 util=1.77 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.15s
+18:46:32 INFO    controller.loop    period 67  rt=0.276 util=2.32 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 2.12s
+18:47:32 INFO    controller.loop    period 68  rt=0.142 util=2.03 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 2.03s
+18:48:33 INFO    controller.loop    period 69  rt=0.380 util=2.36 srv=3/3 dim=0.90 -> set_dimmer 0.1       (reactive: no_op DIFFERS) 3.03s
+18:49:32 INFO    controller.loop    period 70  rt=0.008 util=0.42 srv=3/3 dim=0.10 -> set_dimmer 0.5       (reactive: set_dimmer 0.35 DIFFERS) 2.12s
+18:50:33 INFO    controller.loop    period 71  rt=0.043 util=1.22 srv=3/3 dim=0.50 -> remove_server        (reactive: set_dimmer 0.75 DIFFERS) 2.81s
+18:51:32 INFO    controller.loop    period 72  rt=0.130 util=1.39 srv=2/3 dim=0.50 -> add_server           (reactive: no_op DIFFERS) 2.07s
+18:52:32 INFO    controller.loop    period 73  rt=0.052 util=1.16 srv=2/3 dim=0.50 -> no_op                (reactive: no_op) 2.07s
+18:53:32 INFO    controller.loop    period 74  rt=0.031 util=1.02 srv=3/3 dim=0.50 -> set_dimmer 0.9       (reactive: set_dimmer 0.75 DIFFERS) 2.03s
+18:54:32 INFO    controller.loop    period 75  rt=0.284 util=2.28 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 2.39s
+18:55:32 INFO    controller.loop    period 76  rt=0.110 util=1.91 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.39s
+18:56:32 INFO    controller.loop    period 77  rt=0.112 util=2.00 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 2.18s
+18:57:32 INFO    controller.loop    period 78  rt=0.073 util=1.86 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.85s
+18:58:33 INFO    controller.loop    period 79  rt=0.257 util=1.78 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.70s
+18:59:32 INFO    controller.loop    period 80  rt=0.097 util=1.70 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.84s
+19:00:32 INFO    controller.loop    period 81  rt=0.155 util=2.11 srv=3/3 dim=0.90 -> no_op                (reactive: no_op) 2.10s
+19:01:32 INFO    controller.loop    period 82  rt=0.085 util=1.74 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.90s
+19:02:32 INFO    controller.loop    period 83  rt=0.091 util=1.57 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.25s
+19:03:33 INFO    controller.loop    period 84  rt=0.077 util=1.54 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.75s
+19:04:33 INFO    controller.loop    period 85  rt=0.225 util=1.99 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 3.09s
+19:05:32 INFO    controller.loop    period 86  rt=0.088 util=1.77 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.98s
+19:06:32 INFO    controller.loop    period 87  rt=0.088 util=1.45 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.40s
+19:07:32 INFO    controller.loop    period 88  rt=0.069 util=1.50 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.10s
+19:08:32 INFO    controller.loop    period 89  rt=0.058 util=1.42 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.87s
+19:09:32 INFO    controller.loop    period 90  rt=0.089 util=1.65 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.92s
+19:10:32 INFO    controller.loop    period 91  rt=0.054 util=1.27 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.11s
+19:11:33 INFO    controller.loop    period 92  rt=0.063 util=1.49 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.67s
+19:12:32 INFO    controller.loop    period 93  rt=0.069 util=1.48 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.23s
+19:13:32 INFO    controller.loop    period 94  rt=0.101 util=1.81 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 1.82s
+19:14:32 INFO    controller.loop    period 95  rt=0.056 util=1.38 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.48s
+19:15:32 INFO    controller.loop    period 96  rt=0.084 util=1.51 srv=3/3 dim=0.90 -> remove_server        (reactive: set_dimmer 1 DIFFERS) 2.17s
+19:16:32 INFO    controller.loop    period 97  rt=0.260 util=1.43 srv=2/3 dim=0.90 -> add_server           (reactive: no_op DIFFERS) 1.84s
+19:17:32 INFO    controller.loop    period 98  rt=0.351 util=1.62 srv=2/3 dim=0.90 -> no_op                (reactive: no_op) 2.59s
+19:18:32 INFO    controller.loop    period 99  rt=0.052 util=1.24 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.62s
+19:19:32 INFO    controller.loop    period 100 rt=0.077 util=1.48 srv=3/3 dim=0.90 -> remove_server        (reactive: set_dimmer 1 DIFFERS) 2.31s
+19:20:32 INFO    controller.loop    period 101 rt=0.116 util=1.36 srv=2/3 dim=0.90 -> add_server           (reactive: no_op DIFFERS) 2.11s
+19:21:32 INFO    controller.loop    period 102 rt=0.343 util=1.30 srv=2/3 dim=0.90 -> no_op                (reactive: no_op) 2.59s
+19:22:32 INFO    controller.loop    period 103 rt=0.082 util=1.65 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.56s
+19:23:32 INFO    controller.loop    period 104 rt=0.062 util=1.56 srv=3/3 dim=0.90 -> no_op                (reactive: set_dimmer 1 DIFFERS) 2.04s
+19:24:30 WARNING controller.swim    SWIM exchange failed (attempt 1/4): [Errno 104] Connection reset by peer
+19:24:31 WARNING controller.swim    SWIM exchange failed (attempt 2/4): [Errno 111] Connection refused
+19:24:33 WARNING controller.swim    SWIM exchange failed (attempt 3/4): [Errno 111] Connection refused
+19:24:37 WARNING controller.swim    SWIM exchange failed (attempt 4/4): [Errno 111] Connection refused
+19:24:37 ERROR   controller.loop    sense failed in period 105: SWIM unreachable at localhost:4243
+19:24:45 INFO    controller.loop    stop requested; finishing the current period
+19:24:46 INFO    controller.loop    stopped after 106 periods, 105 records -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/llm/llm/decisions.jsonl

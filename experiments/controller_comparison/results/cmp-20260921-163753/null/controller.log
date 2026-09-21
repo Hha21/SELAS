@@ -1,0 +1,114 @@
+17:39:29 INFO    controller.swim    connected to SWIM at localhost:4244
+17:39:29 INFO    controller.loop    run null -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/null/null
+17:39:29 INFO    controller.loop    period 0   rt=0.166 util=0.01 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:40:29 INFO    controller.loop    period 1   rt=11.797 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:41:29 INFO    controller.loop    period 2   rt=13.089 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:42:29 INFO    controller.loop    period 3   rt=13.306 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:43:29 INFO    controller.loop    period 4   rt=12.719 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:44:29 INFO    controller.loop    period 5   rt=12.068 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:45:29 INFO    controller.loop    period 6   rt=4.043 util=0.95 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:46:29 INFO    controller.loop    period 7   rt=1.196 util=0.89 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:47:29 INFO    controller.loop    period 8   rt=1.857 util=0.88 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:48:29 INFO    controller.loop    period 9   rt=0.507 util=0.86 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:49:29 INFO    controller.loop    period 10  rt=1.108 util=0.91 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:50:29 INFO    controller.loop    period 11  rt=0.809 util=0.82 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:51:29 INFO    controller.loop    period 12  rt=0.445 util=0.80 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:52:29 INFO    controller.loop    period 13  rt=1.643 util=0.85 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:53:29 INFO    controller.loop    period 14  rt=0.367 util=0.79 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:54:29 INFO    controller.loop    period 15  rt=1.102 util=0.75 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:55:29 INFO    controller.loop    period 16  rt=0.283 util=0.76 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:56:29 INFO    controller.loop    period 17  rt=1.057 util=0.81 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:57:29 INFO    controller.loop    period 18  rt=0.940 util=0.72 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+17:58:29 INFO    controller.loop    period 19  rt=0.131 util=0.52 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+17:59:29 INFO    controller.loop    period 20  rt=0.530 util=0.76 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:00:29 INFO    controller.loop    period 21  rt=0.360 util=0.58 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:01:29 INFO    controller.loop    period 22  rt=0.138 util=0.57 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:02:29 INFO    controller.loop    period 23  rt=0.441 util=0.54 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:03:29 INFO    controller.loop    period 24  rt=0.180 util=0.53 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:04:29 INFO    controller.loop    period 25  rt=0.211 util=0.64 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:05:29 INFO    controller.loop    period 26  rt=1.259 util=0.90 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:06:29 INFO    controller.loop    period 27  rt=0.372 util=0.69 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:07:29 INFO    controller.loop    period 28  rt=0.335 util=0.65 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:08:29 INFO    controller.loop    period 29  rt=0.287 util=0.62 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:09:29 INFO    controller.loop    period 30  rt=0.298 util=0.63 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:10:29 INFO    controller.loop    period 31  rt=0.463 util=0.67 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:11:29 INFO    controller.loop    period 32  rt=0.885 util=0.79 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:12:29 INFO    controller.loop    period 33  rt=0.520 util=0.76 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:13:29 INFO    controller.loop    period 34  rt=1.756 util=0.88 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:14:29 INFO    controller.loop    period 35  rt=0.594 util=0.82 srv=1/3 dim=0.90 -> no_op                (reactive: no_op) 0.00s
+18:15:29 INFO    controller.loop    period 36  rt=3.133 util=0.92 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:16:29 INFO    controller.loop    period 37  rt=2.110 util=0.90 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:17:29 INFO    controller.loop    period 38  rt=4.719 util=0.94 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:18:29 INFO    controller.loop    period 39  rt=11.668 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:19:29 INFO    controller.loop    period 40  rt=12.526 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:20:29 INFO    controller.loop    period 41  rt=12.278 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:21:29 INFO    controller.loop    period 42  rt=12.487 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:22:29 INFO    controller.loop    period 43  rt=12.320 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:23:29 INFO    controller.loop    period 44  rt=12.217 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:24:29 INFO    controller.loop    period 45  rt=12.577 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:25:29 INFO    controller.loop    period 46  rt=11.904 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:26:29 INFO    controller.loop    period 47  rt=11.965 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:27:29 INFO    controller.loop    period 48  rt=12.019 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:28:29 INFO    controller.loop    period 49  rt=11.932 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:29:29 INFO    controller.loop    period 50  rt=11.764 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:30:29 INFO    controller.loop    period 51  rt=11.965 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:31:29 INFO    controller.loop    period 52  rt=12.008 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:32:29 INFO    controller.loop    period 53  rt=11.905 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:33:29 INFO    controller.loop    period 54  rt=11.644 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:34:29 INFO    controller.loop    period 55  rt=11.964 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:35:29 INFO    controller.loop    period 56  rt=11.739 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:36:29 INFO    controller.loop    period 57  rt=11.722 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:37:29 INFO    controller.loop    period 58  rt=11.717 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:38:29 INFO    controller.loop    period 59  rt=11.651 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:39:29 INFO    controller.loop    period 60  rt=11.961 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:40:29 INFO    controller.loop    period 61  rt=11.854 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:41:29 INFO    controller.loop    period 62  rt=11.644 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:42:29 INFO    controller.loop    period 63  rt=11.865 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:43:29 INFO    controller.loop    period 64  rt=11.571 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:44:29 INFO    controller.loop    period 65  rt=11.675 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:45:29 INFO    controller.loop    period 66  rt=11.212 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:46:29 INFO    controller.loop    period 67  rt=11.450 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:47:29 INFO    controller.loop    period 68  rt=11.708 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:48:29 INFO    controller.loop    period 69  rt=11.540 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:49:29 INFO    controller.loop    period 70  rt=11.535 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:50:29 INFO    controller.loop    period 71  rt=11.765 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:51:29 INFO    controller.loop    period 72  rt=11.308 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:52:29 INFO    controller.loop    period 73  rt=11.779 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:53:29 INFO    controller.loop    period 74  rt=11.759 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:54:29 INFO    controller.loop    period 75  rt=11.402 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:55:29 INFO    controller.loop    period 76  rt=11.805 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:56:29 INFO    controller.loop    period 77  rt=11.752 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:57:29 INFO    controller.loop    period 78  rt=11.737 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:58:29 INFO    controller.loop    period 79  rt=11.934 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+18:59:29 INFO    controller.loop    period 80  rt=11.994 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:00:29 INFO    controller.loop    period 81  rt=11.677 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:01:29 INFO    controller.loop    period 82  rt=11.901 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:02:29 INFO    controller.loop    period 83  rt=12.056 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:03:29 INFO    controller.loop    period 84  rt=12.166 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:04:29 INFO    controller.loop    period 85  rt=11.906 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:05:29 INFO    controller.loop    period 86  rt=11.775 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:06:29 INFO    controller.loop    period 87  rt=12.078 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:07:29 INFO    controller.loop    period 88  rt=12.212 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:08:29 INFO    controller.loop    period 89  rt=12.310 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:09:29 INFO    controller.loop    period 90  rt=12.169 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:10:29 INFO    controller.loop    period 91  rt=12.270 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:11:29 INFO    controller.loop    period 92  rt=12.316 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:12:29 INFO    controller.loop    period 93  rt=12.240 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:13:29 INFO    controller.loop    period 94  rt=11.961 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:14:29 INFO    controller.loop    period 95  rt=12.271 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:15:29 INFO    controller.loop    period 96  rt=12.175 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:16:29 INFO    controller.loop    period 97  rt=12.334 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:17:29 INFO    controller.loop    period 98  rt=12.073 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:18:29 INFO    controller.loop    period 99  rt=12.302 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:19:29 INFO    controller.loop    period 100 rt=12.381 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:20:29 INFO    controller.loop    period 101 rt=12.359 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:21:29 INFO    controller.loop    period 102 rt=12.457 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:22:29 INFO    controller.loop    period 103 rt=12.183 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:23:29 INFO    controller.loop    period 104 rt=12.081 util=1.00 srv=1/3 dim=0.90 -> no_op                (reactive: add_server DIFFERS) 0.00s
+19:24:29 WARNING controller.swim    SWIM exchange failed (attempt 1/4): [Errno 104] Connection reset by peer
+19:24:30 WARNING controller.swim    SWIM exchange failed (attempt 2/4): [Errno 111] Connection refused
+19:24:32 WARNING controller.swim    SWIM exchange failed (attempt 3/4): [Errno 111] Connection refused
+19:24:36 WARNING controller.swim    SWIM exchange failed (attempt 4/4): [Errno 111] Connection refused
+19:24:36 ERROR   controller.loop    sense failed in period 105: SWIM unreachable at localhost:4244
+19:24:45 INFO    controller.loop    stop requested; finishing the current period
+19:24:45 INFO    controller.loop    stopped after 106 periods, 105 records -> /mnt/iusers01/sk01/t95317ha/selas-results/cmp-20260921-163753/null/null/decisions.jsonl
