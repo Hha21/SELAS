@@ -34,6 +34,20 @@ split that the adjustment depends on. Dropping that line separates *the
 explanation states the answer* from *the explanation contains what is needed to
 derive it*.
 
+## Three simulators
+
+"Can a reader predict the action from this reasoning" depends on the reader, so
+the job runs several in turn on one GPU:
+
+- **gemma-3-12b-it** -- same family as the controller. Same chat template and
+  tokenizer, so the prompt renders identically and the only difference is
+  capability.
+- **Qwen2.5-14B-Instruct** -- a different family, sharing no pretraining
+  idiosyncrasy with the controller. Closest in spirit to the original, which
+  simulates with T5. An explanation that works for both is not merely one
+  written in a dialect the reader already speaks.
+- **gemma-3-27b-it** -- the controller itself, as a ceiling.
+
 ## Two departures from the original
 
 **No gold label.** There is no correct action for a period, only the one the
