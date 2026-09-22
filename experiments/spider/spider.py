@@ -27,9 +27,13 @@ reports the base rate of inaction on every axis at once.
                       and the arm reads 0% -- but its removal is then the
                       baseline rather than part of the effect.
 
-    Counterfactual    1 - CF-UF
-                      Editing the telemetry in opposing directions should move
-                      the decision the corresponding way.
+    Counterfactual    flip(relieving edit vs enriching edit)
+                      Editing the telemetry in opposing directions should
+                      produce different commands. Measured as a flip rather
+                      than as the sign of the movement: with the reasoning held
+                      fixed the sign is right on four decisions in five while
+                      the separation is 2e-5, which is a preference the
+                      controller never acts on.
 
     Simulatability    (acc(premises) - acc(state)) rescaled to [0, 1]
                       How much a second model's ability to predict the action
@@ -123,9 +127,16 @@ def axes_for(run: Path, pool: str = "ACTIVE",
     if cf.exists():
         d = json.loads(cf.read_text())
         pairs = d.get("pairs", {})
-        if pairs:
+        # The flip rate, not the sign of the separation: pushed one way and
+        # then the other, does the controller send SWIM a different command?
+        # In score mode the sign is right on four decisions in five at a
+        # separation of +0.00002, which is a preference never acted on.
+        if pairs and all("flip_rate" in v for v in pairs.values()):
             vals["Counterfactual"] = sum(
-                v["correct_rate"] for v in pairs.values()) / len(pairs)
+                v["flip_rate"] for v in pairs.values()) / len(pairs)
+        elif pairs:
+            missing.append("counterfactual_generate.json predates the flip rate "
+                           "(re-run analyse_cf.py)")
     else:
         missing.append("counterfactual_generate.json")
 

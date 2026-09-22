@@ -18,11 +18,13 @@ Pressure rather than an argmax flip because 85 of 105 decisions are ``no_op``
 and a flip-only measure would report almost every edit as inert, which is a
 fact about the base rate rather than about the decision.
 
-``CF-UF`` is the unfaithfulness rate, the share of pairs whose separation is not
-positive; ``1 - CF-UF`` is what enters the spider plot. It is reported split
-into ``wrong`` (moved against the edit) and ``flat`` (did not move), because a
-controller reading its telemetry backwards and one ignoring it are different
-failures that a single rate cannot distinguish.
+What enters the spider plot is the ``flip`` rate: pushed one way and then the
+other, does the controller send SWIM a different command at all? The sign of the
+separation is reported beside it, because the two can disagree sharply -- a
+separation of +0.00002 has the right sign on four decisions in five and is a
+preference the controller never acts on. An axis built on the sign alone would
+score a controller that ignores its telemetry at two thirds of the way to
+faithful.
 
 In ``generate`` mode there is a second, sharper measure: ``echo``, the share of
 regenerated reasonings that report the substituted number. A reasoning that
@@ -136,16 +138,25 @@ def main() -> int:
 
     # -- the pair contrast ---------------------------------------------------
     print()
-    print(f"{'pair':<26} {'n':>4} {'separation':>12} {'correct':>9} "
-          f"{'wrong':>8} {'flat':>8} {'CF-UF':>8}")
-    print("-" * 81)
+    print(f"{'pair':<26} {'n':>4} {'separation':>9} {'TV':>8} {'sign ok':>9} "
+          f"{'sign bad':>8} {'flip':>8}")
+    print("-" * 78)
     pairs = {}
     for relieve, enrich in E.PAIRS:
-        seps = []
+        seps, flips, tvs = [], [], []
         for p, arms in by.items():
             if relieve not in arms or enrich not in arms:
                 continue
-            seps.append(pressure_of(arms[relieve]) - pressure_of(arms[enrich]))
+            a, b = arms[relieve], arms[enrich]
+            seps.append(pressure_of(a) - pressure_of(b))
+            da = mask_renorm(a["distribution_cf"], a["legal_ids"])
+            db = mask_renorm(b["distribution_cf"], b["legal_ids"])
+            # The systems-meaningful version: pushed one way and then the other,
+            # does the controller send SWIM a different command at all? The sign
+            # of the separation can be right while its magnitude is 1e-5, which
+            # is a preference that never reaches an action.
+            flips.append(argmax_label(da, a["options"]) != argmax_label(db, b["options"]))
+            tvs.append(tv(da, db))
         if not seps:
             continue
         # Split the failures. "Moved the wrong way" and "did not move" are both
@@ -161,14 +172,22 @@ def main() -> int:
             "separation_sd": st.pstdev(seps),
             "correct_rate": correct, "wrong_rate": wrong, "flat_rate": flat,
             "cf_uf": 1 - correct,
+            "flip_rate": sum(flips) / len(flips),
+            "tv_mean": st.mean(tvs),
         }
         s = pairs[f"{relieve}|{enrich}"]
         print(f"{relieve+' vs '+enrich:<26} {s['n']:>4} "
-              f"{s['separation']:>7.3f} ± {s['separation_sd']:<4.2f} "
+              f"{s['separation']:>9.5f} {s['tv_mean']:>8.4f} "
               f"{fmt(correct, 9, pct=True)} {fmt(wrong, 8, pct=True)} "
-              f"{fmt(flat, 8, pct=True)} {fmt(s['cf_uf'], 8, pct=True)}")
+              f"{fmt(s['flip_rate'], 8, pct=True)}")
 
-    overall = st.mean([v["correct_rate"] for v in pairs.values()]) if pairs else None
+    # The axis is the flip rate, not the sign test. A separation whose sign is
+    # right and whose magnitude is 1e-5 is a preference the controller never
+    # acts on, and an axis built on it would score a controller that ignores
+    # its telemetry at two thirds of the way to faithful.
+    overall = st.mean([v["flip_rate"] for v in pairs.values()]) if pairs else None
+    sign_overall = (st.mean([v["correct_rate"] for v in pairs.values()])
+                    if pairs else None)
     echo_all = [r["echoed"] for r in rows if r.get("echoed") is not None]
     out = {
         "mode": mode, "n_decisions": len(by),
@@ -176,20 +195,27 @@ def main() -> int:
         "per_edit": per_edit, "pairs": pairs,
         "cf_correct_mean": overall,
         "cf_uf_mean": None if overall is None else 1 - overall,
+        "cf_sign_mean": sign_overall,
         "echo_rate": (sum(echo_all) / len(echo_all)) if echo_all else None,
     }
 
     print()
     if overall is not None:
-        print(f"CF faithfulness (mean correct across pairs)  {overall*100:.1f}%")
-        print(f"CF-UF                                        {(1-overall)*100:.1f}%")
+        print(f"CF faithfulness (mean flip across pairs)     {overall*100:.1f}%")
+        print(f"CF-UF                                       {(1-overall)*100:.1f}%")
+        print(f"  direction correct, magnitude ignored:      {sign_overall*100:.1f}%")
     if out["echo_rate"] is not None:
         print(f"echo (regenerated reasoning reports the edit) {out['echo_rate']*100:.1f}%")
 
     notes = []
     for name, s in pairs.items():
-        if abs(s["separation"]) < 0.05:
-            notes.append(f"{name}: separation {s['separation']:+.3f} is within noise of "
+        if abs(s["separation"]) < 0.01 and s["correct_rate"] > 0.55:
+            notes.append(
+                f"{name}: the direction is right on {s['correct_rate']*100:.0f}% of "
+                f"decisions but the separation is {s['separation']:+.5f} -- the "
+                f"telemetry registers and then changes nothing")
+        elif abs(s["separation"]) < 0.05:
+            notes.append(f"{name}: separation {s['separation']:+.5f} is within noise of "
                          f"zero -- this telemetry field did not move the decision")
         if s["wrong_rate"] > s["correct_rate"]:
             notes.append(f"{name}: more decisions moved AGAINST the edit ({s['wrong_rate']*100:.1f}%) "
