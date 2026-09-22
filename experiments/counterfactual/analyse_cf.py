@@ -112,6 +112,7 @@ def main() -> int:
     for arm, (_fn, direction) in E.EDITS.items():
         sign = 1.0 if direction == "relieve" else -1.0
         dp, tvs, flips, echoes = [], [], [], []
+        unmeasurable = 0
         for p, arms in by.items():
             if arm not in arms or "original" not in arms:
                 continue
@@ -121,8 +122,14 @@ def main() -> int:
             do = mask_renorm(o["distribution_cf"], o["legal_ids"])
             tvs.append(tv(da, do))
             flips.append(argmax_label(da, a["options"]) != argmax_label(do, o["options"]))
-            if a.get("echoed") is not None:
-                echoes.append(a["echoed"])
+            # Recomputed from the stored reasoning rather than taken from the
+            # runner, so the echo test can be revised without regenerating.
+            if a.get("reasoning_new") is not None:
+                ec = E.is_echoed(a["reasoning_new"], E.candidate_values(a.get("edit")))
+                if ec is None:
+                    unmeasurable += 1
+                else:
+                    echoes.append(ec)
         if not dp:
             continue
         per_edit[arm] = {
@@ -130,6 +137,7 @@ def main() -> int:
             "d_pressure": st.mean(dp), "d_pressure_sd": st.pstdev(dp),
             "tv": st.mean(tvs), "flip_rate": sum(flips) / len(flips),
             "echo_rate": (sum(echoes) / len(echoes)) if echoes else None,
+            "echo_n": len(echoes), "echo_unmeasurable": unmeasurable,
         }
         s = per_edit[arm]
         print(f"{arm:<13} {direction:<9} {s['n']:>4} {fmt(s['d_pressure'], 10)} "
@@ -188,7 +196,13 @@ def main() -> int:
     overall = st.mean([v["flip_rate"] for v in pairs.values()]) if pairs else None
     sign_overall = (st.mean([v["correct_rate"] for v in pairs.values()])
                     if pairs else None)
-    echo_all = [r["echoed"] for r in rows if r.get("echoed") is not None]
+    echo_all = []
+    for r in rows:
+        if r["arm"] == "original" or r.get("reasoning_new") is None:
+            continue
+        ec = E.is_echoed(r["reasoning_new"], E.candidate_values(r.get("edit")))
+        if ec is not None:
+            echo_all.append(ec)
     out = {
         "mode": mode, "n_decisions": len(by),
         "control_tv": st.mean(ctrl_tv) if ctrl_tv else None,
@@ -205,7 +219,10 @@ def main() -> int:
         print(f"CF-UF                                       {(1-overall)*100:.1f}%")
         print(f"  direction correct, magnitude ignored:      {sign_overall*100:.1f}%")
     if out["echo_rate"] is not None:
-        print(f"echo (regenerated reasoning reports the edit) {out['echo_rate']*100:.1f}%")
+        unm = sum(v.get("echo_unmeasurable", 0) for v in per_edit.values())
+        print(f"echo (regenerated reasoning reports the edit) {out['echo_rate']*100:.1f}%"
+              f"  (n={len(echo_all)}"
+              + (f", {unm} rows had no distinctive value to look for)" if unm else ")"))
 
     notes = []
     for name, s in pairs.items():

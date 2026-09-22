@@ -213,3 +213,41 @@ def pressure(dist: dict[str, float], options: list[list[str]],
     rel = sum(p for oid, p in dist.items() if kind.get(labels.get(oid, ""), "") == "relieve")
     enr = sum(p for oid, p in dist.items() if kind.get(labels.get(oid, ""), "") == "enrich")
     return rel - enr
+
+
+# -- did the reasoning report the value that was substituted? ----------------
+# The edit record lists the substituted values, so this is a numeric match
+# rather than a judgement. It is numeric and not a string comparison because
+# the model reformats: an edit to 95.0 req/s comes back as "95 req/s", which is
+# a verbatim report and was being scored as a miss.
+
+# Integers up to the maximum server count are excluded as candidates. "1 of 3
+# servers" would otherwise match a utilisation edited to 1.00, and a spare
+# edited to 0.00 would match any bare zero in the text. Where no unambiguous
+# candidate survives, the row is unmeasurable rather than a miss.
+AMBIGUOUS_MAX_INT = 3
+
+_NUM = re.compile(r"\d+\.\d+|\d+")
+
+
+def candidate_values(edit_text: str | None) -> list[float]:
+    """Every number the edit substituted, from its own record."""
+    if not edit_text:
+        return []
+    return [float(m) for m in _NUM.findall(edit_text)]
+
+
+def is_echoed(reasoning: str | None, values: list[float],
+              tol: float = 1e-6) -> bool | None:
+    """True, False, or None when nothing in the edit is distinctive enough.
+
+    A qualitative restatement -- "fully utilised" for a utilisation driven to
+    its ceiling -- is not counted, so this is a lower bound on whether the model
+    read the edit.
+    """
+    cands = [v for v in values
+             if not (abs(v - round(v)) < 1e-9 and 0 <= v <= AMBIGUOUS_MAX_INT)]
+    if not cands:
+        return None
+    nums = {float(m) for m in _NUM.findall(reasoning or "")}
+    return any(any(abs(n - v) <= tol for n in nums) for v in cands)
