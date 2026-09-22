@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from controller import (
-    DEFAULT_EXEMPLARS, ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
+    ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
     ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
 from controller import NullPolicy
@@ -100,11 +100,10 @@ def build_builder(args: argparse.Namespace) -> ContextBuilder:
         reasoning=ReasoningStyle(args.reasoning),
         window=args.window,
         # A prefix of the bank rather than a separate set, so that a sweep over
-        # exemplar count varies the count and nothing else. None keeps the
-        # default, which is not the same as asking for all of them: it leaves
-        # the builder's own default in charge.
-        exemplars=(None if args.exemplars is None
-                   else DEFAULT_EXEMPLARS[: args.exemplars]),
+        # exemplar count varies the count and nothing else. The builder picks
+        # which bank -- scaffolded or free-form -- from the reasoning style, so
+        # the count is passed rather than the slice.
+        n_exemplars=args.exemplars,
     )
 
 

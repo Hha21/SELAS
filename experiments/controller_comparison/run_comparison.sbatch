@@ -73,8 +73,44 @@ PROMPT_FORMAT="${SELAS_PROMPT_FORMAT:-chat}"
 VLLM_PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
 # null costs nothing and is the control that says whether acting helped at all.
 ARMS="${SELAS_ARMS:-reactive null llm}"
-declare -A ARM_PORT=( [reactive]=4242 [llm]=4243 [null]=4244 )
-declare -A ARM_POLICY=( [reactive]=reactive [llm]=llm [null]=null )
+
+# What each arm *is*, as controller flags. Everything the prompting sweep varies
+# lives here rather than in a second copy of this script: the arms share one
+# vLLM, one node, one wall clock and one simulator build, and running them from
+# separate scripts would let those drift apart silently -- which is exactly the
+# confound a comparison across prompting configurations cannot afford.
+#
+# The LLM arms differ in one dimension each, against `llm` as the reference:
+#
+#   llm       the scaffolded fields, 200 tokens, both exemplars
+#   free      "think step by step" instead of named fields -- tests whether the
+#             scaffold is what makes the conclusion carry the decision
+#   short     the same scaffold on a 60-token budget -- tests whether reasoning
+#             length buys anything beyond latency
+#   zeroshot  no exemplars -- tests how much of the reasoning is the model and
+#             how much is our two hand-written examples
+#   none      no reasoning at all. Not a point on the interpretability axes,
+#             which need an explanation to exist; it is the reference line for
+#             what utility costs when nothing is explained.
+declare -A ARM_SPEC=(
+    [reactive]="--policy reactive"
+    [null]="--policy null"
+    [llm]="--policy llm --reasoning scaffold --max-reasoning-tokens 200"
+    [free]="--policy llm --reasoning free --max-reasoning-tokens 200"
+    [short]="--policy llm --reasoning scaffold --max-reasoning-tokens 60"
+    [zeroshot]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 0"
+    [none]="--policy llm --reasoning none"
+)
+
+# Ports are handed out in order rather than fixed per arm, so adding an arm does
+# not mean remembering to add a port and finding out it collided at runtime.
+PORT_BASE="${SELAS_PORT_BASE:-4242}"
+
+# Empty means "do not pass the flag", which leaves run_controller.py's own
+# default (0.7) in charge and keeps this script's behaviour unchanged. The
+# sweep sets it to 0: with one run per arm, sampling noise would sit on exactly
+# the differences between arms that the comparison is built on.
+TEMPERATURE="${SELAS_TEMPERATURE:-}"
 
 source "$HOME/selas-env.sh"
 export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
@@ -98,7 +134,8 @@ echo "run       $RUN_ID"
 echo "node      $(hostname)   gpus=$CUDA_VISIBLE_DEVICES   cores=$SLURM_CPUS_PER_TASK"
 echo "model     $MODEL  (vllm :$VLLM_PORT)"
 echo "swim      run $RUN_INDEX, seed-set $SEED_SET, initialServers $INITIAL_SERVERS${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
-echo "arms      $ARMS   (llm in $PROMPT_FORMAT format)"
+echo "arms      $ARMS   (llm arms in $PROMPT_FORMAT format${TEMPERATURE:+, temperature $TEMPERATURE})"
+for a in $ARMS; do printf '            %-9s %s\n' "$a" "${ARM_SPEC[$a]:-UNKNOWN}"; done
 echo "out       $OUT"
 
 # Collection runs from the EXIT trap, not only inline. The dry run reached the
@@ -179,8 +216,12 @@ python run_controller.py --check-backend --backend openai \
 # ------------------------------------------------------- 2. simulations + arms
 SWIM_PIDS=""
 CTL_PIDS=""
+arm_index=0
 for arm in $ARMS; do
-    port="${ARM_PORT[$arm]}"
+    if [ -z "${ARM_SPEC[$arm]:-}" ]; then
+        echo "unknown arm '$arm'; known: ${!ARM_SPEC[*]}" >&2; exit 1
+    fi
+    port=$(( PORT_BASE + arm_index )); arm_index=$(( arm_index + 1 ))
     res="$OUT/$arm"; mkdir -p "$res"
 
     echo "starting SWIM for '$arm' on :$port"
@@ -203,12 +244,15 @@ for arm in $ARMS; do
         sleep 1
     done
 
-    if [ "$arm" = "llm" ]; then
-        extra=(--policy llm --backend openai --prompt-format "$PROMPT_FORMAT"
-               --llm-base-url "http://127.0.0.1:$VLLM_PORT/v1" --llm-model "$SERVED")
-    else
-        extra=(--policy "${ARM_POLICY[$arm]}")
-    fi
+    read -r -a extra <<< "${ARM_SPEC[$arm]}"
+    case "${ARM_SPEC[$arm]}" in
+        *"--policy llm"*)
+            extra+=(--backend openai --prompt-format "$PROMPT_FORMAT"
+                    --llm-base-url "http://127.0.0.1:$VLLM_PORT/v1"
+                    --llm-model "$SERVED")
+            [ -n "$TEMPERATURE" ] && extra+=(--temperature "$TEMPERATURE")
+            ;;
+    esac
     python run_controller.py --port "$port" --period "$PERIOD" \
         --run-dir "$res" --run-id "$arm" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
@@ -234,6 +278,7 @@ cat > "$OUT/manifest.json" <<JSON
  "model": "$MODEL", "run_index": $RUN_INDEX, "seed_set": $SEED_SET,
  "sim_time_limit": "${SIM_LIMIT:-default}", "period_s": $PERIOD,
  "initial_servers": $INITIAL_SERVERS, "arms": "$ARMS", "prompt_format": "$PROMPT_FORMAT",
+ "temperature": "${TEMPERATURE:-default}",
  "finished": "$(date -uIseconds)"}
 JSON
 if [ -n "${COLLECT_FAILED:-}" ]; then

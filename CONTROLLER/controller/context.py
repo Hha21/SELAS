@@ -122,6 +122,7 @@ class ContextBuilder:
         reasoning: ReasoningStyle = ReasoningStyle.SCAFFOLD,
         window: int = 5,
         exemplars: list[tuple[str, str, str]] | None = None,
+        n_exemplars: int | None = None,
     ) -> None:
         self.sla = sla
         self.boot_delay = boot_delay
@@ -129,7 +130,18 @@ class ContextBuilder:
         self.dimmer_mode = dimmer_mode
         self.reasoning = reasoning
         self.window = window
-        self.exemplars = exemplars if exemplars is not None else _DEFAULT_EXEMPLARS
+        # The bank follows the style. Demonstrating scaffolded fields while
+        # asking for free-form reasoning would have the model copy the fields
+        # out of the exemplars whatever the instruction says, which is exactly
+        # the confound a free-form arm exists to remove. The two banks state the
+        # same claims and reach the same actions, and differ only in whether
+        # those claims carry field labels.
+        if exemplars is not None:
+            bank = exemplars
+        else:
+            bank = (_FREE_EXEMPLARS if self.reasoning is ReasoningStyle.FREE
+                    else _DEFAULT_EXEMPLARS)
+        self.exemplars = bank if n_exemplars is None else bank[:n_exemplars]
 
     # -- legend ------------------------------------------------------------
     def legend_entries(self, options: list[tuple[str, Action]]) -> list[tuple[str, str]]:
@@ -187,8 +199,22 @@ class ContextBuilder:
             "Actions:",
             legend,
             "",
-            "Reply with the reasoning fields, then a line 'Action: <letter>'.",
+            self._reply_instruction(),
         ])
+
+    def _reply_instruction(self) -> str:
+        """What the system prompt asks for, which is not the same in every style.
+
+        Previously fixed at "reply with the reasoning fields" regardless, so on
+        the chat path FREE and SCAFFOLD produced byte-identical prompts and NONE
+        was asked for fields it is never given the chance to write.
+        """
+        if self.reasoning is ReasoningStyle.NONE:
+            return "Reply with a single line 'Action: <letter>' and nothing else."
+        if self.reasoning is ReasoningStyle.FREE:
+            return ("Think step by step about the state, then give a line "
+                    "'Action: <letter>'.")
+        return "Reply with the reasoning fields, then a line 'Action: <letter>'."
 
     def build_messages(
         self,
@@ -423,4 +449,34 @@ Period 21
 
 #: The exemplar bank, exposed so a caller can take a prefix of it. Slicing this
 #: rather than writing new exemplars keeps the count the only thing that varies.
+# The same two exemplars with the field labels removed. Every claim and both
+# actions are identical to _DEFAULT_EXEMPLARS -- breached/headroom/climbing to
+# add_server, met/ample/steady to raise the dimmer -- so an arm that swaps one
+# bank for the other varies the imposed structure and not the content.
+#
+# This is what makes the free-form arm a control on the scaffold rather than a
+# second variable: if faithfulness rises here, the conclusion-carries-everything
+# result was an artefact of the fields we imposed, not a property of the model.
+_FREE_EXEMPLARS: list[tuple[str, str, str]] = [
+    (
+        _DEFAULT_EXEMPLARS[0][0],
+        """Reasoning: Response time is 1.240 s against a 0.750 s threshold, so the SLA
+is breached. Only 1 of the 3 servers is active, spare capacity is 0.04 and
+nothing is booting, so there is room to grow. The arrival rate is climbing and
+utilisation is near saturation. Capacity is the binding constraint, so adding a
+server is better than cutting content quality.""",
+        _DEFAULT_EXEMPLARS[0][2],
+    ),
+    (
+        _DEFAULT_EXEMPLARS[1][0],
+        """Reasoning: Response time is 0.210 s against 0.750 s, so the SLA is met
+comfortably. All 3 of the 3 servers are active with spare capacity of 2.06, far
+more than is needed, and the arrival rate is low and steady. There is room to
+serve richer responses, so raising the dimmer is better than giving up a
+server.""",
+        _DEFAULT_EXEMPLARS[1][2],
+    ),
+]
+
 DEFAULT_EXEMPLARS = _DEFAULT_EXEMPLARS
+FREE_EXEMPLARS = _FREE_EXEMPLARS

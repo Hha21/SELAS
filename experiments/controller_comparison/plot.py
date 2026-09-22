@@ -32,6 +32,15 @@ SERIES = [
     {"color": "#2a78d6", "linestyle": "-",   "label": "Reactive"},
     {"color": "#eb6834", "linestyle": "--",  "label": "LLM"},
     {"color": "#1baf7a", "linestyle": "-.",  "label": "Null"},
+    # Slots 4-8 for the prompting sweep. Seven overlaid series on a shared time
+    # axis is a diagnostic rather than a paper figure -- the three-arm plot
+    # stays the one that goes in -- but it has to render rather than refuse,
+    # and each still needs its own dash pattern to survive greyscale.
+    {"color": "#8f6bd1", "linestyle": ":",            "label": "Free"},
+    {"color": "#c9407a", "linestyle": (0, (5, 1)),    "label": "Short"},
+    {"color": "#b8860b", "linestyle": (0, (3, 1, 1, 1)), "label": "Zero-shot"},
+    {"color": "#3c8c8c", "linestyle": (0, (1, 1)),    "label": "None"},
+    {"color": "#6b6b6b", "linestyle": (0, (7, 2, 1, 2)), "label": "Extra"},
 ]
 INK_PRIMARY = "#1a1a19"
 INK_SECONDARY = "#5c5b55"
