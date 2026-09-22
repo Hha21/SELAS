@@ -381,6 +381,10 @@ def _locate_scaffold_probes(text: str, search_from: int) -> dict[str, int]:
 # Two exemplars, rendered with the live legend so the letters always match the
 # prompt the model is actually given. One overload, one underload: enough to fix
 # the output shape for a base model without demonstrating every action.
+#
+# Ordered overload-first so that taking a prefix of the list is a meaningful
+# ablation: one exemplar leaves the model having seen a breach handled and not
+# an idle pool, which is the asymmetry a sweep over exemplar count is probing.
 _DEFAULT_EXEMPLARS: list[tuple[str, str, str]] = [
     (
         """---
@@ -415,3 +419,8 @@ Period 21
         "G",
     ),
 ]
+
+
+#: The exemplar bank, exposed so a caller can take a prefix of it. Slicing this
+#: rather than writing new exemplars keeps the count the only thing that varies.
+DEFAULT_EXEMPLARS = _DEFAULT_EXEMPLARS

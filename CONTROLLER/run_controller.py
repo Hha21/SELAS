@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from controller import (
-    ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
+    DEFAULT_EXEMPLARS, ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
     ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
 from controller import NullPolicy
@@ -64,6 +64,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      default=ReasoningStyle.SCAFFOLD.value)
     llm.add_argument("--temperature", type=float, default=0.7)
     llm.add_argument("--max-reasoning-tokens", type=int, default=200)
+    llm.add_argument("--exemplars", type=int, default=None, metavar="N",
+                     help="use the first N of the built-in exemplars "
+                          "(0 for zero-shot; default: all of them)")
     llm.add_argument("--prompt-format", choices=["chat", "completion"], default="chat",
                      help="chat uses system/user/assistant turns, which is the format "
                           "these instruction-tuned checkpoints were post-trained on and "
@@ -96,6 +99,12 @@ def build_builder(args: argparse.Namespace) -> ContextBuilder:
         dimmer_mode=DimmerMode(args.dimmer_mode),
         reasoning=ReasoningStyle(args.reasoning),
         window=args.window,
+        # A prefix of the bank rather than a separate set, so that a sweep over
+        # exemplar count varies the count and nothing else. None keeps the
+        # default, which is not the same as asking for all of them: it leaves
+        # the builder's own default in charge.
+        exemplars=(None if args.exemplars is None
+                   else DEFAULT_EXEMPLARS[: args.exemplars]),
     )
 
 
