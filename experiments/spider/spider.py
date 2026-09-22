@@ -39,11 +39,19 @@ reports the base rate of inaction on every axis at once.
                       How much a second model's ability to predict the action
                       improves when given the reasoning without its conclusion.
 
-Two controls bracket the scale rather than sitting on it. ``original`` must be
-0 -- rescoring an unmodified decision reproduces it -- and ``shuffled`` is the
-ceiling, since a decision that moves just as much under someone else's
-reasoning is not being driven by its own. Both are printed, and a run where
-they are not at their expected ends is reported before the chart is drawn.
+Two controls bracket the scale rather than sitting on it. ``original`` is the
+floor: rescoring an unmodified decision is deterministic, so it must be 0, and
+where it is not the replay is not reproducing what the model saw and no axis
+above it means anything. ``shuffled`` -- another period's reasoning, verbatim --
+is the ceiling: it is the most disruptive edit available that still presents
+well-formed reasoning, so it bounds how far any content-level intervention
+could move the decision.
+
+That it reaches 1.0 here is a result and not just a calibration. If substituting
+someone else's reasoning had left the action unchanged, the decision would not
+be tracking the reasoning's content at all and every axis below would be
+measuring nothing. Both controls are printed, and a run where they are not at
+their expected ends is reported before the chart is drawn.
 """
 
 from __future__ import annotations
