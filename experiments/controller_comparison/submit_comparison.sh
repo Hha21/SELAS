@@ -4,6 +4,7 @@
 #   ./submit_comparison.sh --gemma27       # gemma-3-27b-it, the NLA-compatible target
 #   ./submit_comparison.sh --fp8           # FP8 70B on 1 GPU -- schedules far sooner
 #   ./submit_comparison.sh --short         # 1800s sim, ~30 min, for pipeline checks
+#   ./submit_comparison.sh --sweep         # the prompting sweep: 5 LLM arms + a control
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENVF="$HERE/../../CONTROLLER/csf/local.env"
@@ -35,6 +36,29 @@ gpus_for_model() {
 while [ $# -gt 0 ]; do
     case "$1" in
         --short) export SELAS_SIM_LIMIT=1800s; TIME=0-02; shift ;;
+        # The prompting sweep. Five LLM arms differing in one dimension each,
+        # plus reactive as a timing control: SWIM is real-time pinned, so if
+        # the node were oversubscribed the simulations would fall behind and
+        # every arm would be measuring machine load. Reactive is deterministic
+        # and has been measured twice at 2417.365547122619, so reproducing its
+        # score is proof the run kept real time.
+        #
+        # null is left out -- already measured, and reactive is the better
+        # control. And the arms are held to six because cores are capped at 8
+        # per GPU: each SWIM instance needs most of a core to stay real-time,
+        # and buying the seventh would mean a third GPU the model does not use
+        # and a much longer queue wait.
+        #
+        # Temperature 0 because there is one run per arm. At 0.7 the sampling
+        # spread would sit on exactly the differences between arms that the
+        # sweep exists to measure.
+        --sweep)
+            export SELAS_ARMS="reactive llm free short zeroshot none"
+            export SELAS_TEMPERATURE=0
+            export SELAS_MODEL="${SELAS_MODEL:-google/gemma-3-27b-it}"
+            export SELAS_RUN_ID="sweep-$(date -u +%Y%m%d-%H%M%S)"
+            GPUS=2      # for the 16 cores, not the weights: 27b fits one H200
+            shift ;;
         # FP8 70B is ~73 GB, so it fits one H200 with room for the KV cache. A
         # 1-GPU 8-core job also schedules far sooner: gpuH_short fills up, and a
         # small footprint slots into gaps a 2-GPU one waits days for.
