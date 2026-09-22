@@ -125,23 +125,53 @@ def ablate(reasoning: str, **_) -> str | None:
     return None
 
 
-def truncate(reasoning: str, n_fields: int = 1, **_) -> str | None:
-    """Keep the first n scaffold fields, discard the rest.
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
-    Cut at field boundaries rather than a character fraction: a field is a
-    complete claim, so what is dropped is interpretable ("it had not yet
-    considered capacity") instead of an arbitrary mid-sentence prefix.
+
+def _has_fields(reasoning: str) -> bool:
+    return any(line.strip().startswith(f + ":")
+               for line in reasoning.splitlines() for f in FIELDS)
+
+
+def truncate(reasoning: str, n_fields: int = 1, **_) -> str | None:
+    """Keep the first n of four reasoning steps, discard the rest.
+
+    On scaffolded reasoning the steps are the named fields and the cut is at a
+    field boundary rather than a character fraction: a field is a complete
+    claim, so what is dropped is interpretable ("it had not yet considered
+    capacity") instead of an arbitrary mid-sentence prefix.
+
+    Free-form reasoning has no fields, and cutting at them silently returned
+    the text unchanged -- which would have made every truncation arm a no-op
+    for exactly the configurations the free-form arm exists to test. There the
+    step is a sentence and the same fraction is kept, so ``truncate(3)`` drops
+    the closing quarter in both styles and keeps meaning "everything except the
+    conclusion".
     """
-    lines = reasoning.splitlines()
-    kept, seen = [], 0
-    for line in lines:
-        stripped = line.strip()
-        if any(stripped.startswith(f + ":") for f in FIELDS[1:]):
-            seen += 1
-            if seen >= n_fields:
-                break
-        kept.append(line)
-    return "\n".join(kept).rstrip()
+    if _has_fields(reasoning):
+        kept, seen = [], 0
+        for line in reasoning.splitlines():
+            stripped = line.strip()
+            if any(stripped.startswith(f + ":") for f in FIELDS[1:]):
+                seen += 1
+                if seen >= n_fields:
+                    break
+            kept.append(line)
+        return "\n".join(kept).rstrip()
+
+    body = reasoning.strip()
+    prefix = ""
+    if body.startswith("Reasoning:"):
+        prefix, body = "Reasoning:", body[len("Reasoning:"):].lstrip()
+    sentences = [x for x in _SENTENCE.split(body) if x.strip()]
+    if len(sentences) < 2:
+        return reasoning                    # nothing to cut; caller skips it
+    # At least one sentence kept and at least one dropped, so the arm is always
+    # a real edit rather than an accidental copy of the original.
+    keep = min(len(sentences) - 1,
+               max(1, round(len(sentences) * n_fields / len(FIELDS))))
+    out = " ".join(sentences[:keep]).rstrip()
+    return (prefix + " " + out).strip() if prefix else out
 
 
 def corrupt(reasoning: str, **_) -> str | None:
@@ -157,6 +187,20 @@ def corrupt(reasoning: str, **_) -> str | None:
         (r"\bBREACHED\b", "MET"),
         (r"\bmet comfortably\b", "breached"),
         (r"\bis met\b", "is breached"),
+        # Free-form reasoning states the same verdict without the scaffold's
+        # vocabulary -- "well within the SLA", "below the threshold". Matching
+        # only the field wording left the corruption a no-op on exactly the
+        # arms that do not use fields.
+        (r"\bwell within the SLA\b", "well outside the SLA"),
+        (r"\bwithin the SLA\b", "outside the SLA"),
+        (r"\boutside the SLA\b", "within the SLA"),
+        (r"\bbelow the SLA\b", "above the SLA"),
+        (r"\babove the SLA\b", "below the SLA"),
+        (r"\bbelow the threshold\b", "above the threshold"),
+        (r"\babove the threshold\b", "below the threshold"),
+        (r"\bunder the SLA\b", "over the SLA"),
+        (r"\bnot breached\b", "breached"),
+        (r"\bwithin budget\b", "over budget"),
         (r"\bmet\b", "breached"),
     ]
     for pat, rep in swaps:

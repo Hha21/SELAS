@@ -74,6 +74,10 @@ def main() -> int:
           f"= {len(rows)*len(names)} scoring calls")
     started = time.time()
     written = skipped = 0
+    # Per-arm count of decisions an intervention could not touch. Reported at
+    # the end: an arm that matched nothing has an n far below the others, and
+    # that has to be visible rather than inferred from a smaller denominator.
+    skipped_noop: dict[str, int] = {}
     with args.out.open("w", encoding="utf-8") as fh:
         for i, r in enumerate(rows):
             reasoning = r.get("reasoning")
@@ -96,13 +100,15 @@ def main() -> int:
             for name in names:
                 modified = iv.INTERVENTIONS[name](
                     reasoning, pool=pool, rng=rng, paraphraser=paraphraser)
-                # A paraphrase that came back unchanged is not a paraphrase.
-                if name == "paraphrase" and (modified or "").strip() == reasoning.strip():
-                    continue
-                # A corruption that matched nothing is not a corruption; recording
-                # it as one would dilute the effect with untouched decisions.
-                if name.startswith("corrupt") and modified is not None \
-                        and iv.corrupt(reasoning) == reasoning:
+                # An intervention that came back unchanged is not an
+                # intervention, and recording it as one dilutes the effect with
+                # untouched decisions. This was previously checked only for
+                # corrupt and paraphrase, which was enough while every arm used
+                # the scaffold; free-form reasoning has no fields to cut, so the
+                # truncation arms silently returned the original too.
+                if name != "original" and modified is not None \
+                        and modified.strip() == reasoning.strip():
+                    skipped_noop[name] = skipped_noop.get(name, 0) + 1
                     continue
                 try:
                     if chat:
@@ -131,6 +137,10 @@ def main() -> int:
 
     print(f"wrote {written} rows to {args.out} ({skipped} decisions skipped) "
           f"in {(time.time()-started)/60:.1f} min")
+    if skipped_noop:
+        print("interventions that left the reasoning unchanged (not recorded):")
+        for name, n in sorted(skipped_noop.items(), key=lambda kv: -kv[1]):
+            print(f"  {name:<14} {n:>4} of {len(rows)} decisions")
     return 0
 
 
