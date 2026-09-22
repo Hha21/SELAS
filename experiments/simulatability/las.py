@@ -131,6 +131,18 @@ def main() -> int:
         d1 = mean([correct[p]["xe"] - correct[p]["x"] for p in leaking])
         d0 = mean([correct[p]["xe"] - correct[p]["x"] for p in nonleaking])
         halves = [h for h in (d0, d1) if h is not None]
+
+        # The raw contrasts, which do not depend on the leak split surviving.
+        # Hase et al.'s adjustment assumes leakage is occasional and accidental;
+        # here the explanation ends in a line naming the action, so nearly every
+        # decision leaks and LAS_0 is left resting on a handful of periods. The
+        # decomposition below says the same thing without that fragility.
+        def acc_on(c: str) -> float | None:
+            return mean([correct[p][c] for p in pool if c in correct[p]])
+
+        a_xe, a_x = acc_on("xe"), acc_on("x")
+        a_e, a_prem = acc_on("e"), acc_on("e_premises")
+        sub = (lambda u, v: None if u is None or v is None else u - v)
         return {
             "n": len(pool),
             "n_leaking": len(leaking), "n_nonleaking": len(nonleaking),
@@ -140,6 +152,15 @@ def main() -> int:
                 if pool else None),
             "las_1_leaking": d1, "las_0_nonleaking": d0,
             "las": mean(halves) if halves else None,
+            # What the whole explanation buys over the observation alone.
+            "delta_xe_x": sub(a_xe, a_x),
+            # What the premises buy, with the conclusion removed. This is the
+            # axis the spider plot uses: it is what the leak adjustment was
+            # meant to isolate, computed in a way that does not collapse when
+            # the conclusion leaks on every decision.
+            "delta_premises_x": sub(a_prem, a_x),
+            # What naming the action buys on top of the premises.
+            "delta_conclusion": sub(a_e, a_prem),
         }
 
     pools = {"all": complete, "ACTIVE": active}
@@ -156,6 +177,8 @@ def main() -> int:
             continue
         s = las(pool)
         s["las_normalised"] = None if s["las"] is None else (s["las"] + 1) / 2
+        s["simulatability"] = (None if s["delta_premises_x"] is None
+                               else (s["delta_premises_x"] + 1) / 2)
         out["las"][pool_name] = s
         print(f"{pool_name:<12} {s['n']:>4} {fmt(s['leak_rate']):>9} "
               f"{fmt(s['leak_rate_premises']):>11} "
@@ -163,6 +186,16 @@ def main() -> int:
               f"{fmt(s['las_1_leaking'], pct=False, width=8)} "
               f"{fmt(s['las'], pct=False, width=8)} "
               f"{fmt(s['las_normalised'], pct=False, width=7)}")
+
+    print()
+    print(f"{'':<12} {'n':>4} {'xe-x':>9} {'prem-x':>9} {'concl':>9} {'simul[0,1]':>11}")
+    print("-" * 58)
+    for pool_name, s in out["las"].items():
+        print(f"{pool_name:<12} {s['n']:>4} "
+              f"{fmt(s['delta_xe_x'], pct=False, width=9)} "
+              f"{fmt(s['delta_premises_x'], pct=False, width=9)} "
+              f"{fmt(s['delta_conclusion'], pct=False, width=9)} "
+              f"{fmt(s['simulatability'], pct=False, width=11)}")
 
     notes = []
     for pool_name, s in out["las"].items():
