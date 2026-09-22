@@ -57,7 +57,18 @@ while [ $# -gt 0 ]; do
             export SELAS_TEMPERATURE=0
             export SELAS_MODEL="${SELAS_MODEL:-google/gemma-3-27b-it}"
             export SELAS_RUN_ID="sweep-$(date -u +%Y%m%d-%H%M%S)"
-            GPUS=2      # for the 16 cores, not the weights: 27b fits one H200
+            # One GPU, so eight cores. Asking for two to get sixteen queued
+            # for four days behind a wall of 32-core jobs, on a node that had
+            # sixteen cores idle and one GPU free -- blocked on a resource the
+            # model does not use.
+            #
+            # Eight is enough, and that is measured rather than assumed: six
+            # concurrent simulations on eight cores reproduced the reactive
+            # arm's cumulative utility bit-for-bit against a 16-core run, at
+            # every one of the 16 overlapping timestamps. SWIM instances mostly
+            # sleep between discrete events and the controllers are idle 59
+            # seconds in 60, so the cores are not the binding constraint.
+            GPUS=1
             shift ;;
         # FP8 70B is ~73 GB, so it fits one H200 with room for the KV cache. A
         # 1-GPU 8-core job also schedules far sooner: gpuH_short fills up, and a
