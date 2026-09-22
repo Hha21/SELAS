@@ -138,10 +138,19 @@ def main() -> int:
 
     fig, ax = plt.subplots(figsize=(6.6, 5.0))
     front = frontier([(a, u, n) for a, u, n, _ in points])
-    if len(front) > 1:
+    # A frontier through points that barely differ in interpretability draws a
+    # trade-off curve where there is no trade-off. The span is the honest test:
+    # below it, the finding is that the configurations do not separate, and a
+    # line would assert otherwise.
+    span = (max(p[0] for p in front) - min(p[0] for p in front)) if front else 0.0
+    degenerate = len(front) < 2 or span < 0.05
+    if not degenerate:
         ax.plot([p[0] for p in front], [p[1] for p in front],
                 color=FRONTIER, linewidth=1.4, linestyle="--", zorder=2,
                 label="frontier")
+    elif len(front) > 1:
+        print(f"\nno frontier drawn: the non-dominated points span {span:.3f} "
+              f"on the interpretability axis, which is not a trade-off")
 
     ax.scatter([p[0] for p in points], [p[1] for p in points],
                s=70, color=POINT, zorder=3, edgecolor="white", linewidth=1.2)
@@ -167,8 +176,8 @@ def main() -> int:
         ax.spines[side].set_color(GRID)
     ax.tick_params(colors=INK_SECONDARY, labelsize=8)
     ax.set_title("What does an explanation cost?", color=INK_PRIMARY, fontsize=11)
-    if len(front) > 1:
-        ax.legend(frameon=False, fontsize=8, loc="lower left")
+    if not degenerate:
+        ax.legend(frameon=False, fontsize=8, loc="lower right")
 
     fig.tight_layout()
     for suffix in (".png", ".pdf"):

@@ -103,8 +103,16 @@ def axes_for(run: Path, pool: str = "ACTIVE",
         iso = faith.get("_paired", {}).get("corrupt_open|truncate_3", {}).get(key)
         if iso is not None:
             vals["Mistakes"] = float(iso)
+        elif "_paired" in faith:
+            # The table exists but this pair does not, which happens when the
+            # baseline arm was a no-op for every decision -- a configuration
+            # whose reasoning is already truncated before its conclusion has
+            # nothing for truncate_3 to remove. Unmeasurable here, not zero.
+            missing.append("Mistakes: truncate_3 was a no-op for this "
+                           "configuration, so the premise negation has no "
+                           "baseline to be read against")
         else:
-            # An older faithfulness.json has no paired table. Refuse the
+            # An older faithfulness.json has no paired table at all. Refuse the
             # unpaired number rather than quietly plot an axis that is mostly
             # the cost of deleting the conclusion.
             missing.append("faithfulness.json lacks the paired table "
@@ -214,14 +222,26 @@ def main() -> int:
     ang = np.linspace(0, 2 * np.pi, len(drawn), endpoint=False).tolist()
     ang += ang[:1]
     fig, ax = plt.subplots(figsize=(6.2, 6.2), subplot_kw={"polar": True})
+    unmeasured = {}
     for i, (label, vals, _m, _c) in enumerate(series):
         style = SERIES[i % len(SERIES)]
-        # A missing axis is carried at 0 with the label already flagged above;
-        # a gap in a closed polygon would read as a value.
+        gaps = [a for a in drawn if vals[a] is None]
+        # A closed polygon needs a number at every vertex, so an unmeasured
+        # axis has to be carried at zero -- but drawn plainly that is
+        # indistinguishable from a genuine zero on the same axis, which is
+        # exactly the confusion to avoid when one arm scores 0.000 honestly and
+        # another was never measurable. Mark the series and ring the vertex.
+        if gaps:
+            unmeasured[label] = gaps
+            label = label + " *"
         v = [vals[a] if vals[a] is not None else 0.0 for a in drawn]
         v += v[:1]
         ax.plot(ang, v, linewidth=1.8, label=label, **style)
         ax.fill(ang, v, color=style["color"], alpha=0.12)
+        for a in gaps:
+            ax.plot(ang[drawn.index(a)], 0.0, marker="o", markersize=9,
+                    markerfacecolor="white", markeredgecolor=style["color"],
+                    markeredgewidth=1.6, zorder=5)
 
     ax.set_xticks(ang[:-1])
     ax.set_xticklabels(drawn, color=INK_PRIMARY, fontsize=10)
@@ -242,6 +262,11 @@ def main() -> int:
     if len(series) > 1:
         ax.legend(loc="upper right", bbox_to_anchor=(1.28, 1.12), frameon=False,
                   fontsize=9, labelcolor=INK_PRIMARY)
+    if unmeasured:
+        note = "; ".join(f"{k}: {', '.join(v)} not measurable"
+                         for k, v in unmeasured.items())
+        fig.text(0.5, -0.01, "* " + note + " (open marker, plotted at zero)",
+                 ha="center", fontsize=7.5, color=INK_SECONDARY)
     fig.tight_layout()
     for suffix in (".png", ".pdf"):
         fig.savefig(args.out.with_suffix(suffix), dpi=200,
