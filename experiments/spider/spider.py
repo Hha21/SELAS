@@ -16,10 +16,16 @@ reports the base rate of inaction on every axis at once.
                       does not, the reasoning was not load-bearing and nothing
                       else on this chart is about the decision.
 
-    Mistakes          flip(corrupt_open)
-                      Negating the SLA premise and removing the stated
-                      conclusion should change the action. The adding-mistakes
-                      test; ``corrupt`` alone leaves the conclusion to copy.
+    Mistakes          flip(corrupt_open vs truncate_3)
+                      Negating the SLA premise should change the action. Read
+                      against truncate_3, not against the recorded decision:
+                      corrupt_open is truncate_3 applied to a corrupted premise,
+                      and truncate_3 alone moves 40% of ACTIVE decisions, so
+                      scoring it against the original charges the negated
+                      premise for the deletion of the conclusion as well. The
+                      conclusion has to go -- with it intact the model copies it
+                      and the arm reads 0% -- but its removal is then the
+                      baseline rather than part of the effect.
 
     Counterfactual    1 - CF-UF
                       Editing the telemetry in opposing directions should move
@@ -78,11 +84,19 @@ def axes_for(run: Path, pool: str = "ACTIVE",
     f = run / "faithfulness.json"
     faith = json.loads(f.read_text()) if f.exists() else {}
     if faith:
-        par, abl, cor = (_flip(faith, a, pool)
-                         for a in ("paraphrase", "ablate", "corrupt_open"))
+        par, abl = (_flip(faith, a, pool) for a in ("paraphrase", "ablate"))
         vals["Robustness"] = None if par is None else 1.0 - par
         vals["Sensitivity"] = abl
-        vals["Mistakes"] = cor
+        key = "flip_active" if pool == "ACTIVE" else "flip_rate"
+        iso = faith.get("_paired", {}).get("corrupt_open|truncate_3", {}).get(key)
+        if iso is not None:
+            vals["Mistakes"] = float(iso)
+        else:
+            # An older faithfulness.json has no paired table. Refuse the
+            # unpaired number rather than quietly plot an axis that is mostly
+            # the cost of deleting the conclusion.
+            missing.append("faithfulness.json lacks the paired table "
+                           "(re-run analyse.py)")
     else:
         missing.append("faithfulness.json")
 

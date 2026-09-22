@@ -12,6 +12,12 @@ Three measures, because they answer different questions:
 ``p(orig)``mass remaining on the originally chosen action. Reads directly as
            confidence retained under perturbation.
 
+A composed arm is read against the arm it composes with, not against the
+recorded decision -- see the isolated-effect table. ``corrupt_open`` is
+``truncate_3`` applied to a corrupted premise, and ``truncate_3`` alone moves
+40% of ACTIVE decisions, so scoring it against the original charges the premise
+negation for the deletion of the conclusion as well.
+
 Read the ``original`` row first. Scoring is deterministic, so it should show a
 flip rate near zero and a TV near zero; anything else means the replay is not
 reproducing what the model saw, and the other rows cannot be interpreted.
@@ -110,6 +116,64 @@ def main() -> int:
         if name in summary:
             summary[name]["flip_no_op"] = (sum(buckets["no_op"]) / len(buckets["no_op"])) if buckets["no_op"] else None
             summary[name]["flip_active"] = (sum(buckets["active"]) / len(buckets["active"])) if buckets["active"] else None
+
+    # -- paired arms ---------------------------------------------------------
+    # Some arms are compositions, and measuring them against the *recorded*
+    # decision charges them for both changes at once. corrupt_open is
+    # truncate_3 composed with corrupt, and truncate_3 alone flips 40% of
+    # ACTIVE decisions, so reading corrupt_open against the original reports
+    # mostly the cost of deleting the conclusion and calls it a response to the
+    # negated premise. The honest baseline is the same prompt with the
+    # conclusion already gone, differing only in the premise.
+    PAIRED = [
+        ("corrupt_open", "truncate_3",
+         "negating the SLA premise, with the conclusion already removed"),
+        ("corrupt", "original",
+         "negating the SLA premise, conclusion left intact to copy"),
+        ("ablate", "filler",
+         "what the reasoning said, over and above how long it was"),
+    ]
+    print()
+    print(f"{'isolated effect':<28} {'n':>4} {'flip (all)':>11} "
+          f"{'flip (ACTIVE)':>14} {'TV':>8}")
+    print("-" * 70)
+    paired = {}
+    for arm, base, what in PAIRED:
+        if arm not in by or base not in by:
+            continue
+        b_by = {r["period"]: r for r in by[base]}
+        allf, actf, tvs = [], [], []
+        for r in by[arm]:
+            o = b_by.get(r["period"])
+            if o is None:
+                continue
+            label = dict(r["options"])
+            da = mask_renorm(r["distribution_rescored"], r["legal_ids"])
+            db = mask_renorm(o["distribution_rescored"], o["legal_ids"])
+            if not da or not db:
+                continue
+            flip = label[max(da, key=da.__getitem__)] != label[max(db, key=db.__getitem__)]
+            allf.append(flip)
+            if r["action_recorded"] != "no_op":
+                actf.append(flip)
+            tvs.append(tv(da, db))
+        if not allf:
+            continue
+        key = f"{arm}|{base}"
+        paired[key] = {
+            "n": len(allf), "n_active": len(actf),
+            "flip_rate": sum(allf) / len(allf),
+            "flip_active": (sum(actf) / len(actf)) if actf else None,
+            "tv_mean": st.mean(tvs), "what": what,
+        }
+        k = paired[key]
+        act = "-" if k["flip_active"] is None else f"{k['flip_active']*100:.1f}%"
+        print(f"{arm+' vs '+base:<28} {k['n']:>4} {k['flip_rate']*100:>10.1f}% "
+              f"{act:>14} {k['tv_mean']:>8.3f}")
+    for arm, base, what in PAIRED:
+        if f"{arm}|{base}" in paired:
+            print(f"    {arm} vs {base}: {what}")
+    summary["_paired"] = paired
 
     if "original" in summary:
         o = summary["original"]
