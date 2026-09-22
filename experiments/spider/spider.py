@@ -196,6 +196,10 @@ def main() -> int:
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0.25", "0.50", "0.75", "1.00"],
                        color=INK_SECONDARY, fontsize=8)
+    # Put the radial scale halfway between two spokes. On its default it lies
+    # along the first one, where the gridline numbers sit on top of that axis's
+    # own polygon vertex and are read as part of it.
+    ax.set_rlabel_position(360.0 / len(drawn) / 2.0)
     ax.tick_params(pad=8)
     ax.grid(color=GRID, linewidth=0.8)
     ax.spines["polar"].set_color(GRID)
@@ -207,7 +211,8 @@ def main() -> int:
                   fontsize=9, labelcolor=INK_PRIMARY)
     fig.tight_layout()
     for suffix in (".png", ".pdf"):
-        fig.savefig(args.out.with_suffix(suffix), dpi=200, bbox_inches="tight")
+        fig.savefig(args.out.with_suffix(suffix), dpi=200,
+                    bbox_inches="tight", pad_inches=0.3)
     print(f"\nwrote {args.out.with_suffix('.png')} and {args.out.with_suffix('.pdf')}")
 
     payload = {"pool": args.pool, "axes": drawn,
