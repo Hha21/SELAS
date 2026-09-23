@@ -261,18 +261,47 @@ def _trajectory(obs: Observation, period: int = 0) -> Trajectory:
 
 
 def test_static_prefix_is_identical_across_states():
-    """Segment A must not vary, or P0 differences stop meaning 'state'."""
+    """Segment A must not vary, or P0 differences stop meaning 'state'.
+
+    The pool ceiling is part of segment A but is a configuration constant, not
+    a time-varying quantity: SWIM reports the same max_servers every period of
+    a run. So the invariant that matters is across *states of one run*, which
+    is what this asserts.
+    """
     builder = ContextBuilder()
     a = builder.options_for(_obs(dimmer=0.1))
     b = builder.options_for(_obs(dimmer=0.9, servers=3, active_servers=3))
-    assert builder.static_prefix(a) == builder.static_prefix(b)
+    assert builder.static_prefix(a, 3) == builder.static_prefix(b, 3)
 
 
 def test_step_mode_keeps_the_prefix_static_too():
     builder = ContextBuilder(dimmer_mode=DimmerMode.STEP)
     a = builder.options_for(_obs(dimmer=0.25))
     b = builder.options_for(_obs(dimmer=0.75))
-    assert builder.static_prefix(a) == builder.static_prefix(b)
+    assert builder.static_prefix(a, 3) == builder.static_prefix(b, 3)
+
+
+def test_the_prompt_states_the_real_pool_ceiling():
+    """A hardcoded "1..3" would have told the model the pool was capped at
+    three while the state block said twelve -- and the intervention results say
+    it follows the reasoning over the telemetry, so it would likely have
+    believed the constraint rather than the observation."""
+    builder = ContextBuilder()
+    opts = builder.options_for(_obs())
+    assert "servers   1..3;" in builder.static_prefix(opts, 3)
+    assert "servers   1..12;" in builder.static_prefix(opts, 12)
+    assert builder.static_prefix(opts, 3) != builder.static_prefix(opts, 12)
+
+
+def test_both_prompt_paths_report_the_same_ceiling():
+    """The chat and completion paths build segment A separately; a fix applied
+    to one and not the other would be invisible until a run used the other."""
+    builder = ContextBuilder()
+    traj = _trajectory(_obs(max_servers=12))
+    chat, _ = builder.build_messages(0, traj)
+    flat = builder.build(0, traj)
+    assert "servers   1..12;" in chat[0]["content"]
+    assert "servers   1..12;" in flat.text
 
 
 def test_probe_offsets_land_where_they_claim():
