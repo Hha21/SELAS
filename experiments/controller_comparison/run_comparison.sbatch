@@ -246,7 +246,7 @@ for token in $ARMS; do
     port=$(( PORT_BASE + arm_index )); arm_index=$(( arm_index + 1 ))
     res="$OUT/$label"; mkdir -p "$res"
 
-    echo "starting SWIM for '$arm' on :$port"
+    echo "starting SWIM for '$label' (seed-set $seed) on :$port"
     apptainer exec \
         --bind "$res":/headless/seams-swim/results \
         --bind "$SWIM_INI":/headless/seams-swim/swim/simulations/swim/swim.ini \
