@@ -71,6 +71,7 @@ while [ $# -gt 0 ]; do
             export SELAS_RUN_INDEX=8
             export SELAS_INITIAL_SERVERS=3
             export SELAS_MAX_SERVERS=12
+            export SELAS_BOOT_DELAY=180      # must match run index 8's latency
             export SELAS_BROWNOUT_LEVELS=10
             export SELAS_ARMS="llm reactive none llm@2 reactive@2 none@2"
             export SELAS_TEMPERATURE=0

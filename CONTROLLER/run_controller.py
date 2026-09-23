@@ -45,6 +45,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                       default="reactive",
                       help="null never acts -- the control for whether acting helped at all")
     ctrl.add_argument("--sla", type=float, default=0.75)
+    ctrl.add_argument("--boot-delay", type=int, default=60, metavar="S",
+                      help="seconds a new server takes to boot. SWIM does not "
+                           "expose this over the socket, so it has to be told: "
+                           "the prompt states it as a constraint, and at the "
+                           "published configuration's 180 s a stale 60 would "
+                           "understate how long scaling blocks by three periods")
     ctrl.add_argument("--period", type=float, default=60.0)
     ctrl.add_argument("--max-periods", type=int, default=None)
     ctrl.add_argument("--window", type=int, default=5)
@@ -98,6 +104,7 @@ def build_builder(args: argparse.Namespace) -> ContextBuilder:
         period_seconds=int(args.period),
         dimmer_mode=DimmerMode(args.dimmer_mode),
         reasoning=ReasoningStyle(args.reasoning),
+        boot_delay=args.boot_delay,
         window=args.window,
         # A prefix of the bank rather than a separate set, so that a sweep over
         # exemplar count varies the count and nothing else. The builder picks

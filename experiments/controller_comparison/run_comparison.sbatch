@@ -69,6 +69,10 @@ OUT="${SELAS_RESULTS:-$HOME/selas-results}/$RUN_ID"
 # adaptation. Starting at 1 forces scaling up to be necessary.
 INITIAL_SERVERS="${SELAS_INITIAL_SERVERS:-1}"
 MAX_SERVERS="${SELAS_MAX_SERVERS:-3}"
+# bootDelay is chosen by RUN_INDEX (it is a sweep variable), but the controller
+# has to be told separately because SWIM does not expose it over the socket.
+# The two must agree, and the run is aborted below if they do not.
+BOOT_DELAY="${SELAS_BOOT_DELAY:-60}"
 BROWNOUT_LEVELS="${SELAS_BROWNOUT_LEVELS:-5}"
 PROMPT_FORMAT="${SELAS_PROMPT_FORMAT:-chat}"
 
@@ -142,7 +146,7 @@ mkdir -p "$OUT"
 echo "run       $RUN_ID"
 echo "node      $(hostname)   gpus=$CUDA_VISIBLE_DEVICES   cores=$SLURM_CPUS_PER_TASK"
 echo "model     $MODEL  (vllm :$VLLM_PORT)"
-echo "swim      run $RUN_INDEX, seed-set $SEED_SET, servers $INITIAL_SERVERS/$MAX_SERVERS${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
+echo "swim      run $RUN_INDEX, seed-set $SEED_SET, servers $INITIAL_SERVERS/$MAX_SERVERS, boot ${BOOT_DELAY}s${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
 echo "arms      $ARMS   (llm arms in $PROMPT_FORMAT format${TEMPERATURE:+, temperature $TEMPERATURE})"
 for t in $ARMS; do printf '            %-12s %s\n' "$t" "${ARM_SPEC[${t%@*}]:-UNKNOWN}"; done
 echo "out       $OUT"
@@ -272,11 +276,43 @@ for token in $ARMS; do
             ;;
     esac
     python run_controller.py --port "$port" --period "$PERIOD" \
+        --boot-delay "$BOOT_DELAY" \
         --run-dir "$res" --run-id "$label" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
     CTL_PIDS="$CTL_PIDS $!"
     echo "  controller '$label' started (pid $!)"
 done
+
+# Verify the boot delay we told the model matches the one the simulation is
+# using. SWIM records it as a scalar, so a mismatch is detectable rather than
+# something that quietly makes the prompt wrong for 105 minutes. Checked once a
+# .sca exists -- after the run, since that is when it is written.
+check_boot_delay() {
+    local sca
+    sca=$(find "$OUT" -name "*.sca" -size +0 2>/dev/null | head -1)
+    [ -n "$sca" ] || return 0
+    python - "$sca" "$BOOT_DELAY" <<'PY'
+import sqlite3, sys
+sca, told = sys.argv[1], float(sys.argv[2])
+try:
+    c = sqlite3.connect(f"file:{sca}?mode=ro", uri=True)
+    row = c.execute("SELECT scalarValue FROM scalar WHERE scalarName "
+                    "LIKE '%bootDelay%' LIMIT 1").fetchone()
+    c.close()
+except Exception as exc:
+    print(f"  (could not read bootDelay from {sca}: {exc})"); sys.exit(0)
+if row is None:
+    print("  (bootDelay not recorded; skipping the check)"); sys.exit(0)
+actual = float(row[0])
+if abs(actual - told) > 1e-6:
+    print(f"WARNING: the prompt told the model servers boot in {told:.0f} s, "
+          f"but the simulation used {actual:.0f} s. Every decision was taken "
+          f"against a false constraint; set SELAS_BOOT_DELAY to match "
+          f"SELAS_RUN_INDEX.")
+else:
+    print(f"  bootDelay check: prompt and simulation agree at {actual:.0f} s")
+PY
+}
 
 echo "waiting for all simulations to finish..."
 wait $SWIM_PIDS
@@ -289,6 +325,7 @@ sleep 3
 
 # --------------------------------------------------------------- 3. collection
 echo "reached the collection step"
+check_boot_delay
 collect_results
 
 cat > "$OUT/manifest.json" <<JSON
