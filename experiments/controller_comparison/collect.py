@@ -135,6 +135,16 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
     rt = [(d["sim_elapsed_s"], d["observation"]["avg_rt"]) for d in decisions]
     violations = sum(1 for _, v in rt if v > sla)
 
+    # SLA violations as SWIM itself scores them. UtilityScorer returns a
+    # positive utility when the period's response time is within the threshold
+    # and min(0, throughput*1.5 - latePenalty) when it is not, with latePenalty
+    # = maxServers * maxServiceRate * 1.5 -- negative for any real throughput.
+    # So a scored period is a violation exactly when its utility is negative.
+    # Unlike the count above, this needs no controller log, so it is the same
+    # measurement for socket-driven runs and for SWIM's built-in managers.
+    scored = [v for t, v in vectors.get("utility_period", []) if t >= warmup]
+    swim_violations = sum(1 for v in scored if v < 0)
+
     return {
         "run_dir": str(run_dir),
         "sources": {
@@ -150,6 +160,9 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         "response_time": rt,
         "sla_violations": violations,
         "sla_violation_rate": (violations / len(rt)) if rt else None,
+        "scored_periods": len(scored),
+        "sla_violations_swim": swim_violations,
+        "sla_violation_rate_swim": (swim_violations / len(scored)) if scored else None,
         "decisions": decisions,
     }
 
