@@ -8,7 +8,7 @@
 #SBATCH -e logs/%x_%j.err
 #
 # SWIM's built-in managers over a pre-committed run list. CPU only.
-#   sbatch -A "$CSF_ACCOUNT" run_builtin.sbatch
+#   sbatch run_builtin.sbatch     (default account: the GPU account is rejected on multicore)
 set -uo pipefail
 REPO="${SELAS_REPO:-$HOME/SELAS}"
 OUT="${SELAS_OUT:-$HOME/selas-results/builtin-$(date -u +%Y%m%d-%H%M%S)}"
