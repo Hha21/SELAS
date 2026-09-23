@@ -45,6 +45,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                       default="reactive",
                       help="null never acts -- the control for whether acting helped at all")
     ctrl.add_argument("--sla", type=float, default=0.75)
+    ctrl.add_argument("--dimmer-levels", type=int, default=5, metavar="N",
+                      help="SWIM's numberOfBrownoutLevels. The reactive rule "
+                           "steps the dimmer by 1/(N-1), and SWIM does not report "
+                           "N over the socket")
     ctrl.add_argument("--boot-delay", type=int, default=60, metavar="S",
                       help="seconds a new server takes to boot. SWIM does not "
                            "expose this over the socket, so it has to be told: "
@@ -239,7 +243,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     # -- policy ------------------------------------------------------------
-    reactive = ReactivePolicy(sla=args.sla, require_spare=(args.policy != "reactive2"))
+    reactive = ReactivePolicy(sla=args.sla, require_spare=(args.policy != "reactive2"),
+                              dimmer_levels=args.dimmer_levels)
     if args.policy == "null":
         policy = NullPolicy()
     elif args.policy in ("reactive", "reactive2"):
@@ -257,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
             dimmer_mode=DimmerMode(args.dimmer_mode),
             max_reasoning_tokens=args.max_reasoning_tokens,
             temperature=args.temperature,
-            fallback=ReactivePolicy(sla=args.sla),
+            fallback=ReactivePolicy(sla=args.sla, dimmer_levels=args.dimmer_levels),
             chat=(args.prompt_format == "chat"),
         )
 

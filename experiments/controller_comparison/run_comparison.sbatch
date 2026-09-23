@@ -276,7 +276,7 @@ for token in $ARMS; do
             ;;
     esac
     python run_controller.py --port "$port" --period "$PERIOD" \
-        --boot-delay "$BOOT_DELAY" \
+        --boot-delay "$BOOT_DELAY" --dimmer-levels "$BROWNOUT_LEVELS" \
         --run-dir "$res" --run-id "$label" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
     CTL_PIDS="$CTL_PIDS $!"

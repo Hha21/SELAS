@@ -63,10 +63,20 @@ class ReactivePolicy:
 
     name = "reactive"
 
-    def __init__(self, sla: float = 0.75, require_spare: bool = True) -> None:
+    def __init__(self, sla: float = 0.75, require_spare: bool = True,
+                 dimmer_levels: int = 5) -> None:
         self.sla = sla
         # Reactive2 is this rule minus the spare-capacity guard.
         self.require_spare = require_spare
+        # SWIM's rule steps the dimmer by 1/(numberOfDimmerLevels - 1), and
+        # getNumberOfDimmerLevels() returns numberOfBrownoutLevels. That was a
+        # module constant here, fixed at the reduced configuration's 5 levels
+        # (a step of 0.25), so at the published configuration's 10 levels the
+        # port stepped 2.25x more coarsely than the rule it claims to be (1/9).
+        # SWIM does not report the level count over the socket, so it is told.
+        if dimmer_levels < 2:
+            raise ValueError(f"dimmer_levels must be >= 2, got {dimmer_levels}")
+        self.dimmer_step = 1.0 / (dimmer_levels - 1)
 
     def decide(self, obs: Observation, traj: Trajectory | None = None) -> Action:
         dimmer = obs.dimmer
@@ -78,13 +88,13 @@ class ReactivePolicy:
             if not booting and obs.servers < obs.max_servers:
                 return ADD_SERVER
             if dimmer > 0.0:
-                return Action(Kind.SET_DIMMER, max(0.0, round(dimmer - DIMMER_STEP, 6)))
+                return Action(Kind.SET_DIMMER, max(0.0, round(dimmer - self.dimmer_step, 6)))
             return NO_OP
 
         if rt < self.sla:
             if not self.require_spare or spare > 1:
                 if dimmer < 1.0:
-                    return Action(Kind.SET_DIMMER, min(1.0, round(dimmer + DIMMER_STEP, 6)))
+                    return Action(Kind.SET_DIMMER, min(1.0, round(dimmer + self.dimmer_step, 6)))
                 if not booting and obs.servers > 1:
                     return REMOVE_SERVER
         return NO_OP

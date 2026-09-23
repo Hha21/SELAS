@@ -103,6 +103,11 @@ while [ $# -gt 0 ]; do
         --fp8)    export SELAS_MODEL=nvidia/Llama-3.3-70B-Instruct-FP8; shift ;;
         --gemma27) export SELAS_MODEL=google/gemma-3-27b-it; shift ;;
         --model) export SELAS_MODEL="$2"; shift 2 ;;
+        # Overrides, applied after a preset so "--classic --initial 1" means the
+        # published pool and boot delay starting from one server.
+        --initial) export SELAS_INITIAL_SERVERS="$2"; shift 2 ;;
+        --arms)    export SELAS_ARMS="$2"; shift 2 ;;
+        --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)"; shift 2 ;;
         --gpus)  GPUS="$2"; shift 2 ;;
         --time)  TIME="$2"; shift 2 ;;
         -h|--help) sed -n '2,8p' "$0" | sed 's/^# \?//'; exit 0 ;;

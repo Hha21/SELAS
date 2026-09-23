@@ -456,3 +456,14 @@ def test_scoring_backend_failure_falls_back_rather_than_crashing():
     result = policy(0, obs, _trajectory(obs))
     assert result.policy.endswith("fallback")
     assert result.action == ADD_SERVER          # the reactive answer
+
+
+def test_reactive_step_follows_the_level_count():
+    """SWIM's rule steps by 1/(levels-1). At the published configuration's 10
+    levels that is 1/9, not the reduced configuration's 0.25 -- which the port
+    used regardless until it was told the level count."""
+    obs = _obs(basic_rt=0.1, opt_rt=0.1, dimmer=0.5, servers=3, active_servers=3,
+               max_servers=12, utilizations=(0.1, 0.1, 0.1))
+    assert ReactivePolicy().decide(obs) == Action(Kind.SET_DIMMER, 0.75)
+    assert ReactivePolicy(dimmer_levels=10).decide(obs) == \
+        Action(Kind.SET_DIMMER, round(0.5 + 1 / 9, 6))
