@@ -5,6 +5,7 @@
 #   ./submit_comparison.sh --fp8           # FP8 70B on 1 GPU -- schedules far sooner
 #   ./submit_comparison.sh --short         # 1800s sim, ~30 min, for pipeline checks
 #   ./submit_comparison.sh --sweep         # the prompting sweep: 5 LLM arms + a control
+#   ./submit_comparison.sh --classic       # published SWIM config, headline arms at 2 seeds
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENVF="$HERE/../../CONTROLLER/csf/local.env"
@@ -52,6 +53,31 @@ while [ $# -gt 0 ]; do
         # Temperature 0 because there is one run per arm. At 0.7 the sampling
         # spread would sit on exactly the differences between arms that the
         # sweep exists to measure.
+        # The configuration SWIM's own published results use: 12 servers, 3 to
+        # start, a 180 s boot delay and 10 brownout levels, on ClarkNet. Ours
+        # has been a reduced variant (3/1/60/5), which makes our numbers
+        # incomparable with pladapt 4067 and thallium 4692 -- the reference
+        # results that ship in SWIM/tools/THALLIUM.
+        #
+        # bootDelay is a sweep variable rather than a plain assignment, so it is
+        # selected by run index: `swim -q runs` gives index 8 for ClarkNet at
+        # latency 180. The other three are edited into a copy of the ini.
+        #
+        # Three arms at two seed-sets rather than six arms at one. Six
+        # concurrent simulations is the proven limit, so this costs the same
+        # 105 minutes and buys a run-to-run spread on the headline comparison,
+        # which is what the +-5 noise floor actually needs.
+        --classic)
+            export SELAS_RUN_INDEX=8
+            export SELAS_INITIAL_SERVERS=3
+            export SELAS_MAX_SERVERS=12
+            export SELAS_BROWNOUT_LEVELS=10
+            export SELAS_ARMS="llm reactive none llm@2 reactive@2 none@2"
+            export SELAS_TEMPERATURE=0
+            export SELAS_MODEL="${SELAS_MODEL:-google/gemma-3-27b-it}"
+            export SELAS_RUN_ID="classic-$(date -u +%Y%m%d-%H%M%S)"
+            GPUS=1
+            shift ;;
         --sweep)
             export SELAS_ARMS="reactive llm free short zeroshot none"
             export SELAS_TEMPERATURE=0

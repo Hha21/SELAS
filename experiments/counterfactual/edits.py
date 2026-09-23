@@ -146,7 +146,14 @@ def _set_spare(block: str, saturated: bool):
             continue
         head, old, mid, n_s, tail, _old_spare = m.groups()
         n = int(n_s)
-        util = float(n) if saturated else 0.20
+        # Saturated is n - 0.03 rather than exactly n. At exactly n both
+        # substituted numbers are integers the echo check has to discard as
+        # ambiguous -- n collides with the server count in "1 of 3 servers",
+        # and a spare of 0.00 with any bare zero -- which left this direction
+        # unmeasurable and the field's echo rate resting on the idle edit
+        # alone. Spare 0.03 is saturated by any reading, and both numbers are
+        # distinctive.
+        util = (float(n) - 0.03) if saturated else 0.20
         before = f"{old} used, {_old_spare} spare"
         lines[i] = f"{head}{util:.2f}{mid}{n}{tail}{max(0.0, n - util):.2f}"
         break

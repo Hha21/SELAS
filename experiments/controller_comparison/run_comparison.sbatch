@@ -68,6 +68,8 @@ OUT="${SELAS_RESULTS:-$HOME/selas-results}/$RUN_ID"
 # gemma's 4959 -- the optimal policy was inaction, which makes it a poor test of
 # adaptation. Starting at 1 forces scaling up to be necessary.
 INITIAL_SERVERS="${SELAS_INITIAL_SERVERS:-1}"
+MAX_SERVERS="${SELAS_MAX_SERVERS:-3}"
+BROWNOUT_LEVELS="${SELAS_BROWNOUT_LEVELS:-5}"
 PROMPT_FORMAT="${SELAS_PROMPT_FORMAT:-chat}"
 
 VLLM_PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
@@ -124,18 +126,25 @@ export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
 # directory rather than hidden in the image.
 SWIM_INI="$OUT/swim.ini"
 mkdir -p "$OUT"
-sed "s/^\*\.initialServers *=.*/*.initialServers = $INITIAL_SERVERS/" \
+sed -e "s/^\*\.initialServers *=.*/*.initialServers = $INITIAL_SERVERS/" \
+    -e "s/^\*\.maxServers *=.*/*.maxServers = $MAX_SERVERS/" \
+    -e "s/^\*\.numberOfBrownoutLevels *=.*/*.numberOfBrownoutLevels = $BROWNOUT_LEVELS/" \
     "$REPO/SWIM/simulations/swim/swim.ini" > "$SWIM_INI"
-grep -E "^\*\.(initialServers|maxServers)" "$SWIM_INI" | sed "s/^/  ini: /"
+grep -E "^\*\.(initialServers|maxServers|numberOfBrownoutLevels)" "$SWIM_INI" \
+    | sed "s/^/  ini: /"
+# bootDelay is a sweep variable, not a plain assignment, so it is selected by
+# run index rather than edited. `swim -q runs` lists the mapping; index 8 is
+# ClarkNet at latency 180, which is the published configuration.
+grep -E "^\*\.bootDelay" "$SWIM_INI" | sed "s/^/  ini: /"
 export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 mkdir -p "$OUT"
 
 echo "run       $RUN_ID"
 echo "node      $(hostname)   gpus=$CUDA_VISIBLE_DEVICES   cores=$SLURM_CPUS_PER_TASK"
 echo "model     $MODEL  (vllm :$VLLM_PORT)"
-echo "swim      run $RUN_INDEX, seed-set $SEED_SET, initialServers $INITIAL_SERVERS${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
+echo "swim      run $RUN_INDEX, seed-set $SEED_SET, servers $INITIAL_SERVERS/$MAX_SERVERS${SIM_LIMIT:+, sim-time-limit $SIM_LIMIT}"
 echo "arms      $ARMS   (llm arms in $PROMPT_FORMAT format${TEMPERATURE:+, temperature $TEMPERATURE})"
-for a in $ARMS; do printf '            %-9s %s\n' "$a" "${ARM_SPEC[$a]:-UNKNOWN}"; done
+for t in $ARMS; do printf '            %-12s %s\n' "$t" "${ARM_SPEC[${t%@*}]:-UNKNOWN}"; done
 echo "out       $OUT"
 
 # Collection runs from the EXIT trap, not only inline. The dry run reached the
@@ -151,10 +160,11 @@ collect_results() {
     COLLECTED=1
     echo "=== collecting results ==="
     cd "$REPO/experiments/controller_comparison" || { echo "cannot cd to collect"; return 1; }
-    local dirs=(); for a in $ARMS; do dirs+=("$OUT/$a"); done
+    local dirs=(); for t in $ARMS; do dirs+=("$OUT/${t/@/-s}"); done
     python collect.py "${dirs[@]}" -o "$OUT/runs.json" 2>&1 | tee "$OUT/collect.txt" \
         || echo "collect.py failed"
-    python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels $ARMS \
+    local labels=(); for t in $ARMS; do labels+=("${t/@/-s}"); done
+    python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels "${labels[@]}" \
         --title "SWIM run $RUN_INDEX, seed-set $SEED_SET, $MODEL" 2>&1 \
         || echo "plot.py failed"
     ls -la "$OUT" 2>/dev/null
@@ -170,9 +180,9 @@ collect_results() {
     if [ "$n_sca" -eq 0 ] || [ "$n_dec" -eq 0 ]; then
         echo "FAILED: $n_sca .sca files and $n_dec decision logs across $ARMS." >&2
         echo "        The simulations did not run. Check */swim.log." >&2
-        for a in $ARMS; do
-            echo "        --- $a ---" >&2
-            tail -4 "$OUT/$a/swim.log" 2>/dev/null | sed "s/^/        /" >&2
+        for t in $ARMS; do
+            echo "        --- ${t/@/-s} ---" >&2
+            tail -4 "$OUT/${t/@/-s}/swim.log" 2>/dev/null | sed "s/^/        /" >&2
         done
         COLLECT_FAILED=1
     fi
@@ -217,12 +227,20 @@ python run_controller.py --check-backend --backend openai \
 SWIM_PIDS=""
 CTL_PIDS=""
 arm_index=0
-for arm in $ARMS; do
+for token in $ARMS; do
+    # "llm@2" is the llm arm on seed-set 2. Repeats therefore cost slots in one
+    # allocation rather than a whole extra job: six concurrent simulations is
+    # proven, so three arms at two seeds is the same 105 minutes as six arms at
+    # one, and it is the only way to see run-to-run spread without paying twice.
+    arm="${token%@*}"
+    seed="$SEED_SET"
+    case "$token" in *@*) seed="${token##*@}" ;; esac
+    label="${token/@/-s}"
     if [ -z "${ARM_SPEC[$arm]:-}" ]; then
-        echo "unknown arm '$arm'; known: ${!ARM_SPEC[*]}" >&2; exit 1
+        echo "unknown arm '$arm' (from '$token'); known: ${!ARM_SPEC[*]}" >&2; exit 1
     fi
     port=$(( PORT_BASE + arm_index )); arm_index=$(( arm_index + 1 ))
-    res="$OUT/$arm"; mkdir -p "$res"
+    res="$OUT/$label"; mkdir -p "$res"
 
     echo "starting SWIM for '$arm' on :$port"
     apptainer exec \
@@ -232,7 +250,7 @@ for arm in $ARMS; do
         cd /headless/seams-swim/swim/simulations/swim
         export PATH=/opt/omnetpp-5.4.1/bin:\$PATH
         export LD_LIBRARY_PATH=/opt/omnetpp-5.4.1/lib:\$LD_LIBRARY_PATH
-        ../../src/swim swim.ini -u Cmdenv -c sim -r $RUN_INDEX --seed-set=$SEED_SET \
+        ../../src/swim swim.ini -u Cmdenv -c sim -r $RUN_INDEX --seed-set=$seed \
             --socketrtscheduler-port=$port ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
             -n ..:../../src:../../../queueinglib -l ../../../queueinglib/libqueueinglib.so
     " > "$res/swim.log" 2>&1 &
@@ -254,10 +272,10 @@ for arm in $ARMS; do
             ;;
     esac
     python run_controller.py --port "$port" --period "$PERIOD" \
-        --run-dir "$res" --run-id "$arm" "${extra[@]}" \
+        --run-dir "$res" --run-id "$label" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
     CTL_PIDS="$CTL_PIDS $!"
-    echo "  controller '$arm' started (pid $!)"
+    echo "  controller '$label' started (pid $!)"
 done
 
 echo "waiting for all simulations to finish..."
@@ -277,7 +295,8 @@ cat > "$OUT/manifest.json" <<JSON
 {"run_id": "$RUN_ID", "job_id": "$SLURM_JOB_ID", "node": "$(hostname)",
  "model": "$MODEL", "run_index": $RUN_INDEX, "seed_set": $SEED_SET,
  "sim_time_limit": "${SIM_LIMIT:-default}", "period_s": $PERIOD,
- "initial_servers": $INITIAL_SERVERS, "arms": "$ARMS", "prompt_format": "$PROMPT_FORMAT",
+ "initial_servers": $INITIAL_SERVERS, "max_servers": $MAX_SERVERS,
+ "brownout_levels": $BROWNOUT_LEVELS, "arms": "$ARMS", "prompt_format": "$PROMPT_FORMAT",
  "temperature": "${TEMPERATURE:-default}",
  "finished": "$(date -uIseconds)"}
 JSON

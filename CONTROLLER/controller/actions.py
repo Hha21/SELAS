@@ -32,11 +32,21 @@ if TYPE_CHECKING:
     from .swim import Observation
 
 
-# SWIM's swim.ini sets numberOfBrownoutLevels = 5. The step the reactive
-# controller uses is 1/(levels-1); the representatives below are the midpoints
-# of the five bands the utility scorer distinguishes.
+# Five dimmer targets spanning SWIM's usable range, which is
+# [dimmerMargin, 1 - dimmerMargin] = [0.1, 0.9] at the default margin of 0.1.
+#
+# They are NOT quantised to numberOfBrownoutLevels, and do not need to be:
+# AdaptInterface::cmdSetDimmer takes a continuous double and calls
+# setBrownout(1 - dimmer) with no rounding, so any value in range is
+# commandable. numberOfBrownoutLevels sets the step SWIM's own reactive and
+# proactive managers move in, and the bands the utility scorer distinguishes --
+# neither constrains an external controller.
+#
+# At the reduced configuration's 5 levels these happen to coincide with
+# brownoutLevelToFactor's grid exactly; at the classic configuration's 10 they
+# do not, and that costs nothing beyond the coincidence.
 DIMMER_LEVELS = 5
-DIMMER_STEP = 1.0 / (DIMMER_LEVELS - 1)          # 0.25
+DIMMER_STEP = 1.0 / (DIMMER_LEVELS - 1)          # 0.25, for STEP mode
 DIMMER_REPRESENTATIVES = (0.1, 0.3, 0.5, 0.7, 0.9)
 
 

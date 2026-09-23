@@ -174,7 +174,7 @@ class ContextBuilder:
         return list(zip(OPTION_IDS, actions))
 
     # -- chat form ---------------------------------------------------------
-    def system_text(self, options: list[tuple[str, Action]]) -> str:
+    def system_text(self, options: list[tuple[str, Action]], max_servers: int) -> str:
         """Role, constraints and the action legend -- no examples.
 
         In chat form the worked examples become real user/assistant turns
@@ -189,7 +189,7 @@ class ContextBuilder:
             "of servers. Each period you observe the system and choose exactly one action.",
             "",
             "Constraints:",
-            f"  servers   1..3; a new server takes {self.boot_delay} s to boot; one at a time;",
+            f"  servers   1..{max_servers}; a new server takes {self.boot_delay} s to boot; one at a time;",
             "            no scaling while a server is booting",
             "  dimmer    0.0..1.0, the fraction of responses served with optional content.",
             "            Higher dimmer means richer responses and higher response time.",
@@ -237,7 +237,7 @@ class ContextBuilder:
         options = self.options_for(obs)
 
         messages: list[dict[str, str]] = [
-            {"role": "system", "content": self.system_text(options)}
+            {"role": "system", "content": self.system_text(options, obs.max_servers)}
         ]
         for state, reason, answer in self.exemplars:
             messages.append({"role": "user", "content": state.strip()})
@@ -254,14 +254,14 @@ class ContextBuilder:
         return messages, options
 
     # -- segment A (flat form, retained so earlier runs still parse) --------
-    def static_prefix(self, options: list[tuple[str, Action]]) -> str:
+    def static_prefix(self, options: list[tuple[str, Action]], max_servers: int) -> str:
         legend = "\n".join(f"  {oid}  {label}" for oid, label in self.legend_entries(options))
         lines = [
             "You are the adaptation controller for a web application served by a pool",
             "of servers. Each period you observe the system and choose exactly one action.",
             "",
             "Constraints:",
-            f"  servers   1..3; a new server takes {self.boot_delay} s to boot; one at a time;",
+            f"  servers   1..{max_servers}; a new server takes {self.boot_delay} s to boot; one at a time;",
             "            no scaling while a server is booting",
             "  dimmer    0.0..1.0, the fraction of responses served with optional content.",
             "            Higher dimmer means richer responses and higher response time.",
@@ -362,7 +362,7 @@ class ContextBuilder:
         _, obs = entry
 
         options = self.options_for(obs)
-        prefix = self.static_prefix(options)
+        prefix = self.static_prefix(options, obs.max_servers)
         state = self.state_block(period, traj)
 
         text = prefix + state
