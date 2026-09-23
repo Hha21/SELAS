@@ -32,22 +32,25 @@ if TYPE_CHECKING:
     from .swim import Observation
 
 
-# Five dimmer targets spanning SWIM's usable range, which is
-# [dimmerMargin, 1 - dimmerMargin] = [0.1, 0.9] at the default margin of 0.1.
+# Five dimmer targets spanning the full range, 0 to 1.
 #
-# They are NOT quantised to numberOfBrownoutLevels, and do not need to be:
-# AdaptInterface::cmdSetDimmer takes a continuous double and calls
-# setBrownout(1 - dimmer) with no rounding, so any value in range is
-# commandable. numberOfBrownoutLevels sets the step SWIM's own reactive and
-# proactive managers move in, and the bands the utility scorer distinguishes --
-# neither constrains an external controller.
+# The top value has to be 1.0. SWIM reports utility with the SEAMS 2017 function
+# (plotResults.R, periodUtilitySEAMS2017A), which credits the server-cost term
+# 10 * (maxServers - avgServers) only when revenue is at its optimum -- that is,
+# when the dimmer is 1 and every response carries optional content. The previous
+# targets stopped at 0.9, chosen to sit on the grid of the simulator's own
+# ICAC 2016 scorer, and so left the controller structurally unable to earn that
+# term while SWIM's reactive manager, which steps to 1.0, could.
 #
-# At the reduced configuration's 5 levels these happen to coincide with
-# brownoutLevelToFactor's grid exactly; at the classic configuration's 10 they
-# do not, and that costs nothing beyond the coincidence.
+# They are not quantised to numberOfBrownoutLevels and do not need to be:
+# AdaptInterface::cmdSetDimmer takes a continuous value and calls
+# setBrownout(1 - dimmer) without rounding, and the reported utility reads the
+# dimmer from the recorded brownoutFactor vector, which holds that value.
+#
+# Quarters, which is also SWIM's reactive step at 5 levels.
 DIMMER_LEVELS = 5
 DIMMER_STEP = 1.0 / (DIMMER_LEVELS - 1)          # 0.25, for STEP mode
-DIMMER_REPRESENTATIVES = (0.1, 0.3, 0.5, 0.7, 0.9)
+DIMMER_REPRESENTATIVES = (0.0, 0.25, 0.5, 0.75, 1.0)
 
 
 class Kind(str, Enum):

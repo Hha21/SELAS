@@ -123,6 +123,7 @@ class ContextBuilder:
         window: int = 5,
         exemplars: list[tuple[str, str, str]] | None = None,
         n_exemplars: int | None = None,
+        objective: bool = True,
     ) -> None:
         self.sla = sla
         self.boot_delay = boot_delay
@@ -130,6 +131,7 @@ class ContextBuilder:
         self.dimmer_mode = dimmer_mode
         self.reasoning = reasoning
         self.window = window
+        self.objective = objective
         # The bank follows the style. Demonstrating scaffolded fields while
         # asking for free-form reasoning would have the model copy the fields
         # out of the exemplars whatever the instruction says, which is exactly
@@ -196,11 +198,38 @@ class ContextBuilder:
             f"  SLA       average response time below {self.sla:g} s",
             f"  period    one decision every {self.period_seconds} s",
             "",
+            *self._objective_lines(),
             "Actions:",
             legend,
             "",
             self._reply_instruction(),
         ])
+
+    def _objective_lines(self) -> list[str]:
+        """What the controller is scored on, in the order it is scored.
+
+        SWIM reports utility with the SEAMS 2017 function, which is
+        lexicographic: a period over the response-time threshold takes a large
+        penalty; otherwise revenue rises with the share of optional content; and
+        only when that share is total does running fewer servers add anything.
+        The paper calls this a strict preference order, and it is stated here as
+        one, in words and without the constants, so the controller knows the
+        goal without being handed a formula to optimise against.
+
+        SWIM's own reactive manager encodes the same order by construction --
+        raise the dimmer first, give servers back only once it is at 1 -- and
+        PLA optimises the function directly. A controller told only the
+        constraints would be the one baseline not told what it is for.
+        """
+        if not self.objective:
+            return []
+        return [
+            "Objective, in strict priority order:",
+            "  1. keep the SLA: a period over the threshold is heavily penalised",
+            "  2. serve as much optional content as possible (dimmer towards 1.0)",
+            "  3. only once the dimmer is at 1.0, run as few servers as you can",
+            "",
+        ]
 
     def _reply_instruction(self) -> str:
         """What the system prompt asks for, which is not the same in every style.
@@ -268,6 +297,7 @@ class ContextBuilder:
             f"  SLA       average response time below {self.sla:g} s",
             f"  period    one decision every {self.period_seconds} s",
             "",
+            *self._objective_lines(),
             "Actions:",
             legend,
             "",

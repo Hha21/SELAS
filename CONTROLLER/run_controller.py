@@ -74,6 +74,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      default=ReasoningStyle.SCAFFOLD.value)
     llm.add_argument("--temperature", type=float, default=0.7)
     llm.add_argument("--max-reasoning-tokens", type=int, default=200)
+    llm.add_argument("--no-objective", action="store_true",
+                     help="omit the objective from the system prompt, leaving only "
+                          "the constraints (the prompt used before SWIM's reported "
+                          "utility function was adopted)")
     llm.add_argument("--exemplars", type=int, default=None, metavar="N",
                      help="use the first N of the built-in exemplars "
                           "(0 for zero-shot; default: all of them)")
@@ -115,6 +119,7 @@ def build_builder(args: argparse.Namespace) -> ContextBuilder:
         # which bank -- scaffolded or free-form -- from the reasoning style, so
         # the count is passed rather than the slice.
         n_exemplars=args.exemplars,
+        objective=not args.no_objective,
     )
 
 

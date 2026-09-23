@@ -106,6 +106,15 @@ while [ $# -gt 0 ]; do
         # Overrides, applied after a preset so "--classic --initial 1" means the
         # published pool and boot delay starting from one server.
         --initial) export SELAS_INITIAL_SERVERS="$2"; shift 2 ;;
+        # Trace at the published 180 s boot delay. Run indices from `swim -q runs`;
+        # both are 180 s, so SELAS_BOOT_DELAY needs no change.
+        --trace)
+            case "$2" in
+                clarknet) export SELAS_RUN_INDEX=8 ;;
+                worldcup) export SELAS_RUN_INDEX=3 ;;
+                *) echo "--trace must be clarknet or worldcup" >&2; exit 1 ;;
+            esac
+            shift 2 ;;
         --arms)    export SELAS_ARMS="$2"; shift 2 ;;
         --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)"; shift 2 ;;
         --gpus)  GPUS="$2"; shift 2 ;;

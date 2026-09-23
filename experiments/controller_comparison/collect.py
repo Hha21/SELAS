@@ -24,7 +24,11 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import swim_utility  # noqa: E402
 
 # Vector statistics declared in SimpleMonitor.ned that we care about.
 WANTED_VECTORS = {
@@ -123,6 +127,19 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
     vectors = read_vectors(vec)
     decisions = read_decisions(dec)
 
+    # The utility SWIM reports: periodUtilitySEAMS2017A from plotResults.R,
+    # computed from the vectors (swim_utility.py, verified equal to SWIM's R on
+    # published and on our own runs). utility_total below is the simulator's
+    # ICAC 2016 scalar, which has no server-cost term; it is kept for continuity
+    # with earlier results but is not the number to report.
+    seams = icac = None
+    if sca.exists() and vec.exists():
+        try:
+            seams = swim_utility.utility(vec, sca, "seams2017a")
+            icac = swim_utility.utility(vec, sca, "icac2016")
+        except (KeyError, ValueError, StopIteration) as exc:
+            print(f"  (could not compute SWIM utility for {run_dir.name}: {exc})")
+
     # Cumulative utility over the evaluation window. SWIM scores from the end of
     # the warmup period, so anything before it must not contribute.
     cum, running = [], 0.0
@@ -155,6 +172,11 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         },
         "vectors_found": sorted(vectors),
         "utility_total": scalars.get("utility_total"),
+        "utility_seams2017a": seams["total"] if seams else None,
+        "utility_icac2016": icac["total"] if icac else None,
+        "mean_servers": seams["mean_servers"] if seams else None,
+        "mean_dimmer": seams["mean_dimmer"] if seams else None,
+        "late_periods_seams": seams["late_periods"] if seams else None,
         "utility_cumulative": cum,
         "series": vectors,
         "response_time": rt,

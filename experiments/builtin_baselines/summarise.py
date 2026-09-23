@@ -26,12 +26,14 @@ def main() -> int:
         m = LABEL.match(name)
         cells[m.group("cell") if m else name].append(r)
 
+    print("utility = SWIM's reported SEAMS 2017A function (plotResults.R)")
     print(f"\n{'cell':<32} {'n':>3} {'utility mean':>13} {'sd':>9} "
           f"{'min':>10} {'max':>10} {'SLA viol':>9}")
     print("-" * 92)
     for cell in sorted(cells):
         rs = cells[cell]
-        u = [r["utility_total"] for r in rs if r.get("utility_total") is not None]
+        # SWIM's reported utility (SEAMS 2017A), not the simulator's scalar.
+        u = [r["utility_seams2017a"] for r in rs if r.get("utility_seams2017a") is not None]
         v = [r["sla_violation_rate_swim"] for r in rs
              if r.get("sla_violation_rate_swim") is not None]
         if not u:

@@ -467,3 +467,23 @@ def test_reactive_step_follows_the_level_count():
     assert ReactivePolicy().decide(obs) == Action(Kind.SET_DIMMER, 0.75)
     assert ReactivePolicy(dimmer_levels=10).decide(obs) == \
         Action(Kind.SET_DIMMER, round(0.5 + 1 / 9, 6))
+
+
+def test_dimmer_actions_reach_full_content():
+    """SWIM's reported utility pays the server-cost term only at dimmer 1, so a
+    controller whose actions stop short of 1 can never earn it."""
+    from controller.actions import DIMMER_REPRESENTATIVES
+    assert max(DIMMER_REPRESENTATIVES) == 1.0
+    labels = [label for _, label in ContextBuilder().options_for(_obs())]
+    assert "set_dimmer 1" in labels
+
+
+def test_objective_states_the_priority_order_and_can_be_removed():
+    traj = _trajectory(_obs())
+    on = ContextBuilder().build_messages(0, traj)[0][0]["content"]
+    off = ContextBuilder(objective=False).build_messages(0, traj)[0][0]["content"]
+    assert "strict priority order" in on
+    assert on.index("keep the SLA") < on.index("optional content") < on.index("as few servers")
+    assert "Objective" not in off
+    flat = ContextBuilder().build(0, traj).text
+    assert "strict priority order" in flat
