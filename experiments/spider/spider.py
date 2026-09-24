@@ -183,11 +183,35 @@ def main() -> int:
     if len(labels) != len(args.runs):
         raise SystemExit(f"{len(labels)} labels for {len(args.runs)} runs")
 
-    series = []
+    # Runs that share a label are pooled: each axis is the mean over those runs
+    # (e.g. one prompt over three seeds), so the polygon describes the
+    # configuration rather than one draw. The per-run values are printed first
+    # so the spread behind each mean is visible.
+    per_run = []
     for run, label in zip(args.runs, labels):
         vals, missing = axes_for(run, args.pool, args.simulator)
-        ctl = controls(run, args.pool)
-        series.append((label, vals, missing, ctl))
+        per_run.append((label, run, vals, missing, controls(run, args.pool)))
+    if len(set(labels)) < len(labels):
+        print(f"per run ({args.pool} decisions):")
+        for label, run, vals, _m, _c in per_run:
+            print(f"  {label:<14} {run.name:<14} " + "  ".join(
+                f"{a[:6]} {'-' if vals[a] is None else f'{vals[a]:.3f}'}" for a in AXES))
+        print()
+    series = []
+    for label in dict.fromkeys(labels):
+        group = [r for r in per_run if r[0] == label]
+        vals = {}
+        for a in AXES:
+            got = [g[2][a] for g in group if g[2][a] is not None]
+            vals[a] = sum(got) / len(got) if got else None
+        missing = sorted({m for g in group for m in g[3]})
+        ctl = {}
+        for k in ("original", "shuffled"):
+            got = [g[4].get(k) for g in group if g[4].get(k) is not None]
+            ctl[k] = sum(got) / len(got) if got else None
+        series.append((label if len(group) == 1 else f"{label} (n={len(group)})",
+                       vals, missing, ctl))
+    labels = [s[0] for s in series]
 
     width = max(len(a) for a in AXES) + 2
     print(f"pool: {args.pool} decisions\n")
@@ -201,8 +225,9 @@ def main() -> int:
     print()
     for label, _v, missing, ctl in series:
         if ctl:
-            print(f"{label}: control original {ctl['original']:.3f} (expect 0.000), "
-                  f"shuffled {ctl['shuffled']:.3f} (ceiling)")
+            fmt3 = lambda v: "n/a" if v is None else f"{v:.3f}"
+            print(f"{label}: control original {fmt3(ctl['original'])} (expect 0.000), "
+                  f"shuffled {fmt3(ctl['shuffled'])} (ceiling)")
             if ctl["original"] and ctl["original"] > 0.05:
                 print(f"  WARNING: {label} control arm moved; the axes below it "
                       f"are not interpretable")

@@ -99,6 +99,9 @@ def main() -> int:
     ap.add_argument("run", type=Path, help="a sweep run directory")
     ap.add_argument("--reference", nargs="*", default=["none", "reactive", "null"],
                     help="arms drawn as horizontal lines rather than points")
+    ap.add_argument("--reference-value", nargs="*", default=[], metavar="NAME=UTILITY",
+                    help="extra horizontal reference lines from outside this run, "
+                         "e.g. 'PLA=4089.1' for a result that lives elsewhere")
     ap.add_argument("--pool", choices=["ACTIVE", "all"], default="ACTIVE")
     ap.add_argument("-o", "--out", type=Path, default=None)
     args = ap.parse_args()
@@ -107,6 +110,9 @@ def main() -> int:
     utility = load_utility(args.run)
 
     points, references, skipped = [], [], []
+    for spec in args.reference_value:
+        name, _, value = spec.rpartition("=")
+        references.append((name, float(value)))
     for arm, u in sorted(utility.items()):
         if arm in args.reference:
             references.append((arm, u))
