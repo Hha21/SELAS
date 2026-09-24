@@ -86,6 +86,7 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
             f"{len(results)} runs but only {len(SERIES)} series defined; "
             f"add palette slots before plotting this many arms")
 
+    end_labels = []
     for result, style in zip(results, SERIES):
         label = result.get("label", style["label"])
         common = {"color": style["color"], "linestyle": style["linestyle"],
@@ -115,15 +116,32 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
             ax_util.plot([p[0] for p in cum], [p[1] for p in cum], **common)
             # One direct label per series at its endpoint -- not a number on
             # every point.
-            ax_util.annotate(f"{cum[-1][1]:,.0f}", xy=cum[-1],
-                             xytext=(4, 0), textcoords="offset points",
-                             va="center", fontsize=8, color=style["color"])
+            end_labels.append((cum[-1], style["color"]))
 
     ax_srv.set_ylabel("servers")
     ax_srv.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax_dim.set_ylabel("dimmer")
     ax_dim.set_ylim(-0.05, 1.05)
     ax_rt.set_ylabel("resp. time (s)")
+    # End labels, spread apart vertically where lines finish close together.
+    # Drawn at the true endpoint with a short leader when they had to move, so
+    # the number still points at its own line.
+    if end_labels:
+        lo, hi = ax_util.get_ylim()
+        gap = 0.055 * (hi - lo)
+        placed = []
+        for (x, y), color in sorted(end_labels, key=lambda e: e[0][1]):
+            ty = y if not placed else max(y, placed[-1] + gap)
+            placed.append(ty)
+            ax_util.annotate(f"{y:,.0f}", xy=(x, y), xytext=(x, ty),
+                             textcoords="data", va="center", fontsize=8, color=color,
+                             ha="left",
+                             arrowprops=None if abs(ty - y) < 1e-9 else
+                             dict(arrowstyle="-", color=color, lw=0.6, shrinkA=0, shrinkB=0))
+        # the annotations sit just right of the data; nudge them off the line end
+        for t in ax_util.texts[-len(end_labels):]:
+            t.set_position((t.get_position()[0] + 0.012 * (ax_util.get_xlim()[1] - ax_util.get_xlim()[0]),
+                            t.get_position()[1]))
     ax_util.set_ylabel("cum. utility")
     ax_util.set_xlabel("simulation time (s)")
 
