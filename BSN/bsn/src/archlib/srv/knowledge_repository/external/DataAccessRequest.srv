@@ -1,6 +1,0 @@
-#request constants
-string name
-string query
----
-#response constants
-string content

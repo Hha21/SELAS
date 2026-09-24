@@ -1,24 +1,5 @@
 # Copyrighted papers (not ours to redistribute) -- see READMEs for citations instead
-TAS/Tele_Assistance_A_Self-Adaptive_Service-Based_System_Exemplar.pdf
-BSN/Body Sensor Network: A Self-Adaptive System Exemplar in the Healthcare Domain.pdf
 POLARIS/SEAMS_2025_AgenticFramework.pdf
-
-# Build output produced by build.sh in each TAS variant (TAS.v1.6, TAS-ActivFORMS, ...)
-TAS/*/*/out/
-
-# Stale precompiled output shipped in the original distributions
-TAS/*/*/bin/
-
-# Stale Ant/NetBeans build+deploy tree shipped in the original distributions
-# (duplicated source, duplicated libs, compiled classes, dist jars, old JNLP files)
-TAS/*/TAS_gui/build/
-
-# Eclipse workspace metadata (not per-project config -- large, personal, IDE-only)
-TAS/*/.metadata/
-
-# Runtime-generated output from running the GUI (TAS_gui/results/), in each TAS variant
-TAS/*/TAS_gui/results/log.csv
-TAS/*/TAS_gui/results/result.csv
 
 # Top-level Python venv (requirements.txt)
 .venv/
@@ -50,6 +31,7 @@ __pycache__/
 
 # Paper sources and the term report build, kept out of the code repository.
 LaTeX/
+LaTeX_Submission/
 InitSummerWork.pdf
 
 # Working context documents: notes and references written for/with the agent

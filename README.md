@@ -4,17 +4,17 @@ Research setup for studying **LLM-based self-adaptation and interpretability**:
 an LLM decides how a running system should adapt, and we read its activations to
 explain *why*.
 
-Three pieces, each independently runnable:
-
 | Directory | Role | What it is |
 |---|---|---|
-| [SWIM/](SWIM/) | **managed system** | Simulated web infrastructure with two knobs — server count and a "dimmer" trading response fidelity for latency. Runs in Docker, controlled over TCP on port 4242. |
-| [POLARIS/](POLARIS/) | **managing system** | LLM-based self-adaptation framework (Pandey et al., 2025). Reads SWIM telemetry, reasons about it, and enacts adaptation actions. |
-| [NLA/](NLA/) | **LLM server + interpretability** | Natural Language Autoencoder (Anthropic, 2026). Two roles in one process: it *serves* the model POLARIS reasons with, and it *reads* that model's activations and turns them into natural-language explanations. See [the split](#the-interpretability--llm-server-split). |
+| [SWIM/](SWIM/) | **managed system** | Simulated web infrastructure with two knobs — server count and a "dimmer" trading response fidelity for latency. Controlled over TCP. |
+| [CONTROLLER/](CONTROLLER/) | **managing system** | A MAPE-K loop with one LLM: each period it reads SWIM's telemetry, writes its reasoning, and scores the action options. This is the system the paper evaluates. |
+| [experiments/](experiments/) | **evaluation** | The controller comparison against SWIM's own managers, and the interpretability measurements on the controller's reasoning (faithfulness, counterfactuals, simulatability). |
+| [NLA/](NLA/) | **LLM server + interpretability** | Natural Language Autoencoder (Anthropic, 2026). Reads the model's activations and turns them into natural-language explanations. See [the split](#the-interpretability--llm-server-split). |
+| [POLARIS/](POLARIS/) | *reference only* | LLM-based self-adaptation framework (Pandey et al., 2025). Studied and audited early in the project; not used for any result. |
 
-`BSN/` and `TAS/` are other SEAMS exemplars, parked for now — nothing below
-involves them. Project background and the longer plan are in
-[PROJECT_PLAN.md](PROJECT_PLAN.md).
+> **Note.** The sections below describe the original POLARIS-based setup and are
+> kept for reference. The paper's results come from `CONTROLLER/` and
+> `experiments/`, which carry their own documentation.
 
 ## How they fit together
 
