@@ -80,6 +80,30 @@ At seed-set 0: prompt B keeps the dimmer at 1.0 (mean 0.98) and scales up to
 4 then 6 servers ahead of load (mean 4.28); prompt A repeatedly drops to one
 server and cuts the dimmer, breaching in 38 periods.
 
+**Where the scores come from.** SWIM's reported utility split into its three
+parts (`swim_utility.utility(...)["components"]`; the parts sum exactly to the
+total):
+
+| controller | total | revenue | cost bonus | penalty | periods at dimmer 1 | late | mean servers |
+|---|---|---|---|---|---|---|---|
+| prompt B, seed 0 | 11028 | 5402 | 6562 | −936 | 85/90 | 3 | 4.28 |
+| prompt B, seed 1 | 10965 | 5281 | 6611 | −926 | 80/90 | 3 | 3.87 |
+| prompt B, seed 2 | 9693 | 5161 | 5771 | −1240 | 78/90 | 4 | 4.80 |
+| do nothing | 5101 | 5398 | 0 | −297 | 0/90 | 1 | 3.00 |
+| Thallium | 4659 | 4659 | 0 | 0 | 0/90 | 0 | 2.00 |
+| PLA | 4089 | 4089 | 0 | 0 | 0/90 | 0 | 2.80 |
+| SWIM reactive | −865 | 3727 | 4420 | −9012 | 47/90 | 27 | 2.71 |
+| prompt A, seed 0 | −7119 | 2975 | 2779 | −12873 | 30/90 | 38 | 2.60 |
+
+On revenue alone prompt B equals doing nothing and slightly exceeds the
+planners. Its whole lead is the cost bonus, `10 × (12 − servers)` per period,
+paid only at dimmer 1 — which PLA, Thallium and doing nothing never reach, and
+which SWIM's reactive manager collects and then loses to breaches. A planner
+aiming at this function could exceed prompt B (dimmer 1 on ~2.8 servers without
+breaching would be ~14,000), so the result is **not** "the LLM beats the
+planners"; it is that the LLM, told the function, finds the strategy it rewards
+and holds it with few breaches, and told the same objective in words, does not.
+
 **How to state it.** Under SWIM's reported utility, prompt B is well ahead of
 the published planners. Part of that gap is that prompt B was *told* this
 function, whose server-cost bonus is paid only at dimmer 1; under the older
