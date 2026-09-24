@@ -128,7 +128,7 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
     # the number still points at its own line.
     if end_labels:
         lo, hi = ax_util.get_ylim()
-        gap = 0.055 * (hi - lo)
+        gap = 0.09 * (hi - lo)
         placed = []
         for (x, y), color in sorted(end_labels, key=lambda e: e[0][1]):
             ty = y if not placed else max(y, placed[-1] + gap)
