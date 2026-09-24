@@ -195,8 +195,26 @@ def utility(vec: Path, sca: Path, function: str = "seams2017a") -> dict:
 
     f = FUNCTIONS[function]
     per = [f(max_servers, max_rate, a[i], d[i], rt_threshold, r[i], sv[i]) for i in range(n)]
+
+    # Where the SEAMS 2017A total comes from: revenue in periods within the SLA,
+    # the server-cost bonus (paid only when the dimmer is at 1), and penalties in
+    # periods over it. The three sum to the total; kept so a large score can be
+    # explained rather than just reported.
+    comp = {"revenue": 0.0, "cost_bonus": 0.0, "penalty": 0.0,
+            "bonus_periods": 0, "late_periods": 0, "periods": n}
+    for i in range(n):
+        if r[i] > rt_threshold:
+            comp["penalty"] += min(0.0, a[i] - max_servers * max_rate) * 1.5
+            comp["late_periods"] += 1
+            continue
+        ur = a[i] * ((1 - d[i]) * 1.0 + d[i] * 1.5)
+        comp["revenue"] += ur
+        if ur >= a[i] * 1.5 - 1e-5:
+            comp["cost_bonus"] += 10 * (max_servers - sv[i])
+            comp["bonus_periods"] += 1
     return {
         "function": function,
+        "components": comp,
         "total": sum(per),
         "periods": list(zip(xs, per)),
         "lengths": {"arrival": len(arrival), "dimmer": len(dimmer_mean),
