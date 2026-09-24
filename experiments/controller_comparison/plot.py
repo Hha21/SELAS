@@ -103,7 +103,10 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
             # SWIM records brownout; the controller's knob is the dimmer.
             ax_dim.plot(t, [1.0 - b for b in v], drawstyle="steps-post", **common)
 
-        rt = result.get("response_time") or []
+        # SWIM's own per-period response time where available, so controllers
+        # that keep no decision log (PLA, Thallium, SWIM's managers) are drawn
+        # from the same measurement as the LLM.
+        rt = result.get("response_time_swim") or result.get("response_time") or []
         if rt:
             ax_rt.plot([p[0] for p in rt], [p[1] for p in rt], **common)
 

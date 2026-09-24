@@ -188,6 +188,7 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         "late_periods_seams": seams["late_periods"] if seams else None,
         "utility_cumulative": cum,
         "utility_cumulative_icac2016": cum_icac,
+        "response_time_swim": seams["response_times"] if seams else [],
         "series": vectors,
         "response_time": rt,
         "sla_violations": violations,

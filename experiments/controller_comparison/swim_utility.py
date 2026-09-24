@@ -202,6 +202,9 @@ def utility(vec: Path, sca: Path, function: str = "seams2017a") -> dict:
         "lengths": {"arrival": len(arrival), "dimmer": len(dimmer_mean),
                     "servers": len(servers_mean), "response": len(avg_rt)},
         "late_periods": sum(1 for v in r if v > rt_threshold),
+        # Per-period mean response time from SWIM's per-request records, the
+        # same measure for every controller whether or not it logs decisions.
+        "response_times": list(zip(xs, r)),
         "mean_servers": sum(sv) / len(sv) if sv else math.nan,
         "mean_dimmer": sum(d) / len(d) if d else math.nan,
     }
