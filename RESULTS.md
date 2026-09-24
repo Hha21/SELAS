@@ -93,22 +93,34 @@ function with per-period feedback, goes from the best controller to the worst.
 
 ---
 
-## 3. Interpretability — *to be run on the runs above*
+## 3. Interpretability — *running*
 
-**Regenerate:** once job 21302436 has finished,
+**Regenerate** (on CSF, after the performance runs exist):
 
 ```
-SELAS_RUN=published-clarknet-<timestamp> SELAS_ARMS="llm-s0 formula-s0" \
+SELAS_RUN=published-clarknet-20260924-141546 \
+SELAS_ARMS="llm-s0 llm-s1 llm-s2 formula-s0 formula-s1 formula-s2" \
     sbatch -A "$CSF_ACCOUNT" experiments/replay/replay_all.sbatch
-python3 experiments/spider/spider.py <run>/llm-s0 <run>/formula-s0 \
-    --labels "prompt A" "prompt B" -o <run>/spider
+experiments/spider/interpretability_figures.sh
 ```
 
-`replay_all.sbatch` runs, for each arm, the intervention battery (faithfulness),
-the counterfactual edits in both modes, and simulatability with three readers,
-concurrently against one served model (about 45 minutes).
+`replay_all.sbatch` replays every recorded decision of each run offline — the
+exact prompt the model saw, its reasoning, its distribution over actions —
+under edits, against the same served model, with no simulator: the
+intervention battery (faithfulness), the counterfactual edits in both modes,
+and simulatability with three reader models. All six runs concurrently.
 
-**The five axes** (all on ACTIVE decisions, 1 = interpretable end):
+`interpretability_figures.sh` then writes, into the run directory:
+
+- `spider.png` — one polygon per prompt, each axis the mean over its three
+  seeds, over **all decisions** (primary: holding still is a decision too);
+- `spider_active.png` — the same over active decisions only (does the
+  reasoning drive the action when the controller acts?);
+- `pareto.png` — SWIM's reported utility against the interpretability
+  aggregate, one point per run, with do nothing, SWIM's reactive manager, PLA
+  and Thallium as reference lines.
+
+**The five axes** (1 = interpretable end):
 
 | axis | measured as | source |
 |---|---|---|
@@ -120,9 +132,10 @@ concurrently against one served model (about 45 minutes).
 
 Deviations from the source protocol, all declared: the simulator is prompted
 rather than fine-tuned; the leakage-adjusted split is replaced by an accuracy
-decomposition because the reasoning leaks the answer in ~97% of decisions;
-everything is read on ACTIVE decisions because `no_op` survives any
-perturbation. Counterfactual edits are exact substitutions into structured
+decomposition because the reasoning leaks the answer in ~97% of decisions.
+Most decisions are `no_op`, which is stable under almost any edit, so the
+all-decisions axes partly measure how stable the choice to hold is; the
+active-only figure separates that out. Counterfactual edits are exact substitutions into structured
 telemetry rather than rewrites by another model.
 
 ---
