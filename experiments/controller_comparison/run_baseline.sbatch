@@ -37,8 +37,21 @@ PORT="${SELAS_PORT:-$(( 4300 + SLURM_JOB_ID % 200 ))}"
 RUN_ID="${SELAS_RUN_ID:-baseline-$POLICY-$(date -u +%Y%m%d-%H%M%S)}"
 OUT="${SELAS_RESULTS:-$HOME/selas-results}/$RUN_ID"
 
+# The same configuration knobs as run_comparison.sbatch, edited into a copy of
+# the ini and bind-mounted over the container's. Without this the job ran SWIM's
+# shipped reduced configuration whatever run index it was given.
+INITIAL_SERVERS="${SELAS_INITIAL_SERVERS:-3}"
+MAX_SERVERS="${SELAS_MAX_SERVERS:-3}"
+BROWNOUT_LEVELS="${SELAS_BROWNOUT_LEVELS:-5}"
+
 source "$HOME/selas-env.sh"
 mkdir -p "$OUT/$POLICY"
+SWIM_INI="$OUT/swim.ini"
+sed -e "s/^\*\.initialServers *=.*/*.initialServers = $INITIAL_SERVERS/" \
+    -e "s/^\*\.maxServers *=.*/*.maxServers = $MAX_SERVERS/" \
+    -e "s/^\*\.numberOfBrownoutLevels *=.*/*.numberOfBrownoutLevels = $BROWNOUT_LEVELS/" \
+    "$REPO/SWIM/simulations/swim/swim.ini" > "$SWIM_INI"
+grep -E "^\*\.(initialServers|maxServers|numberOfBrownoutLevels)" "$SWIM_INI" | sed "s/^/  ini: /"
 
 echo "run    $RUN_ID"
 echo "node   $(hostname)  policy=$POLICY  port=$PORT"
@@ -60,7 +73,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-apptainer exec --bind "$OUT/$POLICY":/headless/seams-swim/results "$SIF" bash -lc "
+apptainer exec --bind "$OUT/$POLICY":/headless/seams-swim/results \
+    --bind "$SWIM_INI":/headless/seams-swim/swim/simulations/swim/swim.ini "$SIF" bash -lc "
     cd /headless/seams-swim/swim/simulations/swim
     export PATH=/opt/omnetpp-5.4.1/bin:\$PATH
     export LD_LIBRARY_PATH=/opt/omnetpp-5.4.1/lib:\$LD_LIBRARY_PATH
