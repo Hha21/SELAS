@@ -489,3 +489,30 @@ def test_objective_states_the_priority_order_and_can_be_removed():
     assert "Objective" not in off
     flat = ContextBuilder().build(0, traj).text
     assert "strict priority order" in flat
+
+
+def test_period_utility_matches_the_seams2017_function():
+    from controller.utility import period_utility, kappa
+    assert abs(kappa(12) - 269.5) < 0.1
+    breach = _obs(basic_rt=1.9, opt_rt=1.9, arrival_rate=55.0, max_servers=12)
+    assert abs(period_utility(breach) - 1.5 * (55.0 - kappa(12))) < 1e-9
+    full = _obs(basic_rt=0.3, opt_rt=0.3, arrival_rate=45.0, dimmer=1.0,
+                servers=3, active_servers=3, max_servers=12, utilizations=(0.5,) * 3)
+    assert abs(period_utility(full) - (1.5 * 45.0 + 10 * 9)) < 1e-9
+    partial = _obs(basic_rt=0.2, opt_rt=0.2, arrival_rate=40.0, dimmer=0.9, max_servers=12)
+    assert abs(period_utility(partial) - 40.0 * 1.45) < 1e-9
+
+
+def test_formula_objective_and_feedback_are_independent_switches():
+    traj = _trajectory(_obs(max_servers=12))
+    formula = ContextBuilder(objective="formula").build_messages(0, traj)[0]
+    assert "1.5 * (a - 269.5)" in formula[0]["content"]
+    assert "utility        " not in formula[-1]["content"]
+    fed = ContextBuilder(utility_feedback=True).build_messages(0, traj)[0]
+    assert "strict priority order" in fed[0]["content"]
+    assert "this period" in fed[-1]["content"]
+    try:
+        ContextBuilder(objective="bogus")
+        assert False, "accepted an unknown objective"
+    except ValueError:
+        pass

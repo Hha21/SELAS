@@ -40,6 +40,7 @@ from enum import Enum
 from .actions import Action, DimmerMode, Kind, action_space
 from .swim import Observation
 from .trajectory import Trajectory
+from .utility import kappa, period_utility
 
 
 # Single-token identifiers. Scored one token at a time, so length bias cannot
@@ -123,7 +124,8 @@ class ContextBuilder:
         window: int = 5,
         exemplars: list[tuple[str, str, str]] | None = None,
         n_exemplars: int | None = None,
-        objective: bool = True,
+        objective: bool | str = "priority",
+        utility_feedback: bool = False,
     ) -> None:
         self.sla = sla
         self.boot_delay = boot_delay
@@ -131,7 +133,18 @@ class ContextBuilder:
         self.dimmer_mode = dimmer_mode
         self.reasoning = reasoning
         self.window = window
+        if objective is True:
+            objective = "priority"
+        elif objective is False:
+            objective = "none"
+        if objective not in ("none", "priority", "formula"):
+            raise ValueError(f"objective must be none, priority or formula, got {objective!r}")
         self.objective = objective
+        # Show the estimated utility of each observed period, now and in the
+        # history. Without it the controller cannot see what its choices cost:
+        # a breach and a lean, full-content period differ by several hundred,
+        # and nothing in the telemetry says so.
+        self.utility_feedback = utility_feedback
         # The bank follows the style. Demonstrating scaffolded fields while
         # asking for free-form reasoning would have the model copy the fields
         # out of the exemplars whatever the instruction says, which is exactly
@@ -198,14 +211,14 @@ class ContextBuilder:
             f"  SLA       average response time below {self.sla:g} s",
             f"  period    one decision every {self.period_seconds} s",
             "",
-            *self._objective_lines(),
+            *self._objective_lines(max_servers),
             "Actions:",
             legend,
             "",
             self._reply_instruction(),
         ])
 
-    def _objective_lines(self) -> list[str]:
+    def _objective_lines(self, max_servers: int) -> list[str]:
         """What the controller is scored on, in the order it is scored.
 
         SWIM reports utility with the SEAMS 2017 function, which is
@@ -221,13 +234,33 @@ class ContextBuilder:
         PLA optimises the function directly. A controller told only the
         constraints would be the one baseline not told what it is for.
         """
-        if not self.objective:
+        if self.objective == "none":
             return []
+        if self.objective == "formula":
+            return self._formula_lines(max_servers)
         return [
             "Objective, in strict priority order:",
             "  1. keep the SLA: a period over the threshold is heavily penalised",
             "  2. serve as much optional content as possible (dimmer towards 1.0)",
             "  3. only once the dimmer is at 1.0, run as few servers as you can",
+            "",
+        ]
+
+    def _formula_lines(self, max_servers: int) -> list[str]:
+        """SWIM's reported utility, stated exactly, with its constants.
+
+        The priority order in words gets the direction right but hides the
+        magnitudes, and the magnitudes are what matter under a long boot delay:
+        a period over the threshold costs several hundred, while an idle server
+        costs ten. This gives the model the function itself.
+        """
+        k = kappa(max_servers)
+        return [
+            "Objective: maximise total utility, scored each period. With a the",
+            "arrival rate in req/s:",
+            f"  response time over {self.sla:g} s    1.5 * (a - {k:.1f})",
+            f"  within it, dimmer = 1.0      1.5 * a + 10 * ({max_servers} - servers)",
+            "  within it, dimmer < 1.0      a * (1 + 0.5 * dimmer)",
             "",
         ]
 
@@ -297,7 +330,7 @@ class ContextBuilder:
             f"  SLA       average response time below {self.sla:g} s",
             f"  period    one decision every {self.period_seconds} s",
             "",
-            *self._objective_lines(),
+            *self._objective_lines(max_servers),
             "Actions:",
             legend,
             "",
@@ -335,6 +368,8 @@ class ContextBuilder:
             f"{obs.active_servers} server(s), spare {obs.spare:.2f}",
             f"  arrival rate   {obs.arrival_rate:.1f} req/s",
         ]
+        if self.utility_feedback:
+            lines.append(f"  utility        {period_utility(obs, self.sla):.1f} this period")
 
         history = traj.recent_observations(self.window)
         if len(history) > 1:
@@ -343,6 +378,8 @@ class ContextBuilder:
             lines.append(f"    arrival rate  {_fmt_series([o.arrival_rate for _, o in history], places=1)}")
             lines.append(f"    servers       {_fmt_series([float(o.active_servers) for _, o in history], places=0)}")
             lines.append(f"    dimmer        {_fmt_series([o.dimmer for _, o in history], places=2)}")
+            if self.utility_feedback:
+                lines.append(f"    utility       {_fmt_series([period_utility(o, self.sla) for _, o in history], places=0)}")
 
         decisions = traj.recent_decisions()
         if decisions:

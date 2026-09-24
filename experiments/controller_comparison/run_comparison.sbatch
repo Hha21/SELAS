@@ -106,6 +106,9 @@ declare -A ARM_SPEC=(
     [short]="--policy llm --reasoning scaffold --max-reasoning-tokens 60"
     [zeroshot]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 0"
     [none]="--policy llm --reasoning none"
+    # Config B: the utility function itself, and each period's utility shown.
+    # `llm` is config A: the same prompt with the priority order in words.
+    [formula]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --objective formula --utility-feedback"
 )
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does
