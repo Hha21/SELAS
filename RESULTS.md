@@ -3,9 +3,9 @@
 The record of what has been measured, where it lives, and how to regenerate it.
 Written so the poster and paper can be assembled from this file alone.
 
-**Status (2026-09-24).** The performance experiment on SWIM's published
-configuration is running (jobs 21302436, 21302437); the interpretability
-measurements still have to be re-run on those same runs. Everything in
+**Status (2026-09-24).** Performance on SWIM's published configuration is
+**done** (section 2). The interpretability measurements are being re-run on
+those same runs (section 3). Everything in
 [Earlier results](#earlier-results-superseded-configuration) comes from a
 reduced configuration and is kept for the record, not for the poster.
 
@@ -38,7 +38,7 @@ how the objective is stated:
 
 ---
 
-## 2. Performance — *pending*
+## 2. Performance — done
 
 **Figure:** `~/selas-results/published-figure/comparison.png` (and `.pdf`) on CSF.
 Four panels over time: servers, dimmer, response time, cumulative utility. All
@@ -64,8 +64,32 @@ once these exist:
 | SWIM `Reactive`, seeds 1–10 | −2619 ± 974 | ~30 of 90 | mean ± sample SD |
 | SWIM `Reactive2`, seeds 1–10 | −7436 ± 1026 | ~39 of 90 | |
 
-LLM prompts A and B and do-nothing: *to be filled in from the table printed by
-`published_figure.sh`.*
+**Results** (runs `published-clarknet-20260924-141546`, `published-null-20260924-141546`):
+
+| controller | SWIM reported utility (SEAMS 2017A) | late periods (of 90) | older utility (ICAC 2016) |
+|---|---|---|---|
+| **LLM, prompt B**, seeds 0–2 | **10562 ± 754** (11028, 10965, 9693) | 3.3 | 4248 (4465, 4355, 3923) |
+| do nothing, seed 0 | 5101 | 1 | 5102 |
+| Thallium (shipped) | 4659 | 0 | 4665 |
+| PLA (shipped) | 4089 | 0 | 4087 |
+| SWIM `Reactive`, seed 0 | −865 | 27 | −5284 |
+| SWIM `Reactive`, seeds 1–10 | −2619 ± 974 | 30 | |
+| LLM, prompt A, seeds 0–2 | −6018 ± 1151 (−7119, −4822, −6112) | 35 | −8730 |
+
+At seed-set 0: prompt B keeps the dimmer at 1.0 (mean 0.98) and scales up to
+4 then 6 servers ahead of load (mean 4.28); prompt A repeatedly drops to one
+server and cuts the dimmer, breaching in 38 periods.
+
+**How to state it.** Under SWIM's reported utility, prompt B is well ahead of
+the published planners. Part of that gap is that prompt B was *told* this
+function, whose server-cost bonus is paid only at dimmer 1; under the older
+function it is comparable to them (between PLA and Thallium), and doing nothing
+beats every controller. The shipped files do not record which objective PLA and
+Thallium were set to optimise, and PLA's low dimmer (0.12–0.24) fits neither
+function's revenue term well, so both functions are reported rather than
+assuming either is "theirs". The sharpest contrast is A vs B: the same model,
+given the same objective as a priority order in words rather than as a
+function with per-period feedback, goes from the best controller to the worst.
 
 ---
 
