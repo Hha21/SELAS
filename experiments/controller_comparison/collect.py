@@ -149,6 +149,15 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         running += v
         cum.append((t, running))
 
+    # The plotted curve is SWIM's reported utility, accumulated per period. The
+    # one above is the simulator's ICAC 2016 series, kept under its own name.
+    cum_icac = cum
+    if seams:
+        cum, running = [], 0.0
+        for t, v in seams["periods"]:
+            running += v
+            cum.append((t, running))
+
     rt = [(d["sim_elapsed_s"], d["observation"]["avg_rt"]) for d in decisions]
     violations = sum(1 for _, v in rt if v > sla)
 
@@ -178,6 +187,7 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         "mean_dimmer": seams["mean_dimmer"] if seams else None,
         "late_periods_seams": seams["late_periods"] if seams else None,
         "utility_cumulative": cum,
+        "utility_cumulative_icac2016": cum_icac,
         "series": vectors,
         "response_time": rt,
         "sla_violations": violations,
@@ -206,7 +216,7 @@ def main() -> int:
         print(f"{d}")
         print(f"  sca/vec:        {r['sources']['sca']} / {r['sources']['vec']}")
         print(f"  vectors found:  {r['vectors_found'] or 'NONE'}")
-        print(f"  utility total:  {r['utility_total']}")
+        print(f"  utility (SWIM reported, SEAMS2017A): {r['utility_seams2017a']}   simulator scalar: {r['utility_total']}")
         print(f"  decisions:      {r['sources']['decisions']}")
         if r["sla_violation_rate"] is not None:
             print(f"  SLA violations: {r['sla_violations']} "
