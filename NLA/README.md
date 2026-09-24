@@ -155,8 +155,8 @@ not fit on a 48 GB workstation together — collection and explanation have to b
 separable passes.
 
 Full details, endpoints and trace format: [server/README.md](server/README.md).
-To run the whole setup (SWIM + POLARIS + this server) use
-[`../start.sh`](../start.sh).
+To start this server locally use [`../start_nla.sh`](../start_nla.sh)
+(and [`../stop_nla.sh`](../stop_nla.sh)).
 
 Verify the interface end to end — this drives the server using POLARIS's *own*
 LLM client, then checks a trace was written with one activation per token:

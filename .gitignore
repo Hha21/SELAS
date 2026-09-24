@@ -32,6 +32,7 @@ __pycache__/
 # Paper sources and the term report build, kept out of the code repository.
 LaTeX/
 LaTeX_Submission/
+LaTeX_Poster/
 InitSummerWork.pdf
 
 # Working context documents: notes and references written for/with the agent
@@ -40,6 +41,7 @@ InitSummerWork.pdf
 LLM_Controller_Plan.md
 POLARIS_WIRING_ISSUES.md
 POLARIS_WIRING_AUDIT_2026-09.md
+PROJECT_PLAN.md
 csf3-slurm-manual.md
 
 # OMNeT++ raw vector output: tens of MB per run, regenerable only by re-running

@@ -32,6 +32,11 @@ how the model handles contradictions, which is a different question.
 from __future__ import annotations
 
 import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "CONTROLLER"))
+from controller.utility import BASIC_REVENUE, OPT_REVENUE, SERVER_COST, kappa  # noqa: E402
 
 # Held deliberately far past the decision boundary. An edit that lands near the
 # threshold measures where the model puts the boundary; the question here is
@@ -164,14 +169,64 @@ def _set_spare(block: str, saturated: bool):
         "edit": f"{util:.2f} used, {max(0.0, n-util):.2f} spare", "echo": f"{util:.2f}"}
 
 
+# -- keeping the shown utility consistent ------------------------------------
+# Prompt B shows each period's utility in the state block and the history. An
+# edit that changed the response time but left "utility 157.5 this period"
+# beside it would put a breach and a healthy period's score in the same prompt
+# -- the self-contradiction these edits exist to avoid -- so after every edit the
+# utility is recomputed from the edited values, with the same function the
+# controller uses (controller/utility.py).
+_UTIL_LINE = re.compile(r"^(\s{2}utility\s+)(-?[\d.]+)( this period)\s*$")
+_SERVERS_FULL = re.compile(r"^\s{2}servers\s+(\d+) active, (\d+) provisioned, max (\d+)")
+
+
+def _field(block: str, pattern: re.Pattern, group: int) -> str | None:
+    for line in block.splitlines():
+        m = pattern.match(line)
+        if m:
+            return m.group(group)
+    return None
+
+
+def _refresh_utility(block: str, sla: float = SLA_S) -> str:
+    if not any(_UTIL_LINE.match(l) for l in block.splitlines()):
+        return block                                   # prompt A: nothing to keep in step
+    rt, rate, dim = (_field(block, _RT, 2), _field(block, _RATE, 2), _field(block, _DIM, 1))
+    srv = next((_SERVERS_FULL.match(l) for l in block.splitlines() if _SERVERS_FULL.match(l)), None)
+    if None in (rt, rate, dim) or srv is None:
+        return block
+    rt, a, d = float(rt), float(rate), float(dim)
+    servers, max_servers = int(srv.group(2)), int(srv.group(3))
+    if rt > sla:
+        u = OPT_REVENUE * min(0.0, a - kappa(max_servers))
+    else:
+        u = a * ((1 - d) * BASIC_REVENUE + d * OPT_REVENUE)
+        if d >= 1.0 - 1e-5:
+            u += SERVER_COST * (max_servers - servers)
+    lines = [(_UTIL_LINE.sub(lambda m: f"{m.group(1)}{u:.1f}{m.group(3)}", l)
+              if _UTIL_LINE.match(l) else l) for l in block.splitlines()]
+    return _edit_history_last("\n".join(lines), "utility", f"{u:.0f}")
+
+
+def _consistent(edit):
+    """Wrap an edit so the shown utility follows the edited telemetry."""
+    def run(block: str):
+        res = edit(block)
+        if res is None:
+            return None
+        new_block, meta = res
+        return _refresh_utility(new_block), meta
+    return run
+
+
 EDITS = {
     # name           -> (function, direction the decision should move)
-    "rt_breached":  (lambda b: _set_response_time(b, RT_BREACHED, "BREACHED"), "relieve"),
-    "rt_met":       (lambda b: _set_response_time(b, RT_MET, "met"), "enrich"),
-    "load_high":    (lambda b: _set_rate(b, LOAD_HIGH), "relieve"),
-    "load_low":     (lambda b: _set_rate(b, LOAD_LOW), "enrich"),
-    "spare_none":   (lambda b: _set_spare(b, True), "relieve"),
-    "spare_ample":  (lambda b: _set_spare(b, False), "enrich"),
+    "rt_breached":  (_consistent(lambda b: _set_response_time(b, RT_BREACHED, "BREACHED")), "relieve"),
+    "rt_met":       (_consistent(lambda b: _set_response_time(b, RT_MET, "met")), "enrich"),
+    "load_high":    (_consistent(lambda b: _set_rate(b, LOAD_HIGH)), "relieve"),
+    "load_low":     (_consistent(lambda b: _set_rate(b, LOAD_LOW)), "enrich"),
+    "spare_none":   (_consistent(lambda b: _set_spare(b, True)), "relieve"),
+    "spare_ample":  (_consistent(lambda b: _set_spare(b, False)), "enrich"),
 }
 
 # The pairs the within-decision contrast is computed over.
