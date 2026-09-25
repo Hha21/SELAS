@@ -29,9 +29,44 @@ per-period utility feedback); the ablation below separates them.
 
 ## Order of work
 
-1. **Independent testing** (in progress). A sub-agent tests the code and the
-   integration with SWIM against a written brief; findings are verified before
-   anything is believed or fixed. No new GPU runs until this is clean.
+1. **Independent testing — done (2026-09-25).** An independent audit found
+   nothing that inflates the performance result. A live integration test on
+   CSF (job 21346634) drove SWIM's published configuration through the
+   production path with 17 scripted commands: each became exactly one matching
+   change in SWIM's own recorded vectors, ~1.2 s after sending, with nothing
+   else; illegal targets were masked and not sent; every logged observation
+   matched SWIM's recorded state. The same checker found no problems on all six
+   published LLM runs. SWIM's own R reproduces 11028.35 for prompt B seed 0.
+   (SWIM itself does not guard illegal commands — add at max corrupts counts,
+   removing the last server crashes it — so the controller's legality checks
+   are what protect runs; they were never bypassed.)
+
+   Defects found, all in the interpretability measures, to fix before the next
+   replay (tests in `experiments/tests/test_audit_interpretability.py`; the
+   `test_finding_*` tests pin the current defective behaviour and must be
+   inverted when fixed):
+   - **F1 (medium)** `interventions.truncate(r, 3)` keeps the conclusion when a
+     field is missing or the conclusion sits under a label outside FIELDS
+     (prompt A often writes "Objective:"). No-op on 58/54/45 of 105 decisions
+     for prompt A, 1 for B. Inflates A's Simulatability (by up to ~0.05; the
+     `e_premises` condition uses it) and restricts A's Mistakes axis to a
+     subset. Fix: cut at the first conclusion-like line, whatever its label.
+   - **F2 (low)** `corrupt()` negates the first match anywhere, sometimes a
+     line other than the SLA verdict (13 of 630 decisions). Fix: edit only the
+     SLA line.
+   - **F3 (low)** replay `legal_ids` come from the recorded masked distribution,
+     so a legal option missing from top-k is treated as illegal (5–8 of 105 for
+     A). Fix: recompute legality from the recorded observation.
+   - **F4 (low)** `collect.py`'s `sla_violations_swim` includes the warm-up
+     period ending at t=900 (91 periods, not 90); used by
+     `builtin_baselines/summarise.py`. Headline late counts are unaffected.
+   - Cosmetic: ReactivePolicy treats zero-throughput RT as 0 (SWIM: NaN, no
+     action; never triggered); STEP-mode exemplar letter; a swim.py docstring.
+
+   Audit tooling: `CONTROLLER/tests/test_audit_offline.py`,
+   `CONTROLLER/tests/audit_swim_integration.py` (`check --results DIR` verifies
+   any run's decisions against its .vec in seconds; `drive-a`/`drive-b` drive a
+   live SWIM) and `audit_swim_integration.sbatch`.
 2. **Fix the known prompt flaws**, both affecting A and B equally:
    - the exemplars describe a 3-server pool ("1 of 3 servers", `max 3`) left
      over from the reduced configuration; the live prompt says 12;
