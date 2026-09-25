@@ -80,7 +80,15 @@ def load_utility(run: Path) -> dict[str, float]:
         raise SystemExit(f"no runs.json in {run}; collect.py has not run")
     out = {}
     for r in json.loads(f.read_text()):
-        out[Path(r["run_dir"]).name] = float(r["utility_total"])
+        # SWIM's reported utility (SEAMS 2017A), never the simulator's
+        # utility:last scalar: reference lines passed in are on the reported
+        # function, and mixing the two on one axis is meaningless. A run
+        # collected before the reported utility existed is refused, not
+        # silently plotted on the old function.
+        u = r.get("utility_seams2017a")
+        if u is None:
+            raise SystemExit(f"{r['run_dir']} has no utility_seams2017a; re-run collect.py")
+        out[Path(r["run_dir"]).name] = float(u)
     return out
 
 
@@ -172,7 +180,7 @@ def main() -> int:
                     fontsize=8, color=REFERENCE, va="bottom")
 
     ax.set_xlabel("interpretability (aggregate of the three axes)", color=INK_SECONDARY)
-    ax.set_ylabel("utility realised in SWIM", color=INK_SECONDARY)
+    ax.set_ylabel("SWIM reported utility (SEAMS 2017A)", color=INK_SECONDARY)
     ax.set_xlim(0, 1)
     ax.grid(True, color=GRID, linewidth=0.6, zorder=0)
     ax.set_axisbelow(True)
