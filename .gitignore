@@ -52,3 +52,6 @@ experiments/**/results/**/*.vec
 # Third-party reference material: see external/README.md
 external/*
 !external/README.md
+
+# Figures copied off CSF for the poster and paper (regenerable; see RESULTS.md)
+figures/
