@@ -113,7 +113,9 @@ def main() -> int:
                     help="extra horizontal reference lines from outside this run, "
                          "e.g. 'PLA=4089.1' for a result that lives elsewhere")
     ap.add_argument("--group-labels", nargs="*", default=None,
-                    help="display names for the configurations, in order of first appearance")
+                    metavar="NAME=LABEL",
+                    help="display name per configuration (the run name without -sN); "
+                         "the order given sets the colours")
     ap.add_argument("--pool", choices=["ACTIVE", "all"], default="ACTIVE")
     ap.add_argument("-o", "--out", type=Path, default=None)
     args = ap.parse_args()
@@ -163,8 +165,12 @@ def main() -> int:
     # Runs of one configuration share a name up to "-s<seed>"; they are drawn as
     # one colour with one legend entry, not one label per seed.
     group_of = lambda arm: re.sub(r"-s\d+$", "", arm)
-    groups = list(dict.fromkeys(group_of(a) for _x, _u, a, _g in points))
-    names = dict(zip(groups, args.group_labels)) if args.group_labels else {}
+    # --group-labels NAME=LABEL fixes both the display name and the order, and
+    # so the colour: the same configuration must be the same colour in every
+    # figure, whatever order its runs happen to be listed in.
+    names = dict(g.split("=", 1) for g in (args.group_labels or []))
+    seen = list(dict.fromkeys(group_of(a) for _x, _u, a, _g in points))
+    groups = [g for g in names if g in seen] + [g for g in seen if g not in names]
 
     span = (max(p[0] for p in front) - min(p[0] for p in front)) if front else 0.0
     # A frontier needs configurations to trade off between. Through two it is a

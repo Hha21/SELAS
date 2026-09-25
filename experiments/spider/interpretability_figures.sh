@@ -41,5 +41,5 @@ PY
 )
 mapfile -t REFS <<< "$refs"
 python3 pareto.py "$RUN" --pool all --reference-value "${REFS[@]}" \
-    --group-labels "prompt B" "prompt A" -o "$RUN/pareto" | tail -20
+    --group-labels "llm=prompt A" "formula=prompt B" -o "$RUN/pareto" | tail -20
 echo "figures -> $RUN/{spider,spider_active,pareto}.png"
