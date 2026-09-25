@@ -3,9 +3,10 @@
 The record of what has been measured, where it lives, and how to regenerate it.
 Written so the poster and paper can be assembled from this file alone.
 
-**Status (2026-09-24).** Performance on SWIM's published configuration is
-**done** (section 2). The interpretability measurements are being re-run on
-those same runs (section 3). Everything in
+**Status (2026-09-25).** Performance (section 2) and interpretability
+(section 3) on SWIM's published configuration are **done**; figures are in
+`~/selas-results/published-figure/` and
+`~/selas-results/published-clarknet-20260924-141546/` on CSF. Everything in
 [Earlier results](#earlier-results-superseded-configuration) comes from a
 reduced configuration and is kept for the record, not for the poster.
 
@@ -117,7 +118,7 @@ function with per-period feedback, goes from the best controller to the worst.
 
 ---
 
-## 3. Interpretability — *running*
+## 3. Interpretability — done
 
 **Regenerate** (on CSF, after the performance runs exist):
 
@@ -143,6 +144,48 @@ and simulatability with three reader models. All six runs concurrently.
 - `pareto.png` — SWIM's reported utility against the interpretability
   aggregate, one point per run, with do nothing, SWIM's reactive manager, PLA
   and Thallium as reference lines.
+
+**Results** (replay job 21311247; each value the mean over seed-sets 0–2):
+
+| axis | all decisions: A | all decisions: B | active only: A | active only: B |
+|---|---|---|---|---|
+| Robustness | 0.949 | 0.981 | 0.917 | 0.821 |
+| Sensitivity | 0.314 | **0.073** | 0.442 | **0.637** |
+| Mistakes | 0.097 | 0.032 | 0.141 | 0.231 |
+| Counterfactual | 0.477 | **0.740** | 0.477 | **0.740** |
+| Simulatability | 0.622 | 0.487 | 0.632 | 0.596 |
+| *control: original (expect 0)* | 0.003 | 0.000 | 0.005 | 0.000 |
+| *control: shuffled (ceiling)* | 0.581 | **0.194** | 0.814 | 1.000 |
+
+Per-seed values are printed by `interpretability_figures.sh`; spread across
+seeds is small (e.g. B's Counterfactual 0.746 / 0.737 / 0.737). Counterfactual
+is computed over all decisions in both views. Interpretability aggregate (the
+Pareto x-axis): A 0.61–0.64, B 0.58–0.59.
+
+**Reading it.**
+
+- *Prompt B's decisions track its telemetry far better* (Counterfactual 0.74 vs
+  0.48): pushed towards overload and then away from it, B sends a different
+  command three times in four.
+- *But over all decisions, B's written reasoning barely determines what it
+  does.* Removing it changes 7% of B's decisions (A: 31%), negating its SLA
+  premise 3% (A: 10%), and even substituting another period's reasoning
+  entirely changes only 19% (A: 58%). B's many holds are driven by the state,
+  including the utility figures it is shown, whatever its text says. A second
+  model predicts B's action from its reasoning less well (0.49 vs 0.62).
+- *When B does act, its reasoning matters more than A's* (Sensitivity 0.64 vs
+  0.44; Mistakes 0.23 vs 0.14): the reasoning carries B's changes, not its
+  holds.
+- So the better controller is the one whose chain of thought is less of an
+  account of its behaviour overall. That is the gap an activation-level
+  explanation is meant to close, and the motivation for the NLA component.
+
+Caveats: the all-decision axes are bounded by the shuffled ceiling, which is
+only 0.19 for B, so B's low Sensitivity is partly that its decisions hardly
+move under any change to the text; three seeds per prompt; one model and one
+configuration. The aggregate difference between A and B is small (~0.04) next
+to the utility difference, so the Pareto plot shows two clusters rather than a
+trade-off curve.
 
 **The five axes** (1 = interpretable end):
 
