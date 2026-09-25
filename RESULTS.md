@@ -177,6 +177,22 @@ telemetry rather than rewrites by another model.
 - **Six concurrent simulations on 8 cores keep real time.** A reactive run
   reproduced its cumulative utility bit-for-bit against a 16-core run at every
   overlapping timestamp.
+- **Cross-network check: externally driven controllers pay a one-period
+  handicap after each scale-up.** Our Python port of SWIM's reactive rule, run
+  over the socket at the published configuration and seed-set 0 (job 21319753,
+  `~/selas-results/published-reactiveport-*`), scores −3280 against the
+  built-in manager's −865 (SWIM reported utility; −6128 vs −5284 on the older
+  function; 29 vs 27 late periods). The rule is the same; the difference is
+  timing. Commands sent over the real-time socket land ~1.07 s after the period
+  boundary, so a server booting in exactly 180 s comes online ~1 s after the
+  boundary three periods later, and the controller's read at that boundary
+  still sees it booting. Every decision gated on spare capacity (raising the
+  dimmer, removing a server) therefore lands one period later than SWIM's
+  zero-latency built-in manager, while server additions, which respond to
+  response time directly, line up. This applies to every socket-driven
+  controller, including the LLM (a few seconds of latency), and to none of the
+  built-in managers, PLA or Thallium. Comparisons across the two networks are
+  therefore conservative for the LLM, not flattering.
 - **The prompt matches the simulation.** The pool size is read from SWIM; the
   boot delay is passed in and checked afterwards against the value SWIM
   recorded (`bootDelay check` line in each job log).
