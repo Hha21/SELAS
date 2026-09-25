@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "CONTROLLER"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import interventions as iv
+import legality
 from controller.backends import OpenAICompatBackend
 
 
@@ -95,7 +96,7 @@ def main() -> int:
                     continue
 
             option_ids = [oid for oid, _ in r["decision"]["options"]]
-            legal_ids = list(r["decision"]["distribution"])
+            legal_ids = legality.legal_ids(r)
 
             for name in names:
                 modified = iv.INTERVENTIONS[name](

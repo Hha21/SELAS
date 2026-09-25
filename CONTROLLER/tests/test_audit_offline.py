@@ -4,9 +4,8 @@ Independent of test_offline.py. Every expectation here is derived from SWIM's
 C++ source (AdaptInterface.cc, ReactiveAdaptationManager.cc, SimProbe.cc,
 ExecutionManagerModBase.cc, Model.cc), not from the controller's docstrings.
 
-Tests named ``test_finding_*`` document a discrepancy found by the audit; they
-assert the *current* behaviour so they pass, and say in their docstring why it
-matters.
+Tests named ``test_finding_*`` began as pins on a discrepancy the audit found;
+each now asserts the fixed behaviour, and its docstring says what was wrong.
 
 Run:  cd CONTROLLER && python -m pytest tests/test_audit_offline.py -q
 """
@@ -30,7 +29,7 @@ from controller import (  # noqa: E402
 from controller.actions import (  # noqa: E402
     ADD_SERVER, NO_OP, REMOVE_SERVER, Action, Kind, UnsafeAction, is_legal, validate,
 )
-from controller.context import DEFAULT_EXEMPLARS  # noqa: E402
+from controller.context import DEFAULT_EXEMPLARS, SCAFFOLD_FIELDS  # noqa: E402
 
 
 def obs(servers=3, active=3, max_servers=12, dimmer=0.9, brt=0.2, ort=0.4,
@@ -73,20 +72,52 @@ def test_legend_is_state_independent_in_levels_mode():
 
 def test_exemplar_letters_mean_what_the_reasoning_says_in_levels_mode():
     b = ContextBuilder()
-    opts = dict(b.options_for(obs()))
-    (_, r1, a1), (_, r2, a2) = DEFAULT_EXEMPLARS
+    opts = b.options_for(obs())
+    (_, r1, a1), (_, r2, a2) = b.exemplar_turns(opts, 12)
+    opts = dict(opts)
     assert opts[a1] == ADD_SERVER and "add a server" in r1
     assert opts[a2].kind is Kind.SET_DIMMER and opts[a2].value > 0.30 and "raise the dimmer" in r2
 
 
 def test_finding_step_mode_exemplar_letter_does_not_exist():
-    """STEP mode offers only A-E, but exemplar 2 answers 'G'. No published run
-    uses STEP mode (run_controller default is LEVELS and no job script passes
-    --dimmer-mode), so this affects nothing reported."""
+    """Fixed. STEP mode offers only A-E, and exemplar 2 answered a fixed 'G'.
+    Letters are now resolved against the live legend: the raise-the-dimmer
+    exemplar answers the step-up option."""
     b = ContextBuilder(dimmer_mode=DimmerMode.STEP)
-    ids = [oid for oid, _ in b.options_for(obs())]
-    assert ids == list("ABCDE")
-    assert DEFAULT_EXEMPLARS[1][2] not in ids
+    opts = b.options_for(obs())
+    assert [oid for oid, _ in opts] == list("ABCDE")
+    (_, _, a1), (_, _, a2) = b.exemplar_turns(opts, 12)
+    assert (a1, a2) == ("A", "E")
+    assert b.legend_entries(opts)[4] == ("E", "set_dimmer one step up")
+
+
+@pytest.mark.parametrize("max_servers", [3, 12])
+def test_exemplars_describe_the_live_pool(max_servers):
+    """The published runs' exemplars said "1 of 3 servers" and "max 3" under a
+    legend and constraints that said 12. They are now rendered from data with
+    the live maxServers, through the same state_block as the live state."""
+    b = ContextBuilder(utility_feedback=True)
+    o = obs(max_servers=max_servers)
+    for state, reasoning, _ in b.exemplar_turns(b.options_for(o), max_servers):
+        assert f"max {max_servers}" in state and f"of {max_servers} servers" in reasoning
+        assert "utility" in state                        # feedback reaches the exemplars too
+        assert "average across" in state and "total across" not in state
+
+
+def test_utilisation_is_shown_as_a_mean_not_swims_sum():
+    """The model read SWIM's summed utilisation ("1.38 total across 3") as a
+    fraction and called it impossible. The state now shows a mean in percent."""
+    b = ContextBuilder()
+    t = Trajectory()
+    t.record_observation(5, obs(servers=3, active=3, utils=(0.46, 0.46, 0.46)))
+    line = next(l for l in b.state_block(5, t).splitlines() if "utilisation" in l)
+    assert "46% average across 3 active server(s)" in line and "spare capacity 1.62 servers" in line
+
+
+def test_field_names_are_stated_without_exemplars():
+    b = ContextBuilder(n_exemplars=0)
+    text = b.system_text(b.options_for(obs()), 12)
+    assert all(f in text for f in SCAFFOLD_FIELDS)
 
 
 # ---------------------------------------------------------------------------
@@ -307,11 +338,10 @@ def test_reactive_port_matches_swim_when_there_is_traffic():
 
 
 def test_finding_reactive_port_acts_on_a_period_with_no_completed_requests():
-    """SWIM's avgResponseTime is 0/0 = NaN when nothing completed in the window,
-    so neither branch fires and the built-in manager does nothing. The port
-    reads avg_rt as 0.0 (< SLA) and may raise the dimmer or remove a server.
-    Only reachable when throughput is exactly zero (e.g. the controller's
-    period 0 at t~1 s); affects the socket-driven reactive arm only."""
+    """Fixed. SWIM's avgResponseTime is 0/0 = NaN when nothing completed in the
+    window, so neither branch fires and the built-in manager does nothing. The
+    port read avg_rt as 0.0 (< SLA) and could raise the dimmer; it now does
+    nothing too. Never triggered in a reported run."""
     o = obs(servers=3, active=3, dimmer=0.9, btp=0.0, otp=0.0, utils=[0.0] * 3)
     assert swim_reactive(o, 10) == NO_OP
-    assert ReactivePolicy(dimmer_levels=10).decide(o) == D(1.0)
+    assert ReactivePolicy(dimmer_levels=10).decide(o) == NO_OP

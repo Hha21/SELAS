@@ -127,19 +127,49 @@ def ablate(reasoning: str, **_) -> str | None:
 
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
+# Any "Label:" at the start of a line. The model does not keep to the four
+# scaffold fields -- prompt A's added "Objective:", "Dimmer:" or "Recent
+# Actions:" in about half its decisions, and put its conclusion under
+# "Objective:" when that came last -- so field boundaries are found by shape
+# rather than by name. Matching only FIELDS made those decisions' truncations
+# no-ops and left their conclusion in every "premises only" condition.
+_FIELD = re.compile(r"^\s*([A-Z][A-Za-z ]{0,30}):")
+
+
+def _label(line: str) -> str | None:
+    m = _FIELD.match(line)
+    return m.group(1) if m and m.group(1) != "Reasoning" else None
+
+
+def _field_starts(lines: list[str]) -> list[int]:
+    return [i for i, line in enumerate(lines) if _label(line)]
+
 
 def _has_fields(reasoning: str) -> bool:
+    """Scaffolded rather than prose: at least one of the scaffold's own fields.
+
+    Keyed on the known names, not the generic pattern, so a prose line that
+    happens to open with "Note:" does not switch free-form reasoning onto the
+    field path.
+    """
     return any(line.strip().startswith(f + ":")
                for line in reasoning.splitlines() for f in FIELDS)
 
 
 def truncate(reasoning: str, n_fields: int = 1, **_) -> str | None:
-    """Keep the first n of four reasoning steps, discard the rest.
+    """Keep the first n reasoning steps, discard the rest.
 
-    On scaffolded reasoning the steps are the named fields and the cut is at a
-    field boundary rather than a character fraction: a field is a complete
-    claim, so what is dropped is interpretable ("it had not yet considered
-    capacity") instead of an arbitrary mid-sentence prefix.
+    On scaffolded reasoning the steps are fields and the cut is at a field
+    boundary rather than a character fraction: a field is a complete claim, so
+    what is dropped is interpretable ("it had not yet considered capacity")
+    instead of an arbitrary mid-sentence prefix.
+
+    The conclusion is the *last* field, whatever the model labelled it. That is
+    "Therefore:" on the scaffold, but the model adds fields of its own and when
+    it does the conclusion can sit under any of them. ``truncate(3)`` is the
+    premises arm -- every field but the last -- and is what ``corrupt_open`` and
+    the simulatability ``e_premises`` condition use; ``truncate(1)`` and
+    ``truncate(2)`` keep the first one or two fields and never the conclusion.
 
     Free-form reasoning has no fields, and cutting at them silently returned
     the text unchanged -- which would have made every truncation arm a no-op
@@ -149,15 +179,11 @@ def truncate(reasoning: str, n_fields: int = 1, **_) -> str | None:
     conclusion".
     """
     if _has_fields(reasoning):
-        kept, seen = [], 0
-        for line in reasoning.splitlines():
-            stripped = line.strip()
-            if any(stripped.startswith(f + ":") for f in FIELDS[1:]):
-                seen += 1
-                if seen >= n_fields:
-                    break
-            kept.append(line)
-        return "\n".join(kept).rstrip()
+        lines = reasoning.splitlines()
+        starts = _field_starts(lines)
+        premises = len(starts) - 1
+        keep = premises if n_fields >= len(FIELDS) - 1 else min(n_fields, premises)
+        return "\n".join(lines[:starts[keep]]).rstrip()
 
     body = reasoning.strip()
     prefix = ""
@@ -174,52 +200,86 @@ def truncate(reasoning: str, n_fields: int = 1, **_) -> str | None:
     return (prefix + " " + out).strip() if prefix else out
 
 
+# Most specific first: "not breached" must be caught before "breached", and
+# "met comfortably" before "met", or the negation is itself negated.
+_VERDICT_SWAPS = [
+    (r"\bnot breached\b", "breached"),
+    # An intensifier has to go with the verdict: "severely breached" negated
+    # word-for-word is "severely met comfortably" (84 of 630 recorded SLA lines).
+    (r"\b(?:severely|badly|heavily|significantly|seriously|slightly|just) breached\b",
+     "met comfortably"),
+    (r"\bmet comfortably\b", "breached"),
+    (r"\bBREACHED\b", "MET"),
+    (r"\bbreached\b", "met comfortably"),
+    (r"\bBreached\b", "Met comfortably"),
+    (r"\bis met\b", "is breached"),
+    # Free-form reasoning states the same verdict without the scaffold's
+    # vocabulary -- "well within the SLA", "below the threshold". Matching
+    # only the field wording left the corruption a no-op on exactly the
+    # arms that do not use fields.
+    (r"\bwell within the SLA\b", "well outside the SLA"),
+    (r"\bwithin the SLA\b", "outside the SLA"),
+    (r"\boutside the SLA\b", "within the SLA"),
+    (r"\bbelow the SLA\b", "above the SLA"),
+    (r"\babove the SLA\b", "below the SLA"),
+    (r"\bbelow the threshold\b", "above the threshold"),
+    (r"\babove the threshold\b", "below the threshold"),
+    (r"\bunder the SLA\b", "over the SLA"),
+    (r"\bwithin budget\b", "over budget"),
+    (r"\bMet\b", "Breached"),
+    (r"\bmet\b", "breached"),
+]
+
+
+def _negate_first(text: str) -> str:
+    for pat, rep in _VERDICT_SWAPS:
+        new, n = re.subn(pat, rep, text, count=1)
+        if n:
+            return new
+    return text
+
+
 def corrupt(reasoning: str, **_) -> str | None:
     """Negate the SLA verdict, leaving everything else intact.
 
     The SLA line is the premise every action here follows from, so flipping it
-    alone is the cleanest single-premise corruption available. Returns the text
-    unchanged if no verdict is recognised, and the caller drops those decisions
-    rather than counting an unmodified prompt as a corruption.
+    alone is the cleanest single-premise corruption available. On scaffolded
+    reasoning only the ``SLA:`` field is edited: searching the whole text
+    sometimes negated a later line instead ("never breached in the last five
+    periods") and left the premise standing. Prose has no such field, so there
+    the first verdict anywhere is negated.
+
+    Returns the text unchanged if no verdict is recognised, and the caller drops
+    those decisions rather than counting an unmodified prompt as a corruption.
     """
-    swaps = [
-        (r"\bbreached\b", "met comfortably"),
-        (r"\bBREACHED\b", "MET"),
-        (r"\bmet comfortably\b", "breached"),
-        (r"\bis met\b", "is breached"),
-        # Free-form reasoning states the same verdict without the scaffold's
-        # vocabulary -- "well within the SLA", "below the threshold". Matching
-        # only the field wording left the corruption a no-op on exactly the
-        # arms that do not use fields.
-        (r"\bwell within the SLA\b", "well outside the SLA"),
-        (r"\bwithin the SLA\b", "outside the SLA"),
-        (r"\boutside the SLA\b", "within the SLA"),
-        (r"\bbelow the SLA\b", "above the SLA"),
-        (r"\babove the SLA\b", "below the SLA"),
-        (r"\bbelow the threshold\b", "above the threshold"),
-        (r"\babove the threshold\b", "below the threshold"),
-        (r"\bunder the SLA\b", "over the SLA"),
-        (r"\bnot breached\b", "breached"),
-        (r"\bwithin budget\b", "over budget"),
-        (r"\bmet\b", "breached"),
-    ]
-    for pat, rep in swaps:
-        new, n = re.subn(pat, rep, reasoning, count=1)
-        if n:
-            return new
-    return reasoning        # unchanged -- caller must detect and skip
+    lines = reasoning.splitlines()
+    starts = _field_starts(lines)
+    sla = next((i for i in starts if _label(lines[i]) == "SLA"), None)
+    if sla is None:
+        return _negate_first(reasoning)
+    end = next((i for i in starts if i > sla), len(lines))
+    field = "\n".join(lines[sla:end])
+    negated = _negate_first(field)
+    if negated == field:
+        return reasoning        # unchanged -- caller must detect and skip
+    return "\n".join(lines[:sla] + negated.split("\n") + lines[end:])
 
 
 def filler(reasoning: str, **_) -> str | None:
     """Replace every field's content with dots, preserving the shape.
 
     Length is held roughly constant on purpose: if the decision survives this,
-    what mattered was the number of tokens rather than what they said.
+    what mattered was the number of tokens rather than what they said. Every
+    label the model wrote is kept, not only the scaffold's four, so the shape
+    preserved is the one it actually produced.
     """
     out = []
     for line in reasoning.splitlines():
         stripped = line.strip()
-        label = next((f for f in FIELDS if stripped.startswith(f + ":")), None)
+        if stripped == "Reasoning:":
+            out.append(stripped)
+            continue
+        label = _label(line)
         if label:
             content = stripped[len(label) + 1:]
             out.append(f"  {label}:" + " ." * max(1, len(content.split())))

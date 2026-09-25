@@ -141,10 +141,12 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
             print(f"  (could not compute SWIM utility for {run_dir.name}: {exc})")
 
     # Cumulative utility over the evaluation window. SWIM scores from the end of
-    # the warmup period, so anything before it must not contribute.
+    # the warmup period, so anything before it must not contribute. Each entry
+    # is stamped at the *end* of the period it covers, so the one at exactly
+    # t = warmup is the last warm-up period and is excluded too.
     cum, running = [], 0.0
     for t, v in vectors.get("utility_period", []):
-        if t < warmup:
+        if t <= warmup:
             continue
         running += v
         cum.append((t, running))
@@ -159,7 +161,11 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
             cum.append((t, running))
 
     rt = [(d["sim_elapsed_s"], d["observation"]["avg_rt"]) for d in decisions]
-    violations = sum(1 for _, v in rt if v > sla)
+    # A decision at t observes the period ending at t, so the scored ones are
+    # those after the warm-up -- 89 of 105: the last scored period ends with the
+    # run, and no decision observes it.
+    rt_scored = [(t, v) for t, v in rt if t > warmup]
+    violations = sum(1 for _, v in rt_scored if v > sla)
 
     # SLA violations as SWIM itself scores them. UtilityScorer returns a
     # positive utility when the period's response time is within the threshold
@@ -168,7 +174,7 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
     # So a scored period is a violation exactly when its utility is negative.
     # Unlike the count above, this needs no controller log, so it is the same
     # measurement for socket-driven runs and for SWIM's built-in managers.
-    scored = [v for t, v in vectors.get("utility_period", []) if t >= warmup]
+    scored = [v for t, v in vectors.get("utility_period", []) if t > warmup]
     swim_violations = sum(1 for v in scored if v < 0)
 
     return {
@@ -192,7 +198,7 @@ def build(run_dir: Path, sla: float = 0.75, warmup: float = 900.0) -> dict:
         "series": vectors,
         "response_time": rt,
         "sla_violations": violations,
-        "sla_violation_rate": (violations / len(rt)) if rt else None,
+        "sla_violation_rate": (violations / len(rt_scored)) if rt_scored else None,
         "scored_periods": len(scored),
         "sla_violations_swim": swim_violations,
         "sla_violation_rate_swim": (swim_violations / len(scored)) if scored else None,

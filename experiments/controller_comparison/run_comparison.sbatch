@@ -109,6 +109,20 @@ declare -A ARM_SPEC=(
     # Config B: the utility function itself, and each period's utility shown.
     # `llm` is config A: the same prompt with the priority order in words.
     [formula]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --objective formula --utility-feedback"
+    # The prompt built up one component at a time (PLAN.md step 3), all on the
+    # scaffold with 200 tokens. The name lists what is added to the base
+    # (constraints, legend, state, field names):
+    #   k2        the two worked exemplars
+    #   words     the objective as a priority order in words (config A's)
+    #   formula   the objective as SWIM's utility function, with its constants
+    #   fb        each period's utility shown in the state and its history
+    # k2-words is config A and k2-formula-fb config B, on the fixed prompt.
+    [k0]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 0 --objective none"
+    [k2]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective none"
+    [k2-words]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority"
+    [k2-formula]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective formula"
+    [k2-words-fb]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority --utility-feedback"
+    [k2-formula-fb]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective formula --utility-feedback"
 )
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does

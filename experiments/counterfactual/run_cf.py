@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "faithfulness"))
 
 import edits as E
 import interventions as iv
+import legality
 from controller.backends import OpenAICompatBackend
 
 STOP = ["\nAction:", "\n---"]
@@ -96,7 +97,7 @@ def main() -> int:
             dimmer = E.current_dimmer(block)
             options = r["decision"]["options"]
             option_ids = [oid for oid, _ in options]
-            legal_ids = list(r["decision"]["distribution"])
+            legal_ids = legality.legal_ids(r)
 
             for arm in arms:
                 if arm == "original":

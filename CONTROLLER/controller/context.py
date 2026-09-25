@@ -37,7 +37,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .actions import Action, DimmerMode, Kind, action_space
+from .actions import ADD_SERVER, Action, DimmerMode, Kind, action_space
 from .swim import Observation
 from .trajectory import Trajectory
 from .utility import kappa, period_utility
@@ -122,7 +122,7 @@ class ContextBuilder:
         dimmer_mode: DimmerMode = DimmerMode.LEVELS,
         reasoning: ReasoningStyle = ReasoningStyle.SCAFFOLD,
         window: int = 5,
-        exemplars: list[tuple[str, str, str]] | None = None,
+        exemplars: list["Exemplar"] | None = None,
         n_exemplars: int | None = None,
         objective: bool | str = "priority",
         utility_feedback: bool = False,
@@ -145,17 +145,13 @@ class ContextBuilder:
         # a breach and a lean, full-content period differ by several hundred,
         # and nothing in the telemetry says so.
         self.utility_feedback = utility_feedback
-        # The bank follows the style. Demonstrating scaffolded fields while
-        # asking for free-form reasoning would have the model copy the fields
-        # out of the exemplars whatever the instruction says, which is exactly
-        # the confound a free-form arm exists to remove. The two banks state the
-        # same claims and reach the same actions, and differ only in whether
-        # those claims carry field labels.
-        if exemplars is not None:
-            bank = exemplars
-        else:
-            bank = (_FREE_EXEMPLARS if self.reasoning is ReasoningStyle.FREE
-                    else _DEFAULT_EXEMPLARS)
+        # A prefix of the bank, so a sweep over the count varies the count and
+        # nothing else. Each exemplar carries its reasoning in both styles --
+        # the same claims with and without field labels -- and the style picks
+        # which is shown: demonstrating fields while asking for free-form
+        # reasoning would have the model copy the fields whatever the
+        # instruction says.
+        bank = DEFAULT_EXEMPLARS if exemplars is None else exemplars
         self.exemplars = bank if n_exemplars is None else bank[:n_exemplars]
 
     # -- legend ------------------------------------------------------------
@@ -276,7 +272,37 @@ class ContextBuilder:
         if self.reasoning is ReasoningStyle.FREE:
             return ("Think step by step about the state, then give a line "
                     "'Action: <letter>'.")
-        return "Reply with the reasoning fields, then a line 'Action: <letter>'."
+        # The field names are stated rather than left to the exemplars: with
+        # no exemplars the model would otherwise never see them, write prose,
+        # and move every intervention onto its free-form path -- a second
+        # difference between cells that should differ only in the exemplars.
+        return ("Reply with the reasoning fields "
+                + ", ".join(SCAFFOLD_FIELDS[:-1]) + f" and {SCAFFOLD_FIELDS[-1]}, "
+                "then a line 'Action: <letter>'.")
+
+    def exemplar_turns(
+        self, options: list[tuple[str, Action]], max_servers: int,
+    ) -> list[tuple[str, str, str]]:
+        """Each exemplar as (state, reasoning, option letter) for this prompt.
+
+        The state is rendered by ``state_block`` from the exemplar's
+        observations, so it is formatted exactly as the live state is -- the
+        same pool size, the same utilisation wording, and the utility line
+        whenever utility feedback is on. The exemplars used to be fixed text,
+        and drifted: the published runs showed a 3-server pool ("1 of 3
+        servers", "max 3") under a legend and constraints that said 12.
+        """
+        turns = []
+        for ex in self.exemplars:
+            traj = Trajectory(window=self.window)
+            first = ex.period - len(ex.history) + 1
+            for i, kw in enumerate(ex.history):
+                traj.record_observation(first + i, _exemplar_obs(max_servers, **kw))
+            reasoning = (ex.free if self.reasoning is ReasoningStyle.FREE else ex.scaffold)
+            turns.append((self.state_block(ex.period, traj),
+                          reasoning.format(max_servers=max_servers),
+                          _letter_for(ex.action, traj.latest[1], options)))
+        return turns
 
     def build_messages(
         self,
@@ -301,7 +327,7 @@ class ContextBuilder:
         messages: list[dict[str, str]] = [
             {"role": "system", "content": self.system_text(options, obs.max_servers)}
         ]
-        for state, reason, answer in self.exemplars:
+        for state, reason, answer in self.exemplar_turns(options, obs.max_servers):
             messages.append({"role": "user", "content": state.strip()})
             body = reason.rstrip() + "\n" if (reason and self.reasoning is not ReasoningStyle.NONE) else ""
             messages.append({"role": "assistant", "content": f"{body}Action: {answer}"})
@@ -338,7 +364,7 @@ class ContextBuilder:
         if self.exemplars:
             lines.append("Worked examples:")
             lines.append("")
-            for state, reasoning, answer in self.exemplars:
+            for state, reasoning, answer in self.exemplar_turns(options, max_servers):
                 lines.append(state.rstrip())
                 if self.reasoning is not ReasoningStyle.NONE and reasoning:
                     lines.append(reasoning.rstrip())
@@ -364,8 +390,13 @@ class ContextBuilder:
             f"max {obs.max_servers}" + (", one booting" if obs.booting else ""),
             f"  dimmer         {obs.dimmer:.2f}",
             f"  response time  {obs.avg_rt:.3f} s   (SLA {self.sla:.3f} s, {breached})",
-            f"  utilisation    {obs.total_utilization:.2f} total across "
-            f"{obs.active_servers} server(s), spare {obs.spare:.2f}",
+            # A mean, in percent, with spare capacity in servers. The line used
+            # to print SWIM's own quantity -- the sum over servers -- as
+            # "1.38 total across 3 server(s)", and the model read the sum as a
+            # fraction: "Utilisation is 1.38, which is impossible. It must be a
+            # bug in the simulation."
+            f"  utilisation    {100 * obs.mean_utilization:.0f}% average across "
+            f"{obs.active_servers} active server(s), spare capacity {obs.spare:.2f} servers",
             f"  arrival rate   {obs.arrival_rate:.1f} req/s",
         ]
         if self.utility_feedback:
@@ -471,79 +502,93 @@ def _locate_scaffold_probes(text: str, search_from: int) -> dict[str, int]:
     return probes
 
 
-# Two exemplars, rendered with the live legend so the letters always match the
-# prompt the model is actually given. One overload, one underload: enough to fix
-# the output shape for a base model without demonstrating every action.
-#
-# Ordered overload-first so that taking a prefix of the list is a meaningful
-# ablation: one exemplar leaves the model having seen a breach handled and not
-# an idle pool, which is the asymmetry a sweep over exemplar count is probing.
-_DEFAULT_EXEMPLARS: list[tuple[str, str, str]] = [
-    (
-        """---
-Period 3
-  servers        1 active, 1 provisioned, max 3
-  dimmer         0.90
-  response time  1.240 s   (SLA 0.750 s, BREACHED)
-  utilisation    0.96 total across 1 server(s), spare 0.04
-  arrival rate   38.4 req/s""",
-        """Reasoning:
+def _exemplar_obs(max_servers: int, *, servers: int, dimmer: float, rt: float,
+                  util_each: float, rate: float) -> Observation:
+    return Observation(
+        servers=servers, active_servers=servers, max_servers=max_servers,
+        dimmer=dimmer, basic_rt=rt, opt_rt=rt, basic_throughput=rate,
+        opt_throughput=0.0, arrival_rate=rate, utilizations=(util_each,) * servers)
+
+
+def _letter_for(action: Action, obs: Observation, options: list[tuple[str, Action]]) -> str:
+    """The option letter meaning ``action`` in this prompt's legend.
+
+    Resolved rather than written into the exemplar, so the letter cannot name an
+    option the legend does not have: in ``STEP`` mode the legend ends at E, and a
+    fixed "G" pointed at nothing. There a dimmer target is shown as the step in
+    its direction.
+    """
+    for oid, candidate in options:
+        if candidate == action:
+            return oid
+    if action.kind is Kind.SET_DIMMER:
+        dimmers = [(oid, a) for oid, a in options if a.kind is Kind.SET_DIMMER]
+        return dimmers[-1][0] if action.value > obs.dimmer else dimmers[0][0]
+    raise ValueError(f"no option for {action} in {options}")
+
+
+@dataclass(frozen=True)
+class Exemplar:
+    """A worked example as data: the observations, the reasoning, the action.
+
+    ``history`` is oldest first and its last entry is the state decided on.
+    ``scaffold`` and ``free`` state the same claims with and without field
+    labels, so an arm that swaps one for the other varies the imposed structure
+    and not the content; ``{max_servers}`` is filled in from the live prompt.
+    """
+    period: int
+    history: tuple[dict, ...]
+    scaffold: str
+    free: str
+    action: Action
+
+
+# One overload, one underload: enough to fix the output shape without
+# demonstrating every action. Ordered overload-first so that taking a prefix is
+# a meaningful ablation: one exemplar leaves the model having seen a breach
+# handled and not an idle pool.
+DEFAULT_EXEMPLARS: list[Exemplar] = [
+    Exemplar(
+        period=17,
+        history=(
+            dict(servers=3, dimmer=0.90, rt=0.520, util_each=0.84, rate=49.0),
+            dict(servers=3, dimmer=0.90, rt=0.810, util_each=0.91, rate=53.6),
+            dict(servers=3, dimmer=0.90, rt=1.240, util_each=0.96, rate=58.1),
+        ),
+        scaffold="""Reasoning:
   SLA: breached, 1.240 s against a 0.750 s threshold.
-  Capacity: 1 of 3 servers, spare 0.04, nothing booting, so headroom exists.
-  Trend: arrival rate climbing and utilisation near saturation.
+  Capacity: 3 of {max_servers} servers, 96% busy with 0.12 of a server spare and
+    nothing booting, so there is room to add one.
+  Trend: arrival rate climbing, 49.0 to 58.1 req/s, and response time with it.
   Therefore: capacity is the binding constraint, so add a server rather than
     cutting content quality.""",
-        "A",
+        free="""Reasoning: Response time is 1.240 s against a 0.750 s threshold, so the SLA
+is breached. 3 of the {max_servers} servers are active, 96% busy with 0.12 of a
+server spare, and nothing is booting, so there is room to add one. The arrival
+rate is climbing, from 49.0 to 58.1 req/s, and response time with it. Capacity
+is the binding constraint, so adding a server is better than cutting content
+quality.""",
+        action=ADD_SERVER,
     ),
-    (
-        """---
-Period 21
-  servers        3 active, 3 provisioned, max 3
-  dimmer         0.30
-  response time  0.210 s   (SLA 0.750 s, met)
-  utilisation    0.94 total across 3 server(s), spare 2.06
-  arrival rate   11.2 req/s""",
-        """Reasoning:
+    Exemplar(
+        period=42,
+        history=(
+            dict(servers=3, dimmer=0.30, rt=0.205, util_each=0.330, rate=11.6),
+            dict(servers=3, dimmer=0.30, rt=0.198, util_each=0.310, rate=11.0),
+            dict(servers=3, dimmer=0.30, rt=0.210, util_each=0.313, rate=11.2),
+        ),
+        scaffold="""Reasoning:
   SLA: met comfortably, 0.210 s against 0.750 s.
-  Capacity: 3 of 3 servers with spare 2.06, far more than needed.
-  Trend: arrival rate low and steady.
+  Capacity: 3 of {max_servers} servers, 31% busy with 2.06 servers spare, far
+    more than needed.
+  Trend: arrival rate low and steady, around 11 req/s.
   Therefore: there is room to serve richer responses, so raise the dimmer
     before giving up a server.""",
-        "G",
+        free="""Reasoning: Response time is 0.210 s against 0.750 s, so the SLA is met
+comfortably. 3 of the {max_servers} servers are active, 31% busy with 2.06
+servers spare, far more than is needed, and the arrival rate is low and steady
+at around 11 req/s. There is room to serve richer responses, so raising the
+dimmer is better than giving up a server.""",
+        action=Action(Kind.SET_DIMMER, 0.75),
     ),
 ]
-
-
-#: The exemplar bank, exposed so a caller can take a prefix of it. Slicing this
-#: rather than writing new exemplars keeps the count the only thing that varies.
-# The same two exemplars with the field labels removed. Every claim and both
-# actions are identical to _DEFAULT_EXEMPLARS -- breached/headroom/climbing to
-# add_server, met/ample/steady to raise the dimmer -- so an arm that swaps one
-# bank for the other varies the imposed structure and not the content.
-#
-# This is what makes the free-form arm a control on the scaffold rather than a
-# second variable: if faithfulness rises here, the conclusion-carries-everything
-# result was an artefact of the fields we imposed, not a property of the model.
-_FREE_EXEMPLARS: list[tuple[str, str, str]] = [
-    (
-        _DEFAULT_EXEMPLARS[0][0],
-        """Reasoning: Response time is 1.240 s against a 0.750 s threshold, so the SLA
-is breached. Only 1 of the 3 servers is active, spare capacity is 0.04 and
-nothing is booting, so there is room to grow. The arrival rate is climbing and
-utilisation is near saturation. Capacity is the binding constraint, so adding a
-server is better than cutting content quality.""",
-        _DEFAULT_EXEMPLARS[0][2],
-    ),
-    (
-        _DEFAULT_EXEMPLARS[1][0],
-        """Reasoning: Response time is 0.210 s against 0.750 s, so the SLA is met
-comfortably. All 3 of the 3 servers are active with spare capacity of 2.06, far
-more than is needed, and the arrival rate is low and steady. There is room to
-serve richer responses, so raising the dimmer is better than giving up a
-server.""",
-        _DEFAULT_EXEMPLARS[1][2],
-    ),
-]
-
-DEFAULT_EXEMPLARS = _DEFAULT_EXEMPLARS
-FREE_EXEMPLARS = _FREE_EXEMPLARS

@@ -50,8 +50,13 @@ SLA_S = 0.750
 
 _RT = re.compile(r"^(\s{2}response time\s+)([\d.]+) s(\s+)\(SLA ([\d.]+) s, (\w+)\)\s*$")
 _RATE = re.compile(r"^(\s{2}arrival rate\s+)([\d.]+)( req/s)\s*$")
+# Two formats: the current one (mean in percent, spare in servers) and the one
+# the published runs used (SWIM's sum over servers), so those still replay.
 _UTIL = re.compile(
-    r"^(\s{2}utilisation\s+)([\d.]+)( total across )(\d+)( server\(s\), spare )([\d.]+)\s*$")
+    r"^(\s{2}utilisation\s+)(\d+)(% average across )(\d+)"
+    r"( active server\(s\), spare capacity )([\d.]+)( servers)\s*$")
+_UTIL_SUM = re.compile(
+    r"^(\s{2}utilisation\s+)([\d.]+)( total across )(\d+)( server\(s\), spare )([\d.]+)()\s*$")
 _DIM = re.compile(r"^\s{2}dimmer\s+([\d.]+)\s*$")
 _SERVERS = re.compile(r"^\s{2}servers\s+(\d+) active")
 
@@ -147,9 +152,12 @@ def _set_spare(block: str, saturated: bool):
     before = None
     for i, line in enumerate(lines):
         m = _UTIL.match(line)
+        as_sum = m is None
+        if as_sum:
+            m = _UTIL_SUM.match(line)
         if not m:
             continue
-        head, old, mid, n_s, tail, _old_spare = m.groups()
+        head, old, mid, n_s, tail, _old_spare, unit = m.groups()
         n = int(n_s)
         # Saturated is n - 0.03 rather than exactly n. At exactly n both
         # substituted numbers are integers the echo check has to discard as
@@ -159,14 +167,16 @@ def _set_spare(block: str, saturated: bool):
         # alone. Spare 0.03 is saturated by any reading, and both numbers are
         # distinctive.
         util = (float(n) - 0.03) if saturated else 0.20
+        spare = max(0.0, n - util)
+        shown = f"{util:.2f}" if as_sum else f"{100 * util / n:.0f}"
         before = f"{old} used, {_old_spare} spare"
-        lines[i] = f"{head}{util:.2f}{mid}{n}{tail}{max(0.0, n - util):.2f}"
+        lines[i] = f"{head}{shown}{mid}{n}{tail}{spare:.2f}{unit}"
         break
     if before is None:
         return None
     return "\n".join(lines), {
         "field": "utilisation", "target": before,
-        "edit": f"{util:.2f} used, {max(0.0, n-util):.2f} spare", "echo": f"{util:.2f}"}
+        "edit": f"{shown} used, {spare:.2f} spare", "echo": shown}
 
 
 # -- keeping the shown utility consistent ------------------------------------
@@ -286,8 +296,9 @@ def pressure(dist: dict[str, float], options: list[list[str]],
 # Integers up to the maximum server count are excluded as candidates. "1 of 3
 # servers" would otherwise match a utilisation edited to 1.00, and a spare
 # edited to 0.00 would match any bare zero in the text. Where no unambiguous
-# candidate survives, the row is unmeasurable rather than a miss.
-AMBIGUOUS_MAX_INT = 3
+# candidate survives, the row is unmeasurable rather than a miss. 12 is SWIM's
+# published maxServers; this was 3, from the reduced configuration.
+AMBIGUOUS_MAX_INT = 12
 
 _NUM = re.compile(r"\d+\.\d+|\d+")
 

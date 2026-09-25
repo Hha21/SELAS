@@ -275,10 +275,11 @@ class SwimClient:
         }
 
         max_servers = int(vals["get_max_servers"])
-        # Query every provisioned slot, not just the active ones: SWIM's own
-        # total is taken over its whole utilization map, which retains entries
-        # for servers that have since been removed (their sliding-window value
-        # decays to zero on its own).
+        # Query every slot up to maxServers rather than tracking which exist.
+        # SWIM's own total is over the servers its probe currently knows --
+        # SimProbe erases a server's entry when it is removed -- and a slot with
+        # no server answers with an error or -1, which counts as zero below, so
+        # the sum is the same.
         util_cmds = [f"get_utilization server{i}" for i in range(1, max_servers + 1)]
         util_replies = self.command(*util_cmds)
         utils: list[float] = []

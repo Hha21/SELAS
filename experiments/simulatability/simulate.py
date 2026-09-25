@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "CONTROLLER"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import conditions as C
+import legality
 from controller.backends import OpenAICompatBackend
 
 
@@ -77,7 +78,7 @@ def main() -> int:
         for i, r in enumerate(usable):
             options = dict(r["decision"]["options"])
             option_ids = list(options)
-            legal_ids = list(r["decision"]["distribution"])
+            legal_ids = legality.legal_ids(r)
             for name in names:
                 try:
                     msgs = C.CONDITIONS[name](r["messages"])

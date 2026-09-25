@@ -79,6 +79,11 @@ class ReactivePolicy:
         self.dimmer_step = 1.0 / (dimmer_levels - 1)
 
     def decide(self, obs: Observation, traj: Trajectory | None = None) -> Action:
+        # With nothing completed in the window SWIM's average response time is
+        # 0/0 = NaN, both comparisons below are false, and its manager does
+        # nothing. avg_rt reports 0.0 there, which would read as "fast".
+        if not obs.has_traffic:
+            return NO_OP
         dimmer = obs.dimmer
         spare = obs.spare
         booting = obs.booting
