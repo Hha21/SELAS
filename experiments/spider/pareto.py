@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -52,6 +53,7 @@ INK_PRIMARY = "#1a1a19"
 INK_SECONDARY = "#5c5b55"
 GRID = "#e6e5e0"
 POINT = "#2a78d6"
+GROUP_COLOURS = ["#2a78d6", "#eb6834", "#1baf7a", "#8f6bd1"]
 FRONTIER = "#eb6834"
 REFERENCE = "#5c5b55"
 
@@ -110,6 +112,8 @@ def main() -> int:
     ap.add_argument("--reference-value", nargs="*", default=[], metavar="NAME=UTILITY",
                     help="extra horizontal reference lines from outside this run, "
                          "e.g. 'PLA=4089.1' for a result that lives elsewhere")
+    ap.add_argument("--group-labels", nargs="*", default=None,
+                    help="display names for the configurations, in order of first appearance")
     ap.add_argument("--pool", choices=["ACTIVE", "all"], default="ACTIVE")
     ap.add_argument("-o", "--out", type=Path, default=None)
     args = ap.parse_args()
@@ -156,28 +160,44 @@ def main() -> int:
     # trade-off curve where there is no trade-off. The span is the honest test:
     # below it, the finding is that the configurations do not separate, and a
     # line would assert otherwise.
+    # Runs of one configuration share a name up to "-s<seed>"; they are drawn as
+    # one colour with one legend entry, not one label per seed.
+    group_of = lambda arm: re.sub(r"-s\d+$", "", arm)
+    groups = list(dict.fromkeys(group_of(a) for _x, _u, a, _g in points))
+    names = dict(zip(groups, args.group_labels)) if args.group_labels else {}
+
     span = (max(p[0] for p in front) - min(p[0] for p in front)) if front else 0.0
-    degenerate = len(front) < 2 or span < 0.05
+    # A frontier needs configurations to trade off between. Through two it is a
+    # line between two clusters and asserts a curve that is not there; through
+    # points that barely differ in interpretability it asserts a trade-off that
+    # is not there either.
+    degenerate = len(groups) < 3 or len(front) < 2 or span < 0.05
     if not degenerate:
         ax.plot([p[0] for p in front], [p[1] for p in front],
                 color=FRONTIER, linewidth=1.4, linestyle="--", zorder=2,
                 label="frontier")
-    elif len(front) > 1:
-        print(f"\nno frontier drawn: the non-dominated points span {span:.3f} "
-              f"on the interpretability axis, which is not a trade-off")
+    else:
+        print(f"\nno frontier drawn: {len(groups)} configuration(s), "
+              f"non-dominated span {span:.3f} on the interpretability axis")
 
-    ax.scatter([p[0] for p in points], [p[1] for p in points],
-               s=70, color=POINT, zorder=3, edgecolor="white", linewidth=1.2)
-    for agg, u, arm, _g in points:
-        ax.annotate(arm, xy=(agg, u), xytext=(6, 4), textcoords="offset points",
-                    fontsize=9, color=INK_PRIMARY)
+    for i, g in enumerate(groups):
+        pts = [(x, u) for x, u, a, _g in points if group_of(a) == g]
+        n = len(pts)
+        ax.scatter([x for x, _ in pts], [u for _, u in pts], s=70, zorder=3,
+                   color=GROUP_COLOURS[i % len(GROUP_COLOURS)], edgecolor="white",
+                   linewidth=1.2, label=f"{names.get(g, g)} (n={n})")
 
-    for arm, u in references:
+    # Reference labels at the right edge, spread apart where lines sit close.
+    lo, hi = ax.get_ylim()
+    gap = 0.045 * (hi - lo)
+    placed = []
+    for arm, u in sorted(references, key=lambda r: r[1]):
         ax.axhline(u, color=REFERENCE, linewidth=1.0, linestyle=":", zorder=1)
-        ax.annotate(f"{arm} (no explanation)", xy=(0.01, u),
-                    xycoords=("axes fraction", "data"),
-                    xytext=(0, 3), textcoords="offset points",
-                    fontsize=8, color=REFERENCE, va="bottom")
+        ty = u if not placed else max(u, placed[-1] + gap)
+        placed.append(ty)
+        ax.annotate(f"{arm}", xy=(0.99, ty), xycoords=("axes fraction", "data"),
+                    xytext=(0, 2), textcoords="offset points",
+                    fontsize=8, color=REFERENCE, va="bottom", ha="right")
 
     ax.set_xlabel("interpretability (aggregate of the three axes)", color=INK_SECONDARY)
     ax.set_ylabel("SWIM reported utility (SEAMS 2017A)", color=INK_SECONDARY)
@@ -189,9 +209,8 @@ def main() -> int:
     for side in ("left", "bottom"):
         ax.spines[side].set_color(GRID)
     ax.tick_params(colors=INK_SECONDARY, labelsize=8)
-    ax.set_title("What does an explanation cost?", color=INK_PRIMARY, fontsize=11)
-    if not degenerate:
-        ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.set_title("Utility against interpretability", color=INK_PRIMARY, fontsize=11)
+    ax.legend(frameon=False, fontsize=8, loc="center left")
 
     fig.tight_layout()
     for suffix in (".png", ".pdf"):
