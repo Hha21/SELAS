@@ -244,10 +244,21 @@ def value_at(series, t, strict=True):
     return v
 
 
+def _latency(d) -> float:
+    return float(d["decision"].get("latency_s") or 0.0)
+
+
 def _estimate_offset(decisions, bchg) -> float:
     """sim time of controller-elapsed 0: median lag between each recorded dimmer
-    change and the latest earlier sent set_dimmer decision with that value."""
-    sent = [(d["sim_elapsed_s"], 1.0 - d["decision"]["action_value"]) for d in decisions
+    change and the latest earlier sent set_dimmer decision with that value,
+    less that decision's own latency.
+
+    Without the latency the offset absorbed the model's thinking time, and the
+    observations -- read *before* the model is called -- were then dated that
+    much too late: with a 5 s median latency (Qwen3 generating through
+    OpenRouter) seven observations were compared with a state the previous
+    action had already changed, and reported as mismatches."""
+    sent = [(d["sim_elapsed_s"] + _latency(d), 1.0 - d["decision"]["action_value"]) for d in decisions
             if d["execution"]["sent"] and d["decision"]["action_kind"] == "set_dimmer"]
     diffs = []
     for tg, _, new in bchg:
@@ -284,7 +295,13 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
             P.append(f"period {k}: reply {ex['reply']!r}")
 
     bchg = changes(brown)
-    offset = _estimate_offset(decisions, [c for c in bchg if c[0] >= t_min])
+    try:
+        offset = _estimate_offset(decisions, [c for c in bchg if c[0] >= t_min])
+    except ValueError:
+        # Nothing was commanded (a do-nothing run), so there is no action to
+        # date the clock from; every run that did act measured 0.92-0.96 s.
+        offset = 0.93
+        report["notes"].append("no dimmer change to estimate the clock offset from; assumed 0.93 s")
     report["offset_s"] = offset
     if not (-1.0 <= offset <= 15.0):
         P.append(f"implausible clock offset {offset:.2f}s")
@@ -299,7 +316,7 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
     for d in decisions:
         if not d["execution"]["sent"]:
             continue
-        kind, val, t = d["decision"]["action_kind"], d["decision"]["action_value"], tsim(d)
+        kind, val, t = d["decision"]["action_kind"], d["decision"]["action_value"], tsim(d) + _latency(d)
         if kind == "set_dimmer":
             # a set_dimmer to the value already in force records no change
             if abs(val - d["observation"]["dimmer"]) > 1e-9:
