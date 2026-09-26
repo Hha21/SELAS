@@ -7,8 +7,9 @@
 #SBATCH -o logs/%x_%j.out
 #SBATCH -e logs/%x_%j.err
 #
-# One SWIM instance driven by a policy that needs no model: `null` (never acts)
-# or `reactive` (SWIM's own rule). Deliberately a CPU job -- neither arm touches
+# One SWIM instance driven by a policy that needs no model: `null` (never acts),
+# `random` (uniform over the legal options, seeded by the seed-set)
+# or `reactive` (SWIM's own rule). Deliberately a CPU job -- none of them touches
 # an LLM, so queueing them behind the H200s wastes days for nothing, and the
 # GPU partitions are the scarce resource.
 #
@@ -108,7 +109,7 @@ cd "$REPO/CONTROLLER"
 # nor the boot delay is reported over the socket, so both are passed in. Without
 # them a reactive run here would step by 0.25 whatever SWIM was configured with.
 python run_controller.py --port "$PORT" --period "$PERIOD" --policy "$POLICY" \
-    --dimmer-levels "$BROWNOUT_LEVELS" --boot-delay "$BOOT_DELAY" \
+    --dimmer-levels "$BROWNOUT_LEVELS" --boot-delay "$BOOT_DELAY" --random-seed "$SEED_SET" \
     --run-dir "$OUT/$POLICY" --run-id ctl > "$OUT/$POLICY/controller.log" 2>&1 &
 CTL_PID=$!
 

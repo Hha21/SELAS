@@ -345,3 +345,18 @@ def test_finding_reactive_port_acts_on_a_period_with_no_completed_requests():
     o = obs(servers=3, active=3, dimmer=0.9, btp=0.0, otp=0.0, utils=[0.0] * 3)
     assert swim_reactive(o, 10) == NO_OP
     assert ReactivePolicy(dimmer_levels=10).decide(o) == NO_OP
+
+
+# ---------------------------------------------------------------------------
+# random baseline
+# ---------------------------------------------------------------------------
+def test_random_policy_is_legal_and_reproducible():
+    from controller import RandomPolicy
+    states = [obs(servers=s, active=a, dimmer=d, max_servers=12)
+              for s, a in ((1, 1), (3, 3), (4, 3), (12, 12)) for d in (0.0, 0.5, 1.0)] * 20
+    p, q = RandomPolicy(seed=7), RandomPolicy(seed=7)
+    a = [p.decide(o) for o in states]
+    assert a == [q.decide(o) for o in states]                     # same seed, same run
+    assert a != [RandomPolicy(seed=8).decide(o) for o in states]  # different seed differs
+    assert all(is_legal(x, o) for x, o in zip(a, states))
+    assert len({str(x) for x in a}) >= 6                          # it does vary

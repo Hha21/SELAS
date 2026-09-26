@@ -20,13 +20,14 @@ Details that look like details and are not:
 from __future__ import annotations
 
 import logging
+import random
 import time
 from dataclasses import dataclass, field
 from typing import Any
 
 from .actions import (
     ADD_SERVER, NO_OP, REMOVE_SERVER, Action, DimmerMode, Kind,
-    DIMMER_STEP, is_legal, validate,
+    DIMMER_STEP, is_legal, legal_actions, validate,
 )
 from .backends import Backend, StubBackend
 from .context import P_ACTION, ContextBuilder, ReasoningStyle
@@ -136,6 +137,32 @@ class NullPolicy:
 
     def __call__(self, period: int, obs: Observation, traj: Trajectory) -> PolicyResult:
         return PolicyResult(action=NO_OP, policy=self.name, latency_s=0.0)
+
+
+class RandomPolicy:
+    """Picks uniformly among the legal options the LLM is offered.
+
+    The chance baseline for the LLM arms: the same action space and the same
+    legality mask, with no reading of the state at all. NullPolicy answers
+    "did acting help?"; this answers "did choosing help?" -- a controller that
+    acts as often as the words prompt does, but blindly.
+
+    Seeded, so a run is reproducible; the job passes SWIM's seed-set.
+    """
+
+    name = "random"
+
+    def __init__(self, seed: int = 0, dimmer_mode: DimmerMode = DimmerMode.LEVELS) -> None:
+        self.seed = seed
+        self.rng = random.Random(seed)
+        self.dimmer_mode = dimmer_mode
+
+    def decide(self, obs: Observation, traj: Trajectory | None = None) -> Action:
+        return self.rng.choice(legal_actions(obs, self.dimmer_mode))
+
+    def __call__(self, period: int, obs: Observation, traj: Trajectory) -> PolicyResult:
+        return PolicyResult(action=self.decide(obs, traj), policy=self.name,
+                            latency_s=0.0, notes={"seed": self.seed})
 
 
 class LLMPolicy:
