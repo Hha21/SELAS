@@ -55,3 +55,6 @@ external/*
 
 # Figures copied off CSF for the poster and paper (regenerable; see RESULTS.md)
 figures/
+
+# local SWIM runs (run_local.sh)
+results-local/

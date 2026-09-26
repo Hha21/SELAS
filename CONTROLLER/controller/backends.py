@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import random
+import time
 from typing import Protocol, runtime_checkable
 
 log = logging.getLogger("controller.backend")
@@ -281,6 +283,80 @@ class OpenAICompatBackend:
         return -30.0
 
 
+class OpenRouterBackend(OpenAICompatBackend):
+    """A model served through OpenRouter, scored the same way as on vLLM.
+
+    Chat only. Scoring prefills the final assistant turn with the reasoning and
+    "Action:" and reads the next token's top logprobs, exactly as on vLLM --
+    except that ``continue_final_message`` is a vLLM extension: OpenRouter
+    continues a trailing assistant message by itself (its "assistant prefill"),
+    so the two vLLM flags are dropped. ``require_parameters`` routes only to
+    providers that honour logprobs, and a pinned provider (``order`` with no
+    fallbacks) keeps every call of a run on the same weights and precision --
+    unpinned, one probe was generated on DeepInfra and scored on Parasail.
+
+    The key is read from OPENROUTER_API_KEY and never logged. Each response
+    names the provider that served it, kept in ``last_provider`` so the policy
+    can record it with the decision.
+    """
+
+    name = "openrouter"
+    BASE_URL = "https://openrouter.ai/api/v1"
+
+    def __init__(self, model: str, provider: str | None = None,
+                 timeout: float = 60.0, top_logprobs: int = 20, retries: int = 3) -> None:
+        key = os.environ.get("OPENROUTER_API_KEY")
+        if not key:
+            raise RuntimeError("OPENROUTER_API_KEY is not set; source ~/.config/selas/openrouter.env")
+        super().__init__(self.BASE_URL, model, api_key=key, timeout=timeout,
+                         top_logprobs=top_logprobs)
+        self.provider = provider
+        self.retries = retries
+        self.last_provider: str | None = None
+
+    def _post(self, path: str, payload: dict) -> dict:
+        import requests
+
+        payload = {k: v for k, v in payload.items()
+                   if k not in ("continue_final_message", "add_generation_prompt")}
+        routing: dict = {"require_parameters": True} if payload.get("logprobs") else {}
+        if self.provider:
+            routing.update(order=[self.provider], allow_fallbacks=False)
+        if routing:
+            payload["provider"] = routing
+        headers = {"Authorization": f"Bearer {self.api_key}",
+                   "HTTP-Referer": "https://github.com/Hha21/SELAS", "X-Title": "SELAS"}
+        for attempt in range(self.retries):
+            last = attempt == self.retries - 1
+            try:
+                resp = requests.post(f"{self.base_url}{path}", json=payload,
+                                     headers=headers, timeout=self.timeout)
+            except requests.RequestException as exc:
+                if last:
+                    raise
+                log.warning("openrouter request failed (%s); retrying", type(exc).__name__)
+                time.sleep(2 ** attempt)
+                continue
+            if resp.status_code in (408, 429, 500, 502, 503, 504) and not last:
+                log.warning("openrouter returned %d; retrying", resp.status_code)
+                time.sleep(2 ** attempt)
+                continue
+            if resp.status_code != 200:
+                raise RuntimeError(f"openrouter {resp.status_code}: {resp.text[:300]}")
+            data = resp.json()
+            if "error" in data:
+                raise RuntimeError(f"openrouter error: {str(data['error'])[:300]}")
+            self.last_provider = data.get("provider")
+            return data
+        raise RuntimeError("unreachable")
+
+    def generate(self, *args, **kwargs):
+        raise NotImplementedError("OpenRouter is used through the chat interface only")
+
+    def score(self, *args, **kwargs):
+        raise NotImplementedError("OpenRouter is used through the chat interface only")
+
+
 def build_backend(
     kind: str,
     *,
@@ -288,9 +364,14 @@ def build_backend(
     model: str | None = None,
     api_key: str = "local",
     seed: int = 0,
+    provider: str | None = None,
 ) -> Backend:
     if kind == "stub":
         return StubBackend(seed=seed)
+    if kind == "openrouter":
+        if not model:
+            raise ValueError("--llm-model is required for the openrouter backend")
+        return OpenRouterBackend(model=model, provider=provider)
     if kind == "openai":
         if not base_url or not model:
             raise ValueError("--llm-base-url and --llm-model are required for the openai backend")

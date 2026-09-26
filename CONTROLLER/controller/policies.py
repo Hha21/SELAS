@@ -259,6 +259,11 @@ class LLMPolicy:
             result.notes = {"score_error": str(exc)}
             return result
 
+        # Which provider served the call, where the backend says (OpenRouter):
+        # different providers run different precisions of the same weights.
+        if getattr(self.backend, "last_provider", None):
+            notes["provider"] = self.backend.last_provider
+
         legal_ids = [oid for oid, a in options if is_legal(a, obs)]
         masked = {oid: p for oid, p in raw.items() if oid in legal_ids}
         total = sum(masked.values())

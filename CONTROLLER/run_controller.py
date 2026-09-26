@@ -70,7 +70,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                       help="decide and log, but never send an action to SWIM")
 
     llm = p.add_argument_group("LLM")
-    llm.add_argument("--backend", choices=["stub", "openai"], default="stub")
+    llm.add_argument("--backend", choices=["stub", "openai", "openrouter"], default="stub")
+    llm.add_argument("--provider", default=None,
+                     help="openrouter: pin every call to this provider (e.g. DeepInfra)")
     llm.add_argument("--llm-base-url", default=None)
     llm.add_argument("--llm-model", default=None)
     llm.add_argument("--llm-api-key", default="local")
@@ -144,7 +146,7 @@ def check_backend(args: argparse.Namespace) -> int:
 
     backend = build_backend(
         args.backend, base_url=args.llm_base_url, model=args.llm_model,
-        api_key=args.llm_api_key,
+        api_key=args.llm_api_key, provider=args.provider,
     )
     builder = build_builder(args)
     obs = synthetic_observation()
@@ -272,6 +274,7 @@ def main(argv: list[str] | None = None) -> int:
             base_url=args.llm_base_url,
             model=args.llm_model,
             api_key=args.llm_api_key,
+            provider=args.provider,
         )
         policy = LLMPolicy(
             backend=backend,
