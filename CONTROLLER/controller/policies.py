@@ -256,7 +256,9 @@ class LLMPolicy:
             result = self.fallback(period, obs, traj)
             result.policy = f"{self.name}:fallback"
             result.latency_s = time.perf_counter() - start
-            result.notes = {"score_error": str(exc)}
+            # Merged, not replaced: a reasoning_error recorded above is usually
+            # why scoring failed, and it was being lost.
+            result.notes = {**notes, "score_error": str(exc)}
             return result
 
         # Which provider served the call, where the backend says (OpenRouter):
