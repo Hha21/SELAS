@@ -101,6 +101,9 @@ ARMS="${SELAS_ARMS:-reactive null llm}"
 declare -A ARM_SPEC=(
     [reactive]="--policy reactive"
     [null]="--policy null"
+    # Uniform over the legal options, seeded by the arm's seed-set: the chance
+    # baseline for the LLM arms.
+    [random]="--policy random"
     [llm]="--policy llm --reasoning scaffold --max-reasoning-tokens 200"
     [free]="--policy llm --reasoning free --max-reasoning-tokens 200"
     [short]="--policy llm --reasoning scaffold --max-reasoning-tokens 60"
@@ -353,7 +356,7 @@ for token in $ARMS; do
             ;;
     esac
     python run_controller.py --port "$port" --period "$PERIOD" \
-        --boot-delay "$BOOT_DELAY" --dimmer-levels "$BROWNOUT_LEVELS" \
+        --boot-delay "$BOOT_DELAY" --dimmer-levels "$BROWNOUT_LEVELS" --random-seed "$seed" \
         --run-dir "$res" --run-id "$label" "${extra[@]}" \
         > "$res/controller.log" 2>&1 &
     CTL_PIDS="$CTL_PIDS $!"
