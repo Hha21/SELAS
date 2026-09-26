@@ -71,6 +71,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     llm = p.add_argument_group("LLM")
     llm.add_argument("--backend", choices=["stub", "openai", "openrouter"], default="stub")
+    llm.add_argument("--decide", choices=["score", "generate"], default="score",
+                     help="score: read the action letter's probability after 'Action:' (needs a "
+                          "server that continues the turn, i.e. vLLM); generate: the model writes "
+                          "'Action: <letter>' and it is parsed (any provider)")
     llm.add_argument("--provider", default=None,
                      help="openrouter: pin every call to this provider (e.g. DeepInfra)")
     llm.add_argument("--llm-base-url", default=None)
@@ -156,7 +160,7 @@ def check_backend(args: argparse.Namespace) -> int:
     policy = LLMPolicy(
         backend=backend, builder=builder, dimmer_mode=DimmerMode(args.dimmer_mode),
         max_reasoning_tokens=args.max_reasoning_tokens, temperature=args.temperature,
-        chat=(args.prompt_format == "chat"),
+        chat=(args.prompt_format == "chat"), decide=args.decide,
     )
 
     print(f"format       {args.prompt_format}")
@@ -284,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
             temperature=args.temperature,
             fallback=ReactivePolicy(sla=args.sla, dimmer_levels=args.dimmer_levels),
             chat=(args.prompt_format == "chat"),
+            decide=args.decide,
         )
 
     run_id = args.run_id or datetime.now(timezone.utc).strftime("run-%Y%m%d-%H%M%S")

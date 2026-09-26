@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -139,6 +140,9 @@ class NullPolicy:
         return PolicyResult(action=NO_OP, policy=self.name, latency_s=0.0)
 
 
+_ACTION_LINE = re.compile(r"Action:\s*\**\s*([A-H])\b")
+
+
 class RandomPolicy:
     """Picks uniformly among the legal options the LLM is offered.
 
@@ -180,7 +184,11 @@ class LLMPolicy:
         temperature: float = 0.7,
         fallback: ReactivePolicy | None = None,
         chat: bool = True,
+        decide: str = "score",
     ) -> None:
+        if decide not in ("score", "generate"):
+            raise ValueError(f"decide must be score or generate, got {decide!r}")
+        self.decide = decide
         self.backend = backend
         self.builder = builder
         self.dimmer_mode = dimmer_mode
@@ -200,6 +208,8 @@ class LLMPolicy:
 
     def __call__(self, period: int, obs: Observation, traj: Trajectory) -> PolicyResult:
         start = time.perf_counter()
+        if self.decide == "generate" and self.chat:
+            return self._decide_by_generation(period, obs, traj, start)
         notes: dict[str, Any] = {}
 
         reasoning_text: str | None = None
@@ -297,6 +307,81 @@ class LLMPolicy:
             probes={} if self.chat else prompt.probes,
             distribution=masked,
             raw_distribution=raw,
+            options=self.builder.legend_entries(options),
+            latency_s=time.perf_counter() - start,
+            notes=notes,
+        )
+
+    def _decide_by_generation(self, period: int, obs: Observation, traj: Trajectory,
+                              start: float) -> PolicyResult:
+        """Decide by reading the letter the model writes, not by scoring one.
+
+        Scoring needs the server to *continue* the assistant turn after
+        "Action:". vLLM does (``continue_final_message``); no OpenRouter
+        provider tried does -- each opens a new reply, so the token scored is
+        the start of a fresh answer, not the letter after the model's own
+        reasoning (checked 2026-09-26 by prefilling "The capital of France is
+        Pa": every provider answered "The capital of...", none "ris").
+
+        Here the model writes its reasoning and "Action: <letter>" in one reply,
+        as the prompt asks, and the last such letter is taken. If it writes none
+        -- usually because the reasoning ran to the token cap -- it is asked
+        once, in a new user turn, for the letter alone. At temperature 0 this is
+        the model's greedy choice, read from its text rather than from a
+        probability at a fixed position. An illegal letter becomes no_op, where
+        scoring would renormalise over the legal options; both are recorded.
+        """
+        notes: dict[str, Any] = {"decide": "generate"}
+        gen_messages, options = self.builder.build_messages(period, traj)
+        ids = [oid for oid, _ in options]
+        try:
+            text = self.backend.generate_chat(
+                gen_messages, max_tokens=self.max_reasoning_tokens + 24,
+                temperature=self.temperature, stop=["\n---"]) or ""
+        except Exception as exc:
+            log.warning("generation failed (%s)", exc)
+            notes["reasoning_error"] = str(exc)
+            text = ""
+        hits = [m for m in _ACTION_LINE.finditer(text) if m.group(1) in ids]
+        letter = hits[-1].group(1) if hits else None
+        reasoning_text = (text[:hits[-1].start()] if hits else text).rstrip()
+        if letter is None:
+            follow = gen_messages + [
+                {"role": "assistant", "content": text.strip() or "Reasoning:"},
+                {"role": "user", "content": "Give your action as a single letter."}]
+            try:
+                reply = self.backend.generate_chat(follow, max_tokens=4,
+                                                   temperature=self.temperature, stop=["\n"]) or ""
+                m = re.search(r"\b([A-H])\b", reply)
+                if m and m.group(1) in ids:
+                    letter = m.group(1)
+                    notes["letter_asked"] = True
+                else:
+                    notes["parse_error"] = reply[:80]
+            except Exception as exc:
+                notes["parse_error"] = str(exc)[:160]
+        if getattr(self.backend, "last_provider", None):
+            notes["provider"] = self.backend.last_provider
+
+        legal_ids = [oid for oid, a in options if is_legal(a, obs)]
+        no_op_id = next(oid for oid, a in options if a == NO_OP)
+        if letter is not None and letter not in legal_ids:
+            notes["illegal_choice"] = letter
+        chosen_id = letter if letter in legal_ids else no_op_id
+        action = dict(options)[chosen_id]
+        try:
+            validate(action, obs)
+        except Exception as exc:
+            notes["unsafe"] = str(exc)
+            action = NO_OP
+        messages, _ = self.builder.build_messages(period, traj, reasoning=reasoning_text)
+        return PolicyResult(
+            action=action,
+            policy=self.name,
+            reasoning=reasoning_text,
+            messages=messages,
+            distribution={chosen_id: 1.0},
+            raw_distribution={letter: 1.0} if letter else {},
             options=self.builder.legend_entries(options),
             latency_s=time.perf_counter() - start,
             notes=notes,

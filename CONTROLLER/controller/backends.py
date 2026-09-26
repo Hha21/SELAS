@@ -284,20 +284,24 @@ class OpenAICompatBackend:
 
 
 class OpenRouterBackend(OpenAICompatBackend):
-    """A model served through OpenRouter, scored the same way as on vLLM.
+    """A model served through OpenRouter.
 
-    Chat only. Scoring prefills the final assistant turn with the reasoning and
-    "Action:" and reads the next token's top logprobs, exactly as on vLLM --
-    except that ``continue_final_message`` is a vLLM extension: OpenRouter
-    continues a trailing assistant message by itself (its "assistant prefill"),
-    so the two vLLM flags are dropped. ``require_parameters`` routes only to
-    providers that honour logprobs, and a pinned provider (``order`` with no
-    fallbacks) keeps every call of a run on the same weights and precision --
-    unpinned, one probe was generated on DeepInfra and scored on Parasail.
+    Generation is the ordinary chat call. Scoring is NOT equivalent to vLLM's:
+    ``continue_final_message`` is a vLLM extension, and no OpenRouter provider
+    tried continues a trailing assistant turn -- prefilled with "The capital of
+    France is Pa", every one (gemma, Llama 3.3/4, Qwen3, gpt-4o-mini) answered
+    with a new reply, not "ris". So ``score_chat`` here reads the first token of
+    a fresh reply written after the model's reasoning and "Action:", not the
+    token that continues it. Use ``--decide generate`` (the model writes
+    "Action: <letter>" and it is parsed) for a decision that means the same
+    thing on every provider.
 
-    The key is read from OPENROUTER_API_KEY and never logged. Each response
-    names the provider that served it, kept in ``last_provider`` so the policy
-    can record it with the decision.
+    ``require_parameters`` routes only to providers that return logprobs, and a
+    pinned provider (``order`` with no fallbacks) keeps every call of a run on
+    the same weights and precision -- unpinned, one probe was generated on one
+    provider and scored on another. The key is read from OPENROUTER_API_KEY and
+    never logged. Each response names the provider that served it, kept in
+    ``last_provider`` so the policy can record it with the decision.
     """
 
     name = "openrouter"

@@ -24,7 +24,7 @@ IMAGE="${SELAS_SWIM_IMAGE:-gabrielmoreno/swim:latest}"
 PY="${SELAS_PYTHON:-python3}"
 PLOT_PY="${SELAS_PLOT_PYTHON:-$REPO/.venv/bin/python}"
 
-MODEL=""; PROVIDER=""; ARMS=""; TAG="local"; PORT_BASE=15000
+MODEL=""; PROVIDER=""; ARMS=""; TAG="local"; PORT_BASE=15000; DECIDE=score
 RUN_INDEX=8; INITIAL_SERVERS=3; MAX_SERVERS=12; BROWNOUT_LEVELS=10; BOOT_DELAY=180
 PERIOD=60; TEMPERATURE=0
 SIM_LIMIT="${SELAS_SIM_LIMIT:-}"      # e.g. 180s for a smoke test; empty = SWIM's 6300 s
@@ -32,6 +32,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --model) MODEL="$2"; shift 2 ;;
         --provider) PROVIDER="$2"; shift 2 ;;
+        --decide) DECIDE="$2"; shift 2 ;;       # score (vLLM-style) or generate; see run_controller.py
         --arms) ARMS="$2"; shift 2 ;;
         --tag) TAG="$2"; shift 2 ;;
         --port-base) PORT_BASE="$2"; shift 2 ;;
@@ -57,7 +58,7 @@ OUT="${SELAS_RESULTS:-$REPO/results-local}/$RUN_ID"
 mkdir -p "$OUT"
 exec > >(tee -a "$OUT/job.log") 2>&1
 echo "run       $RUN_ID"
-echo "model     ${MODEL:-<none>} @ ${PROVIDER:-any provider}"
+echo "model     ${MODEL:-<none>} @ ${PROVIDER:-any provider}, decide=$DECIDE"
 echo "arms      $ARMS"
 echo "config    run $RUN_INDEX, servers $INITIAL_SERVERS..$MAX_SERVERS, boot $BOOT_DELAY s, $BROWNOUT_LEVELS levels"
 
@@ -70,7 +71,8 @@ sed -e "s/^\*\.initialServers *=.*/*.initialServers = $INITIAL_SERVERS/" \
 
 needs_model=0
 for t in $ARMS; do case "${ARM_SPEC[${t%@*}]:-}" in *"--policy llm"*) needs_model=1 ;; esac; done
-llm_flags=(--backend openrouter --llm-model "$MODEL" --prompt-format chat --temperature "$TEMPERATURE")
+llm_flags=(--backend openrouter --llm-model "$MODEL" --prompt-format chat --temperature "$TEMPERATURE"
+           --decide "$DECIDE")
 [ -n "$PROVIDER" ] && llm_flags+=(--provider "$PROVIDER")
 
 cd "$REPO/CONTROLLER"

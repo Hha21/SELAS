@@ -387,3 +387,52 @@ def test_words_variants_change_one_thing_each():
     assert scaled[:4] == base[:4] and "40 periods" in " ".join(scaled[4:])
     para = _objective_block("priority-paraphrase")
     assert "run as few servers" not in para and "as low" in para and para.count("  3.") == 1
+
+
+# ---------------------------------------------------------------------------
+# --decide generate: the letter is read from the model's own text
+# ---------------------------------------------------------------------------
+class _Scripted:
+    """generate_chat returns the scripted replies in order; score_chat must not be used."""
+    def __init__(self, *replies):
+        self.replies = list(replies)
+        self.calls = []
+
+    def generate_chat(self, messages, **kw):
+        self.calls.append((messages, kw))
+        return self.replies.pop(0)
+
+    def score_chat(self, *a, **k):
+        raise AssertionError("generate mode must not score")
+
+
+def _decide_gen(*replies, o=None):
+    from controller import LLMPolicy
+    o = o or obs(servers=3, active=3, dimmer=0.5)
+    t = Trajectory(); t.record_observation(20, o)
+    backend = _Scripted(*replies)
+    r = LLMPolicy(backend=backend, builder=ContextBuilder(), decide="generate")(20, o, t)
+    return r, backend
+
+
+def test_generate_takes_the_last_action_letter_and_strips_it_from_the_reasoning():
+    r, b = _decide_gen("Reasoning:\n  SLA: breached.\n  Therefore: add a server.\nAction: A")
+    assert r.action == ADD_SERVER and r.distribution == {"A": 1.0}
+    assert "Action:" not in r.reasoning and r.reasoning.endswith("add a server.")
+    assert len(b.calls) == 1 and "\nAction:" not in b.calls[0][1]["stop"]     # not cut before the letter
+
+
+def test_generate_asks_for_the_letter_when_none_is_written():
+    r, b = _decide_gen("Reasoning:\n  SLA: met. The load is", "C")
+    assert r.action == NO_OP and r.notes.get("letter_asked") and len(b.calls) == 2
+    assert b.calls[1][0][-1] == {"role": "user", "content": "Give your action as a single letter."}
+
+
+def test_generate_illegal_letter_becomes_no_op_and_is_recorded():
+    r, _ = _decide_gen("Reasoning: at max.\nAction: A", o=obs(servers=12, active=12, dimmer=0.5))
+    assert r.action == NO_OP and r.notes["illegal_choice"] == "A"
+
+
+def test_generate_unparseable_reply_is_no_op_with_a_parse_error():
+    r, _ = _decide_gen("Reasoning: thinking", "I would rather not say")
+    assert r.action == NO_OP and "parse_error" in r.notes
