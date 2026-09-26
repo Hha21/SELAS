@@ -244,11 +244,24 @@ Late periods of 90 (seeds 0, 1, 2), and mean servers:
 2. **Not a gemma quirk, and not an infrastructure one:** gemma through
    OpenRouter reproduces gemma on CSF within the seed spread (10229 / −6674 /
    11472 against 11020 / −6208 / 11864).
-3. **The mechanism generalises for two models so far:** gemma and gpt-4o-mini
-   run markedly fewer servers under the words (2.3 and 2.8 against 3.7–4.3).
-   Llama-4 and Qwen3 run small pools under every prompt (2.5–2.8 servers, 8–23
-   late periods even without an objective); why the words hurt them is not yet
-   read from their reasoning.
+3. **The same mechanism in every model: removing servers while on time, then
+   breaching.** Server removals made while the SLA was met, and the share
+   followed by a breach within three periods (all three seeds, scored window):
+
+   | model | no objective | words | formula |
+   |---|---|---|---|
+   | gemma-3-27b (OR) | 1 (0%) | **31 (97%)** | 8 (0%) |
+   | gpt-4o-mini | 3 (0%) | **51 (82%)** | 15 (13%) |
+   | Llama-4-Maverick | 23 (48%) | **39 (87%)** | 22 (59%) |
+   | Qwen3-235B | 25 (60%) | **35 (83%)** | 32 (56%) |
+
+   gemma and gpt-4o-mini also run smaller pools under the words (2.3 and 2.8
+   servers against 3.7–4.3); Llama-4 and Qwen3 add the servers back, so their
+   mean pool barely moves, but each removal costs the 180 s boot in late
+   periods. Qwen3, words, seed 0, period 39: "response time exploded after
+   removing a server (period 37) while dimmer was set to 1.0". (The breach
+   share is partly the words runs' higher base rate of late periods; the
+   removal counts are the direct evidence.)
 4. **Formula against no objective depends on the model:** +1243 (gemma OR),
    +2513 (gpt-4o-mini), about 0 (Llama-4), +1274 (Qwen3), with large spread for
    the weaker two. The robust contrast is words against either of the others.
