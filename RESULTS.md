@@ -3,8 +3,9 @@
 The record of what has been measured, where it lives, and how to regenerate it.
 Written so the poster and paper can be assembled from this file alone.
 
-**Status (2026-09-26).** Performance of prompts A and B (section 2) and the
-prompt built up one component at a time (section 2b, three seeds) on SWIM's
+**Status (2026-09-26).** Performance of prompts A and B (section 2), the
+prompt built up one component at a time (section 2b, three seeds) and the same
+three prompts across four more models (section 2c, three seeds each) on SWIM's
 published configuration are **done**. The interpretability numbers (section 3)
 were measured before the audit fixes and the prompt fixes and are to be
 re-measured; use them as placeholders. Figures are in
@@ -205,6 +206,107 @@ python experiments/controller_comparison/ladder_plot.py \
     --reference "SWIM reactive=-865" \
     --title "Utility by prompt: SWIM ClarkNet, published configuration, 3 seeds"
 ```
+
+---
+
+## 2c. Across models — done (2026-09-26)
+
+Is the words collapse a quirk of gemma-3-27b? The three prompts that carry it
+— `k2` (no objective), `k2-words`, `k2-formula` — on four models through
+OpenRouter, seed-sets 0–2 each, same configuration as section 1.
+
+**Figure:** `figures/models/models_utility.pdf` — one row per prompt, one colour
+per model, a dot per seed; CSF gemma (section 2b) included for reference.
+
+| model (provider) | no objective | **objective in words** | utility formula |
+|---|---|---|---|
+| gemma-3-27b, CSF vLLM (section 2b) | 11020 ± 390 | **−6208 ± 1694** | 11864 ± 342 |
+| gemma-3-27b (Parasail) | 10229 ± 2152 (12177, 10591, 7919) | **−6674 ± 845** (−6262, −6113, −7646) | 11472 ± 187 (11651, 11487, 11277) |
+| gpt-4o-mini (OpenAI) | 6570 ± 1265 (7280, 7321, 5110) | **−5234 ± 493** (−4908, −4992, −5801) | 9083 ± 612 (9120, 8454, 9677) |
+| Llama-4-Maverick (Parasail) | 1807 ± 1290 (3144, 570, 1708) | **−5544 ± 768** (−5532, −6318, −4782) | 1771 ± 3980 (2118, −2371, 5566) |
+| Qwen3-235B-A22B-Instruct-2507 (GMICloud) | 1982 ± 1942 (1023, 4217, 706) | **−6323 ± 743** (−6946, −6522, −5501) | 3256 ± 1973 (5229, 3256, 1283) |
+
+Late periods of 90 (seeds 0, 1, 2), and mean servers:
+
+| model | no objective | words | formula |
+|---|---|---|---|
+| gemma-3-27b (OR) | 1, 2, 1 — 3.67 | **32, 30, 34 — 2.31** | 2, 2, 3 — 3.98 |
+| gpt-4o-mini | 2, 0, 4 — 4.32 | **37, 38, 39 — 2.82** | 1, 0, 1 — 4.17 |
+| Llama-4-Maverick | 8, 17, 13 — 2.48 | **37, 34, 34 — 2.60** | 17, 21, 8 — 2.70 |
+| Qwen3-235B | 20, 15, 23 — 2.70 | **38, 38, 36 — 2.53** | 16, 19, 22 — 2.81 |
+
+**What it shows.**
+
+1. **The objective in words is the worst prompt for every model, on every
+   seed**, and never close: for each model the best words run is below the
+   worst run of either other prompt. Words runs are late in 30–39 of 90
+   periods for every model.
+2. **Not a gemma quirk, and not an infrastructure one:** gemma through
+   OpenRouter reproduces gemma on CSF within the seed spread (10229 / −6674 /
+   11472 against 11020 / −6208 / 11864).
+3. **The mechanism generalises for two models so far:** gemma and gpt-4o-mini
+   run markedly fewer servers under the words (2.3 and 2.8 against 3.7–4.3).
+   Llama-4 and Qwen3 run small pools under every prompt (2.5–2.8 servers, 8–23
+   late periods even without an objective); why the words hurt them is not yet
+   read from their reasoning.
+4. **Formula against no objective depends on the model:** +1243 (gemma OR),
+   +2513 (gpt-4o-mini), about 0 (Llama-4), +1274 (Qwen3), with large spread for
+   the weaker two. The robust contrast is words against either of the others.
+5. **Model competence differs a lot:** Llama-4 and Qwen3 score below doing
+   nothing even without an objective. The claim is about the prompt's effect
+   within a model, not about which model controls best.
+
+**How decisions are made here, and why it differs from CSF.** CSF reads the
+letter's probability by prefilling the assistant turn with the model's
+reasoning and "Action:" and having vLLM *continue* it. No OpenRouter provider
+continues a prefilled turn (prefilled "The capital of France is Pa", every one
+answered "The capital of…", none "ris"; gemma, Llama 3.3/4, Qwen3 on three
+providers, gpt-4o-mini). So here (`--decide generate`) the model writes its
+reasoning and "Action: <letter>" itself, and the top-20 logprobs *at the token
+where it writes the letter* give the distribution over letters — the same
+position the CSF call reads, produced by the model. The decision renormalises
+over the legal letters and takes the most likely, as on CSF. Every one of the
+36 decisions logs says `generate+logprobs`; no decision fell back to the
+reactive rule; illegal first choices (masked to the best legal letter) were
+0–18 per run, most for gpt-4o-mini (33–41 per words run: it names "set the
+dimmer to 0.5" while at 0.5). Providers pinned per model; temperature 0;
+reasoning capped at 200 tokens (+24 for the action line).
+
+Two earlier seed-0 passes used other decision rules and agree on the ordering
+(words lowest for every model): reading the first token of a fresh reply after
+the reasoning — gemma 7845 / −4403 / 9253, gpt-4o-mini 4977 / −7430 / 8064,
+Llama-4 7907 / −3211 / 5031 (Qwen3 unusable: its fresh reply restarts the
+reasoning); and the written letter without logprobs — gemma 11171 / 74 / 11466,
+gpt-4o-mini 7620 / −3252 / 7964, Llama-4 1284 / −3842 / 6580, Qwen3 4890 /
+−2626 / −538. (No objective / words / formula.)
+
+**Validation.** SWIM ran locally from the `gabrielmoreno/swim` Docker image
+(the image CSF's `swim.sif` was built from; its `swim.ini` equals the
+repository's) with the published configuration. Doing nothing locally scores
+5101.2 with 1 late period, as on CSF (5101, 1). All 36 runs pass the
+integration check (commands ↔ recorded changes, observations ↔ recorded
+state); the checker now dates observations net of each decision's latency
+(the clock offset is 0.92–0.96 s on every local run).
+
+**Provenance.** On the laptop, gitignored: `results-local/gl-gemma27b-20260926-191134`,
+`gl-gpt4omini-20260926-191219`, `gl-llama4-maverick-20260926-191304`,
+`gl-qwen3-235b-20260926-191349` (each with `runs.json`, per-run decisions,
+SWIM vectors and `integration_check.json`); validation run
+`results-local/local-null-20260926-163341`. Produced by
+
+```
+experiments/controller_comparison/run_local.sh --model <model> --provider <provider> \
+    --decide generate --arms "k2@0 k2-words@0 k2-formula@0 k2@1 k2-words@1 k2-formula@1 k2@2 k2-words@2 k2-formula@2" \
+    --tag gl-<name> --port-base <port>
+```
+
+with the OpenRouter key in `~/.config/selas/openrouter.env`. Figure:
+`experiments/controller_comparison/models_plot.py` (command in its docstring).
+
+**Pending on CSF (VPN down since 2026-09-26 18:00):** Llama-3.3-70B on the
+three prompts, seeds 0–3 (vLLM scoring, like gemma); the three words variants
+(PLAN.md) on gemma; a fourth gemma seed; the random baseline. Jobs 21392438,
+21392444, 21392445, 21392449 and 21392112–4.
 
 ---
 

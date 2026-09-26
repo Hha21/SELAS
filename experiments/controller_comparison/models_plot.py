@@ -66,7 +66,7 @@ def plot(per, models: list[str], arms: list[tuple[str, str]], refs: list[tuple[s
                     linewidth=1.8, zorder=4)
         if row:
             ax.axhline(row - 0.5, color=GRID, linewidth=0.8, zorder=0)
-    step = 0.32
+    step = 0.2
     for k, (name, v) in enumerate(sorted(refs, key=lambda r: r[1])):
         ax.axvline(v, color=INK_SECONDARY, linestyle=":", linewidth=0.9, zorder=1)
         ax.annotate(name, xy=(v, -0.62 - step * (len(refs) - 1 - k)), xytext=(3, 0),

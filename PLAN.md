@@ -133,7 +133,13 @@ per-period utility feedback); the ablation below separates them.
    before interpreting why. Interpretability (step 5) follows once the effect
    is established.
 4. **Consistency**: repeat the decisive cells on a second model
-   (Llama-3.3-70B) if the flip holds on gemma.
+   (Llama-3.3-70B) if the flip holds on gemma. **Across models done
+   (RESULTS.md §2c):** the words objective is the worst prompt for every model
+   on every seed — gemma (CSF and OpenRouter), gpt-4o-mini, Llama-4-Maverick,
+   Qwen3-235B. Llama-3.3-70B on CSF, the words variants and the random baseline
+   are running there, waiting on the VPN. Next: read Llama-4/Qwen3 reasoning
+   under the words (they do not cut servers the way gemma does); then the
+   configurations (WorldCup, boot delay, pool size).
 5. **Interpretability** on every cell (replay_all.sbatch + spider), then NLA:
    for the same states, compare what the model represents at the decision
    point under each prompt — does it encode server cost, the breach penalty,
