@@ -14,7 +14,7 @@ below, which predates the cross-model and rule-3 results):
 > six LLMs from four families, given the objective as a priority order in
 > words, all perform worse than doing nothing — while the same models given no
 > objective, or the utility function itself, perform far better (by 7,000–
-> 18,000 in SWIM's utility). The cause is one
+> 19,000 in SWIM's utility). The cause is one
 > rule, "only once the dimmer is at 1.0, run as few servers as you can":
 > removing it restores full performance; rewording it, or stating how much a
 > late period costs, does not. The models' reasoning names the rule, so the
