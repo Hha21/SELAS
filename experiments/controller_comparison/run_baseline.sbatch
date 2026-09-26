@@ -74,6 +74,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Something already answering here would be taken for this run's SWIM; see
+# run_comparison.sbatch, where a shared port once cross-wired two jobs.
+if (exec 3<>/dev/tcp/127.0.0.1/$PORT) 2>/dev/null; then
+    echo "port $PORT is already in use on $(hostname); refusing to start" >&2
+    exit 1
+fi
+
 apptainer exec --bind "$OUT/$POLICY":/headless/seams-swim/results \
     --bind "$SWIM_INI":/headless/seams-swim/swim/simulations/swim/swim.ini "$SIF" bash -lc "
     cd /headless/seams-swim/swim/simulations/swim
@@ -85,10 +92,16 @@ apptainer exec --bind "$OUT/$POLICY":/headless/seams-swim/results \
 " > "$OUT/$POLICY/swim.log" 2>&1 &
 SWIM_PID=$!
 
+up=0
 for _ in $(seq 1 30); do
-    (exec 3<>/dev/tcp/127.0.0.1/$PORT) 2>/dev/null && break
+    (exec 3<>/dev/tcp/127.0.0.1/$PORT) 2>/dev/null && { up=1; break; }
     sleep 1
 done
+if [ "$up" != 1 ] || ! kill -0 "$SWIM_PID" 2>/dev/null; then
+    echo "SWIM is not listening on :$PORT (see $OUT/$POLICY/swim.log)" >&2
+    tail -5 "$OUT/$POLICY/swim.log" >&2
+    exit 1
+fi
 
 cd "$REPO/CONTROLLER"
 # The reactive rule's dimmer step is 1/(levels - 1), and neither the level count

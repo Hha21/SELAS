@@ -127,7 +127,14 @@ declare -A ARM_SPEC=(
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does
 # not mean remembering to add a port and finding out it collided at runtime.
-PORT_BASE="${SELAS_PORT_BASE:-4242}"
+#
+# The base comes from the job id, as the vLLM port does. A fixed base (4242) let
+# two jobs on one node claim the same ports (2026-09-26, jobs 21384049/50): the
+# second SWIM on each port crashed at start-up, and its controller found the
+# port open -- served by the *other* job's simulation -- and drove that one.
+# 10000-18990 stays clear of the vLLM range (20000-39999) and of the kernel's
+# ephemeral ports (32768+).
+PORT_BASE="${SELAS_PORT_BASE:-$(( 10000 + SLURM_JOB_ID % 900 * 10 ))}"
 
 # Empty means "do not pass the flag", which leaves run_controller.py's own
 # default (0.7) in charge and keeps this script's behaviour unchanged. The
@@ -194,19 +201,46 @@ collect_results() {
     # The first three-arm attempt exited 0 after 3 minutes with no .sca, no
     # decisions and a tidy set of empty directories, because every simulation
     # had died on a rejected command-line option -- and nothing in the job
-    # noticed. Slurm reported COMPLETED.
-    local n_sca n_dec
-    n_sca=$(find "$OUT" -name "*.sca" 2>/dev/null | wc -l)
-    n_dec=$(find "$OUT" -name decisions.jsonl 2>/dev/null | wc -l)
-    if [ "$n_sca" -eq 0 ] || [ "$n_dec" -eq 0 ]; then
-        echo "FAILED: $n_sca .sca files and $n_dec decision logs across $ARMS." >&2
-        echo "        The simulations did not run. Check */swim.log." >&2
-        for t in $ARMS; do
-            echo "        --- ${t/@/-s} ---" >&2
-            tail -4 "$OUT/${t/@/-s}/swim.log" 2>/dev/null | sed "s/^/        /" >&2
-        done
-        COLLECT_FAILED=1
-    fi
+    # noticed. Slurm reported COMPLETED. Checked per arm: when two jobs shared
+    # ports, half the arms lost their simulation and half their decisions, and
+    # a check across the whole job still passed.
+    local bad=0 t d n_vec n_dec
+    for t in $ARMS; do
+        d="$OUT/${t/@/-s}"
+        n_vec=$(find "$d" -name "*.vec" -size +0 2>/dev/null | wc -l)
+        n_dec=$(cat "$d"/*/decisions.jsonl 2>/dev/null | wc -l)
+        if [ "$n_vec" -eq 0 ] || [ "$n_dec" -eq 0 ]; then
+            echo "FAILED: ${t/@/-s} has $n_vec .vec files and $n_dec decisions" >&2
+            tail -4 "$d/swim.log" 2>/dev/null | sed "s/^/        /" >&2
+            bad=1
+        fi
+    done
+    [ "$bad" = 1 ] && COLLECT_FAILED=1
+
+    # Every run is checked against SWIM's own record: each command sent must be
+    # exactly one recorded change of the right value, no change may lack a
+    # command, and what the controller observed must match SWIM's state. This
+    # is what exposes a controller driving the wrong simulation.
+    echo "=== integration check ==="
+    for t in $ARMS; do
+        d="$OUT/${t/@/-s}"
+        [ -n "$(find "$d" -name "*.vec" -size +0 2>/dev/null)" ] || continue
+        python "$REPO/CONTROLLER/tests/audit_swim_integration.py" check --results "$d" \
+            --unscripted --brief > "$d/integration_check.json" 2>&1
+        python - "$d/integration_check.json" "${t/@/-s}" <<'PY' || bad=1
+import json, sys
+txt = open(sys.argv[1]).read()
+try:
+    rep = json.loads(txt[txt.index("{"):])
+except ValueError:
+    print(f"  {sys.argv[2]:18s} check did not run:", txt.strip().splitlines()[-1:]); sys.exit(1)
+print(f"  {sys.argv[2]:18s} {len(rep['problems'])} problems, {len(rep['notes'])} notes")
+for x in rep["problems"][:5]:
+    print("      ", x[:160])
+sys.exit(1 if rep["problems"] else 0)
+PY
+    done
+    [ "$bad" = 1 ] && COLLECT_FAILED=1
 }
 
 cleanup() {
@@ -263,6 +297,12 @@ for token in $ARMS; do
     port=$(( PORT_BASE + arm_index )); arm_index=$(( arm_index + 1 ))
     res="$OUT/$label"; mkdir -p "$res"
 
+    # Something already answering here would be taken for this arm's SWIM.
+    if (exec 3<>/dev/tcp/127.0.0.1/$port) 2>/dev/null; then
+        echo "port $port is already in use on $(hostname); refusing to start '$label'" >&2
+        exit 1
+    fi
+
     echo "starting SWIM for '$label' (seed-set $seed) on :$port"
     apptainer exec \
         --bind "$res":/headless/seams-swim/results \
@@ -275,13 +315,22 @@ for token in $ARMS; do
             --socketrtscheduler-port=$port ${SIM_LIMIT:+--sim-time-limit=$SIM_LIMIT} \
             -n ..:../../src:../../../queueinglib -l ../../../queueinglib/libqueueinglib.so
     " > "$res/swim.log" 2>&1 &
-    SWIM_PIDS="$SWIM_PIDS $!"
+    swim_pid=$!
+    SWIM_PIDS="$SWIM_PIDS $swim_pid"
 
-    # The clock is already running, so the controller follows immediately.
+    # The clock is already running, so the controller follows immediately --
+    # but only once this arm's own SWIM is listening. The port being open is
+    # not enough on its own: it must be open with our process still alive.
+    up=0
     for _ in $(seq 1 30); do
-        (exec 3<>/dev/tcp/127.0.0.1/$port) 2>/dev/null && break
+        (exec 3<>/dev/tcp/127.0.0.1/$port) 2>/dev/null && { up=1; break; }
         sleep 1
     done
+    if [ "$up" != 1 ] || ! kill -0 "$swim_pid" 2>/dev/null; then
+        echo "SWIM for '$label' is not listening on :$port (see $res/swim.log)" >&2
+        tail -5 "$res/swim.log" >&2
+        exit 1
+    fi
 
     read -r -a extra <<< "${ARM_SPEC[$arm]}"
     case "${ARM_SPEC[$arm]}" in
@@ -355,7 +404,7 @@ cat > "$OUT/manifest.json" <<JSON
  "finished": "$(date -uIseconds)"}
 JSON
 if [ -n "${COLLECT_FAILED:-}" ]; then
-    echo "run produced no usable output -> $OUT"
+    echo "an arm produced no usable output or failed its integration check -> $OUT"
     exit 1
 fi
 echo "done -> $OUT"
