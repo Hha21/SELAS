@@ -406,11 +406,11 @@ class _Scripted:
         raise AssertionError("generate mode must not score")
 
 
-def _decide_gen(*replies, o=None):
+def _decide_gen(*replies, o=None, cls=None):
     from controller import LLMPolicy
     o = o or obs(servers=3, active=3, dimmer=0.5)
     t = Trajectory(); t.record_observation(20, o)
-    backend = _Scripted(*replies)
+    backend = (cls or _Scripted)(*replies)
     r = LLMPolicy(backend=backend, builder=ContextBuilder(), decide="generate")(20, o, t)
     return r, backend
 
@@ -436,3 +436,37 @@ def test_generate_illegal_letter_becomes_no_op_and_is_recorded():
 def test_generate_unparseable_reply_is_no_op_with_a_parse_error():
     r, _ = _decide_gen("Reasoning: thinking", "I would rather not say")
     assert r.action == NO_OP and "parse_error" in r.notes
+
+
+class _ScriptedLogprobs(_Scripted):
+    """Like _Scripted, but also returns per-token alternatives, as OpenRouter does."""
+    def __init__(self, *replies):
+        super().__init__(*replies)
+
+    def generate_chat_logprobs(self, messages, **kw):
+        self.calls.append((messages, kw))
+        return self.replies.pop(0)
+
+
+def test_generate_with_logprobs_masks_an_illegal_letter_like_scoring_does():
+    """gpt-4o-mini wrote 'set the dimmer to 0.5' while it was at 0.5 (illegal).
+    With the alternatives at the letter's position, the decision is the best
+    legal letter -- as scoring would choose -- not a forced no_op."""
+    import math
+    text = "Reasoning:\n  Therefore: raise the dimmer.\nAction: F"
+    toks = [("Reasoning", {}), (":\n", {}), ("  Therefore: raise the dimmer.", {}), ("\n", {}),
+            ("Action", {}), (":", {}),
+            (" F", {" F": math.log(0.6), " H": math.log(0.3), " C": math.log(0.1)})]
+    r, _ = _decide_gen((text, toks), o=obs(servers=3, active=3, dimmer=0.5), cls=_ScriptedLogprobs)
+    assert r.notes["illegal_choice"] == "F" and r.notes["decide"] == "generate+logprobs"
+    assert r.raw_distribution == pytest.approx({"F": 0.6, "H": 0.3, "C": 0.1})
+    assert r.distribution == pytest.approx({"H": 0.75, "C": 0.25})
+    assert r.action == D(1.0)
+
+
+def test_generate_with_logprobs_reads_the_letter_after_action_not_an_earlier_one():
+    text = "Reasoning: option A is tempting.\nAction: C"
+    toks = [("Reasoning", {}), (": option", {}), (" A", {" A": 0.0}), (" is tempting.\n", {}),
+            ("Action", {}), (":", {}), (" C", {" C": math.log(0.9), " B": math.log(0.1)})]
+    r, _ = _decide_gen((text, toks), cls=_ScriptedLogprobs)
+    assert r.action == NO_OP and r.raw_distribution == pytest.approx({"C": 0.9, "B": 0.1})

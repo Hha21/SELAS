@@ -157,6 +157,34 @@ class OpenAICompatBackend:
         })
         return data["choices"][0]["message"]["content"] or ""
 
+    def generate_chat_logprobs(
+        self, messages: list[dict], *, max_tokens: int = 200,
+        temperature: float = 0.0, stop: list[str] | None = None,
+    ) -> tuple[str, list[tuple[str, dict[str, float]]]]:
+        """Generate, and return each generated token with its top alternatives.
+
+        What makes a written action as informative as a scored one: at the
+        token where the model writes its letter, the top alternatives *are* the
+        distribution over letters at that position -- the same context the
+        scoring call builds by prefilling, but produced by the model itself, so
+        it needs no server that continues an assistant turn.
+        """
+        data = self._post("/chat/completions", {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            **({"stop": stop} if stop else {}),
+            "logprobs": True,
+            "top_logprobs": self.top_logprobs,
+        })
+        choice = data["choices"][0]
+        text = choice["message"]["content"] or ""
+        tokens = [(t.get("token", ""), {a.get("token", ""): a.get("logprob", -99.0)
+                                         for a in t.get("top_logprobs", [])})
+                  for t in ((choice.get("logprobs") or {}).get("content") or [])]
+        return text, tokens
+
     def score_chat(self, messages: list[dict], options: list[str]) -> dict[str, float]:
         """Distribution over the next token, continuing the final assistant turn.
 
@@ -371,6 +399,27 @@ class OpenRouterBackend(OpenAICompatBackend):
             log.warning("openrouter returned empty reasoning (attempt %d); asking again", attempt + 1)
             time.sleep(1 + attempt)
         return text
+
+    def generate_chat_logprobs(self, messages: list[dict], *, stop: list[str] | None = None,
+                               **kwargs) -> tuple[str, list[tuple[str, dict[str, float]]]]:
+        """As the base class, with the stop sequences applied here instead.
+
+        Some providers support logprobs but not ``stop`` alongside them, and
+        ``require_parameters`` then routes nowhere (GMICloud for Qwen3). The
+        stops only guard against the model running on into another state
+        block, so the text and tokens are cut at the first one client-side.
+        """
+        text, tokens = super().generate_chat_logprobs(messages, stop=[], **kwargs)
+        cut = min((i for i in (text.find(x) for x in (stop or [])) if i >= 0), default=-1)
+        if cut >= 0:
+            text, kept, seen = text[:cut], [], 0
+            for tok, alts in tokens:
+                if seen >= cut:
+                    break
+                kept.append((tok, alts))
+                seen += len(tok)
+            tokens = kept
+        return text, tokens
 
     def generate(self, *args, **kwargs):
         raise NotImplementedError("OpenRouter is used through the chat interface only")

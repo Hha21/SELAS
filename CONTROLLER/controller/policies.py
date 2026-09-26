@@ -20,6 +20,7 @@ Details that look like details and are not:
 from __future__ import annotations
 
 import logging
+import math
 import random
 import re
 import time
@@ -141,6 +142,40 @@ class NullPolicy:
 
 
 _ACTION_LINE = re.compile(r"Action:\s*\**\s*([A-H])\b")
+_BEFORE_LETTER = re.compile(r"Action:[\s*]*$")
+
+
+def _letter_distribution(tokens: list[tuple[str, dict[str, float]]], ids: list[str],
+                         first: bool = False) -> dict[str, float]:
+    """The distribution over option letters at the token where one is written.
+
+    The position is the last token that is an option letter and follows
+    "Action:" (or, with ``first``, the first token that is a letter at all --
+    the reply to "give your action as a single letter"). Its top alternatives
+    are read like a scoring call's: both " B" and "B" count, the better wins,
+    and the letters present are renormalised. Empty if no such token.
+    """
+    text, pos = "", None
+    for i, (tok, _) in enumerate(tokens):
+        if tok.strip() in ids and (first or _BEFORE_LETTER.search(text)):
+            pos = i
+            if first:
+                break
+        text += tok
+    if pos is None:
+        return {}
+    top = tokens[pos][1]
+    logprobs = {}
+    for oid in ids:
+        found = [top[k] for k in (oid, f" {oid}") if k in top]
+        if found:
+            logprobs[oid] = max(found)
+    if not logprobs:
+        return {}
+    peak = max(logprobs.values())
+    weights = {k: math.exp(v - peak) for k, v in logprobs.items()}
+    total = sum(weights.values())
+    return {k: w / total for k, w in weights.items()}
 
 
 class RandomPolicy:
@@ -334,10 +369,17 @@ class LLMPolicy:
         notes: dict[str, Any] = {"decide": "generate"}
         gen_messages, options = self.builder.build_messages(period, traj)
         ids = [oid for oid, _ in options]
+        legal_ids = [oid for oid, a in options if is_legal(a, obs)]
+        tokens: list[tuple[str, dict[str, float]]] = []
         try:
-            text = self.backend.generate_chat(
-                gen_messages, max_tokens=self.max_reasoning_tokens + 24,
-                temperature=self.temperature, stop=["\n---"]) or ""
+            if hasattr(self.backend, "generate_chat_logprobs"):
+                text, tokens = self.backend.generate_chat_logprobs(
+                    gen_messages, max_tokens=self.max_reasoning_tokens + 24,
+                    temperature=self.temperature, stop=["\n---"])
+            else:
+                text = self.backend.generate_chat(
+                    gen_messages, max_tokens=self.max_reasoning_tokens + 24,
+                    temperature=self.temperature, stop=["\n---"]) or ""
         except Exception as exc:
             log.warning("generation failed (%s)", exc)
             notes["reasoning_error"] = str(exc)
@@ -345,29 +387,45 @@ class LLMPolicy:
         hits = [m for m in _ACTION_LINE.finditer(text) if m.group(1) in ids]
         letter = hits[-1].group(1) if hits else None
         reasoning_text = (text[:hits[-1].start()] if hits else text).rstrip()
+        raw = _letter_distribution(tokens, ids) if letter else {}
         if letter is None:
             follow = gen_messages + [
                 {"role": "assistant", "content": text.strip() or "Reasoning:"},
                 {"role": "user", "content": "Give your action as a single letter."}]
             try:
-                reply = self.backend.generate_chat(follow, max_tokens=4,
-                                                   temperature=self.temperature, stop=["\n"]) or ""
-                m = re.search(r"\b([A-H])\b", reply)
+                if hasattr(self.backend, "generate_chat_logprobs"):
+                    reply, ftoks = self.backend.generate_chat_logprobs(
+                        follow, max_tokens=4, temperature=self.temperature, stop=["\n"])
+                    raw = _letter_distribution(ftoks, ids, first=True)
+                else:
+                    reply = self.backend.generate_chat(
+                        follow, max_tokens=4, temperature=self.temperature, stop=["\n"]) or ""
+                m = re.search(r"\b([A-H])\b", reply or "")
                 if m and m.group(1) in ids:
                     letter = m.group(1)
                     notes["letter_asked"] = True
                 else:
-                    notes["parse_error"] = reply[:80]
+                    notes["parse_error"] = (reply or "")[:80]
             except Exception as exc:
                 notes["parse_error"] = str(exc)[:160]
         if getattr(self.backend, "last_provider", None):
             notes["provider"] = self.backend.last_provider
 
-        legal_ids = [oid for oid, a in options if is_legal(a, obs)]
         no_op_id = next(oid for oid, a in options if a == NO_OP)
         if letter is not None and letter not in legal_ids:
             notes["illegal_choice"] = letter
-        chosen_id = letter if letter in legal_ids else no_op_id
+        # With the letter's alternatives in hand, decide exactly as scoring does:
+        # renormalise over the legal options and take the most likely. Without
+        # them, the written letter if legal, else no_op.
+        masked = {k: v for k, v in raw.items() if k in legal_ids}
+        total = sum(masked.values())
+        if total > 0:
+            masked = {k: v / total for k, v in masked.items()}
+            chosen_id = max(masked, key=masked.__getitem__)
+            notes["decide"] = "generate+logprobs"
+        else:
+            chosen_id = letter if letter in legal_ids else no_op_id
+            masked = {chosen_id: 1.0}
         action = dict(options)[chosen_id]
         try:
             validate(action, obs)
@@ -380,8 +438,8 @@ class LLMPolicy:
             policy=self.name,
             reasoning=reasoning_text,
             messages=messages,
-            distribution={chosen_id: 1.0},
-            raw_distribution={letter: 1.0} if letter else {},
+            distribution=masked,
+            raw_distribution=raw or ({letter: 1.0} if letter else {}),
             options=self.builder.legend_entries(options),
             latency_s=time.perf_counter() - start,
             notes=notes,
