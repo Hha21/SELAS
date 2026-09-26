@@ -13,7 +13,8 @@ below, which predates the cross-model and rule-3 results):
 > whether the controller is among the best or the worst. On the SWIM exemplar,
 > six LLMs from four families, given the objective as a priority order in
 > words, all perform worse than doing nothing — while the same models given no
-> objective, or the utility function itself, perform best. The cause is one
+> objective, or the utility function itself, perform far better (by 7,000–
+> 18,000 in SWIM's utility). The cause is one
 > rule, "only once the dimmer is at 1.0, run as few servers as you can":
 > removing it restores full performance; rewording it, or stating how much a
 > late period costs, does not. The models' reasoning names the rule, so the
@@ -24,11 +25,12 @@ below, which predates the cross-model and rule-3 results):
 > objective's effect that passes through the written reasoning from the part
 > that bypasses it. [results pending: RESULTS.md §3, mediation]
 
-Framing notes for the revision: "worse than doing nothing" holds for every
-model's words runs except Llama-3.3-70B's (1310, still ~8000 below its own
-other prompts) — say "collapse" or "worst of the three prompts" if the
-abstract must hold for all six. The claim is within-model (what the prompt does
-to a model), not which model is best.
+Framing notes for the revision: "worse than doing nothing" (5101) holds for
+the words runs of all six models (the highest is Llama-3.3-70B at 1310). "Far
+better" rather than "best": Llama-4 and Qwen3 stay below doing nothing even
+without the words. The gap words → other prompts is 7,300–18,700 per model
+(Llama-4 no objective −5544 → 1807; gemma formula −6754 → 11935). The claim is
+within-model (what the prompt does to a model), not which model is best.
 
 Previous working abstract (2026-09-25):
 
