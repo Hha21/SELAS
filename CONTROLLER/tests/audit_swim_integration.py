@@ -292,43 +292,63 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
     def tsim(d):
         return d["sim_elapsed_s"] + offset
 
-    tol = 3.0
+    tol = 3.0          # usual lag: one reasoning pass plus the TCP round trip
+    late = 60.0        # landing a whole period after sensing is a fault, not latency
+    t_end = max(x for x, _ in life) if life else float("inf")
     exp_brown, exp_srv, exp_act = [], [], []
     for d in decisions:
         if not d["execution"]["sent"]:
             continue
         kind, val, t = d["decision"]["action_kind"], d["decision"]["action_value"], tsim(d)
         if kind == "set_dimmer":
-            exp_brown.append((t, 1.0 - val))
+            # a set_dimmer to the value already in force records no change
+            if abs(val - d["observation"]["dimmer"]) > 1e-9:
+                exp_brown.append((t, 1.0 - val))
         elif kind == "add_server":
             exp_srv.append((t, +1)); exp_act.append((t + BOOT, +1))
         elif kind == "remove_server":
             exp_srv.append((t, -1)); exp_act.append((t, -1))
 
-    def keep(ev):
-        return [(t, v) for t, v in ev if t >= t_min + tol]
-
     def match(label, got, expected, is_delta):
-        got = [c for c in got if c[0] >= t_min + tol]
-        expected = keep(expected)
-        if not is_delta:
-            # a set_dimmer to the value already in force records no change
-            prev = value_at(brown, t_min + tol, strict=False)
-            filt = []
-            for t, v in expected:
-                if prev is None or abs(v - prev) > 1e-9:
-                    filt.append((t, v))
-                prev = v
-            expected = filt
-        if len(got) != len(expected):
-            P.append(f"{label}: {len(got)} changes recorded, {len(expected)} expected: "
-                     f"got={[(round(t,1), o, n) for t,o,n in got]} "
-                     f"exp={[(round(t,1), v) for t,v in expected]}")
-        for (te, ve), (tg, og, ng) in zip(expected, got):
-            ok_val = (ng - og == ve) if is_delta else abs(ng - ve) < 1e-9
-            if not ok_val or abs(tg - te) > tol:
-                P.append(f"{label}: expected {ve} at ~{te:.1f}s, recorded {og}->{ng} at {tg:.1f}s")
+        """Pair each command with the recorded change it caused.
+
+        Paired by value, nearest first, within [-3 s, +60 s] of sensing (the
+        clock offset is estimated, so a change can appear to precede its
+        command slightly) -- not by position. Positional pairing turned one slow
+        decision into a misalignment of every later pair: a shared ~35 s vLLM
+        pause at one period, or a decision sensed just before the warm-up cut
+        but landing just after it, reported a clean run as 45 problems.
+        Nearest-first keeps a warm-up command, whose change SWIM never recorded,
+        from claiming the next period's change instead.
+        """
+        got = [c for c in got if c[0] >= t_min]
+        expected = [(t, v) for t, v in expected if t >= t_min - late and t <= t_end]
+        pairs = sorted((abs(tg - te), i, j)
+                       for i, (te, ve) in enumerate(expected)
+                       for j, (tg, og, ng) in enumerate(got)
+                       if -tol <= tg - te <= late
+                       and ((ng - og == ve) if is_delta else abs(ng - ve) < 1e-9))
+        hit, used = {}, set()
+        for _, i, j in pairs:
+            if i not in hit and j not in used:
+                hit[i] = j; used.add(j)
+        lags = []
+        for i, (te, ve) in enumerate(expected):
+            if i not in hit:
+                if te >= t_min + tol:          # before that, SWIM was not yet recording
+                    P.append(f"{label}: expected {ve} at ~{te:.1f}s, no matching change recorded")
+                continue
+            lag = got[hit[i]][0] - te
+            lags.append(lag)
+            if lag > tol:
+                report["notes"].append(f"{label}: {ve} landed {lag:.1f}s after ~{te:.1f}s")
+        for i, (tg, og, ng) in enumerate(got):
+            if i not in used:
+                P.append(f"{label}: recorded {og}->{ng} at {tg:.1f}s with no command to cause it")
         report[label] = [(round(t, 2), o, n) for t, o, n in got]
+        if lags:
+            lags.sort()
+            report[f"{label}_lag_median_s"] = round(lags[len(lags) // 2], 2)
 
     match("brownoutFactor", bchg, exp_brown, False)
     match("serverCost", changes(servers), exp_srv, True)
