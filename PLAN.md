@@ -115,36 +115,17 @@ per-period utility feedback); the ablation below separates them.
    | `k2-words-fb` | 2 | words | on |
    | `k2-formula-fb` (= B) | 2 | formula | on |
 
-   First pass, one seed: job 21366743, `submit_comparison.sh --classic
+   Seed 0: job 21366743, `submit_comparison.sh --classic
    --trace clarknet --arms "k0@0 k2@0 k2-words@0 k2-formula@0 k2-words-fb@0
    k2-formula-fb@0" --tag prompts-clarknet`. Check every run with
    `CONTROLLER/tests/audit_swim_integration.py check --results DIR`.
 
-   Seed 0 (`~/selas-results/prompts-clarknet-20260925-220652`), SEAMS 2017A:
-
-   | arm | utility | late | mean servers | mean dimmer | actions sent |
-   |---|---|---|---|---|---|
-   | `k0` | 4021 | 0/90 | 3.88 | 0.15 | 27 |
-   | `k2` | 10605 | 2/90 | 3.97 | 0.89 | 14 |
-   | `k2-words` (A) | −4365 | 27/90 | 2.34 | 0.70 | 70 |
-   | `k2-formula` | 11862 | 1/90 | 4.19 | 0.98 | 10 |
-   | `k2-words-fb` | −6867 | 33/90 | 2.18 | 0.71 | 69 |
-   | `k2-formula-fb` (B) | 10926 | 3/90 | 3.99 | 0.95 | 7 |
-
-   Integration check: every command sent in all six runs matches exactly one
-   change in SWIM's vectors with the right value, and no recorded change lacks
-   a command; observations match SWIM's state. Latency ~3 s, except one period
-   (t = 3900) where every arm took ~30 s — a shared vLLM stall. (The checker
-   used to pair commands to changes by position, so one slow decision
-   misaligned every later pair; it now pairs by value, nearest first.)
-
-   Reading, one seed only: the words objective is what breaks the controller.
-   With no objective (`k2`) it already scores 10605; adding the priority order
-   drops it to −4365, the model repeatedly citing rule 3 ("now that the dimmer
-   is at its maximum, we should try to reduce the number of servers") and
-   thrashing (70 actions against 7–14). The formula is not a rescue: it adds
-   ~1000 over no objective. Without exemplars the model keeps the dimmer near
-   0: safe, low revenue.
+   **Done, three seeds (RESULTS.md §2b).** Stating the objective in words is
+   worse than not stating it: no objective 11020 ± 390, words −6208 ± 1694,
+   formula 11864 ± 342; utility feedback makes no clear difference; without
+   exemplars 4038 ± 71. Every run passed the integration check. The model
+   applies "run as few servers as you can" literally and thrashes (80 of 105
+   decisions are actions).
 
    **Then robustness (agreed 2026-09-25):** the first claim to establish is
    that the prompt has a distinct effect on utility, and that it holds across

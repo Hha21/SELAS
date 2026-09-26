@@ -3,10 +3,15 @@
 The record of what has been measured, where it lives, and how to regenerate it.
 Written so the poster and paper can be assembled from this file alone.
 
-**Status (2026-09-25).** Performance (section 2) and interpretability
-(section 3) on SWIM's published configuration are **done**; figures are in
-`~/selas-results/published-figure/` and
-`~/selas-results/published-clarknet-20260924-141546/` on CSF. Everything in
+**Status (2026-09-26).** Performance of prompts A and B (section 2) and the
+prompt built up one component at a time (section 2b, three seeds) on SWIM's
+published configuration are **done**. The interpretability numbers (section 3)
+were measured before the audit fixes and the prompt fixes and are to be
+re-measured; use them as placeholders. Figures are in
+`~/selas-results/published-figure/`,
+`~/selas-results/published-clarknet-20260924-141546/` and
+`~/selas-results/prompts-clarknet-*` on CSF, with local copies under
+`figures/` (gitignored). Everything in
 [Earlier results](#earlier-results-superseded-configuration) comes from a
 reduced configuration and is kept for the record, not for the poster.
 
@@ -115,10 +120,99 @@ function's revenue term well, so both functions are reported rather than
 assuming either is "theirs". The sharpest contrast is A vs B: the same model,
 given the same objective as a priority order in words rather than as a
 function with per-period feedback, goes from the best controller to the worst.
+Section 2b separates the two differences: it is the words that break it.
 
 ---
 
-## 3. Interpretability — done
+## 2b. What in the prompt matters — done (2026-09-26)
+
+The prompt built up one component at a time, on the fixed base (exemplars
+rendered for the 12-server pool, utilisation shown as a mean, reasoning fields
+named in the system prompt; PLAN.md step 2). Configuration as in section 1,
+seed-sets 0–2, SWIM's reported utility. All arms: scaffolded reasoning, 200
+tokens, temperature 0.
+
+**Figure:** `figures/prompts-clarknet/ladder_utility.pdf` — utility per
+configuration, one dot per seed, baselines as lines. Behaviour over time for
+seed 0 (servers, dimmer, response time, cumulative utility):
+`figures/prompts-clarknet-s0/ladder_s0.pdf`.
+
+| arm | exemplars | objective | feedback | utility, mean ± SD (seeds 0, 1, 2) | late periods | mean servers | mean dimmer | actions of 105 |
+|---|---|---|---|---|---|---|---|---|
+| `k0` | 0 | none | off | 4038 ± 71 (4021, 3977, 4116) | 0, 0, 0 | 3.29 | 0.14 | 29, 34, 29 |
+| `k2` | 2 | none | off | 11020 ± 390 (10605, 11378, 11078) | 2, 2, 2 | 3.99 | 0.92 | 19, 10, 13 |
+| `k2-words` (= A) | 2 | words | off | **−6208 ± 1694** (−4364, −7695, −6563) | 27, 34, 33 | 2.31 | 0.70 | 80, 82, 80 |
+| `k2-formula` | 2 | formula | off | **11864 ± 342** (11862, 11522, 12207) | 1, 1, 2 | 3.98 | 0.98 | 15, 16, 16 |
+| `k2-words-fb` | 2 | words | on | −7699 ± 1088 (−6867, −8930, −7301) | 33, 39, 35 | 2.31 | 0.72 | 81, 85, 73 |
+| `k2-formula-fb` (= B) | 2 | formula | on | 11397 ± 970 (10926, 12512, 10752) | 3, 1, 2 | 3.77 | 0.96 | 11, 9, 9 |
+
+Baselines as in section 2: do nothing 5101, Thallium 4659, PLA 4089, SWIM
+reactive −865.
+
+**What it shows.**
+
+1. **Stating the objective in words is worse than not stating it.** Every
+   seed of both words arms is below −4300; every seed of every other arm with
+   exemplars is above 10,500. Words against no objective: −17,228.
+2. **Mechanism** (from the reasoning, seed 0): the model applies the third
+   priority literally — "now that the dimmer is at its maximum, we should try
+   to reduce the number of servers" — removing servers even at 71% utilisation
+   and 55 req/s, breaching, adding them back, and repeating: 80 of 105
+   decisions are actions, against 9–19 for the other exemplar arms. Mean pool
+   2.3 servers, below the 3 it started with.
+3. **The formula helps a little over no objective:** +844, higher on every
+   seed (by seed: +1257, +144, +1129).
+4. **Showing each period's utility makes no clear difference** (formula −467,
+   words −1491; both within the seed spread).
+5. **Exemplars matter:** without them the model keeps the dimmer near 0.14 —
+   never late, but below doing nothing (4038 vs 5101).
+6. **Consistent with section 2:** `k2-words` reproduces prompt A (−6208 vs
+   −6018) and `k2-formula-fb` prompt B (11397 vs 10562) on the fixed prompt.
+
+**How to state it.** Told the objective as a priority order in words, the
+controller scores below doing nothing, below SWIM's reactive manager and below
+every other prompt; told nothing about the objective, or told it as the
+utility function, it scores more than twice what doing nothing does. (SWIM's
+second reactive manager, −7436 ± 1026, is the one controller in section 2
+below the words prompt.) The words are
+not wrong — they are the order SWIM's utility encodes — but without magnitudes
+"run as few servers as you can" outweighs the SLA it is conditioned on.
+
+**Validation.** Every run passed the integration check, run by the job itself
+(`integration_check.json` in each run directory): each command sent became
+exactly one change of the right value in SWIM's vectors, no change lacks a
+command, and each observation matches SWIM's recorded state.
+
+**Provenance and regeneration.**
+
+| seed-set | job | command (in `experiments/controller_comparison/`) | results on CSF |
+|---|---|---|---|
+| 0 | 21366743 | `submit_comparison.sh --classic --trace clarknet --arms "k0@0 k2@0 k2-words@0 k2-formula@0 k2-words-fb@0 k2-formula-fb@0" --tag prompts-clarknet` | `~/selas-results/prompts-clarknet-20260925-220652` |
+| 1 | 21387073 | the same with `@1`, `--tag prompts-clarknet-s1` | `~/selas-results/prompts-clarknet-s1-20260926-130655` |
+| 2 | 21387074 | the same with `@2`, `--tag prompts-clarknet-s2` | `~/selas-results/prompts-clarknet-s2-20260926-130657` |
+
+Jobs 21384049/21384050 (an earlier attempt at seeds 1–2) shared ports on one
+node and cross-wired their runs; they are set aside in
+`~/selas-results/invalid-port-collision/` and must not be used.
+
+```
+python experiments/controller_comparison/ladder_plot.py \
+    <the three runs.json> -o figures/prompts-clarknet/ladder_utility \
+    --arm "k0=no examples, no objective" --arm "k2=2 examples, no objective" \
+    --arm "k2-words=+ objective in words (A)" --arm "k2-formula=+ objective as utility formula" \
+    --arm "k2-words-fb=+ words + utility feedback" --arm "k2-formula-fb=+ formula + utility feedback (B)" \
+    --reference "do nothing=5101" --reference "Thallium=4659" --reference "PLA=4089" \
+    --reference "SWIM reactive=-865" \
+    --title "Utility by prompt: SWIM ClarkNet, published configuration, 3 seeds"
+```
+
+---
+
+## 3. Interpretability — to be re-measured
+
+Measured on prompts A and B before the audit fixes (PLAN.md F1–F4) and before
+the prompt fixes; the numbers below are placeholders until the section 2b runs
+are replayed.
 
 **Regenerate** (on CSF, after the performance runs exist):
 
