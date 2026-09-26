@@ -123,6 +123,12 @@ declare -A ARM_SPEC=(
     [k2-formula]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective formula"
     [k2-words-fb]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority --utility-feedback"
     [k2-formula-fb]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective formula --utility-feedback"
+    # The words objective taken apart (RESULTS.md 2b: it collapses the
+    # controller). One change each against k2-words: rule 3 removed; a line of
+    # scale added; the same rules reworded.
+    [k2-words-no3]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-no3"
+    [k2-words-scaled]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-scaled"
+    [k2-words-para]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-paraphrase"
 )
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does

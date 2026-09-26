@@ -24,6 +24,7 @@ from controller import (
     ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
 from controller import NullPolicy, RandomPolicy
+from controller.context import OBJECTIVES
 from controller.actions import is_legal
 
 ROOT = Path(__file__).resolve().parent
@@ -77,7 +78,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      default=ReasoningStyle.SCAFFOLD.value)
     llm.add_argument("--temperature", type=float, default=0.7)
     llm.add_argument("--max-reasoning-tokens", type=int, default=200)
-    llm.add_argument("--objective", choices=["none", "priority", "formula"],
+    llm.add_argument("--objective", choices=list(OBJECTIVES),
                      default="priority",
                      help="what the system prompt says the controller is scored on: "
                           "nothing, the utility's priority order in words, or the "

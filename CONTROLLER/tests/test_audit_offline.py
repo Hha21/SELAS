@@ -360,3 +360,30 @@ def test_random_policy_is_legal_and_reproducible():
     assert a != [RandomPolicy(seed=8).decide(o) for o in states]  # different seed differs
     assert all(is_legal(x, o) for x, o in zip(a, states))
     assert len({str(x) for x in a}) >= 6                          # it does vary
+
+
+# ---------------------------------------------------------------------------
+# the words objective, taken apart
+# ---------------------------------------------------------------------------
+def _objective_block(objective):
+    text = ContextBuilder(objective=objective).system_text(ContextBuilder().options_for(obs()), 12)
+    return text[text.index("  period    one decision"):text.index("Actions:")].split("\n", 2)[2]
+
+
+def test_words_objective_is_unchanged():
+    """k2-words must stay the prompt the published and ladder runs used."""
+    assert _objective_block("priority") == (
+        "Objective, in strict priority order:\n"
+        "  1. keep the SLA: a period over the threshold is heavily penalised\n"
+        "  2. serve as much optional content as possible (dimmer towards 1.0)\n"
+        "  3. only once the dimmer is at 1.0, run as few servers as you can\n\n")
+
+
+def test_words_variants_change_one_thing_each():
+    base = _objective_block("priority").splitlines()
+    no3 = _objective_block("priority-no3").splitlines()
+    assert no3 == base[:3] + [""]                                  # rule 3 removed, nothing else
+    scaled = _objective_block("priority-scaled").splitlines()
+    assert scaled[:4] == base[:4] and "40 periods" in " ".join(scaled[4:])
+    para = _objective_block("priority-paraphrase")
+    assert "run as few servers" not in para and "as low" in para and para.count("  3.") == 1

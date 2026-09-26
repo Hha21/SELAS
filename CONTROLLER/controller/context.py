@@ -137,8 +137,8 @@ class ContextBuilder:
             objective = "priority"
         elif objective is False:
             objective = "none"
-        if objective not in ("none", "priority", "formula"):
-            raise ValueError(f"objective must be none, priority or formula, got {objective!r}")
+        if objective not in OBJECTIVES:
+            raise ValueError(f"objective must be one of {OBJECTIVES}, got {objective!r}")
         self.objective = objective
         # Show the estimated utility of each observed period, now and in the
         # history. Without it the controller cannot see what its choices cost:
@@ -234,13 +234,13 @@ class ContextBuilder:
             return []
         if self.objective == "formula":
             return self._formula_lines(max_servers)
-        return [
-            "Objective, in strict priority order:",
-            "  1. keep the SLA: a period over the threshold is heavily penalised",
-            "  2. serve as much optional content as possible (dimmer towards 1.0)",
-            "  3. only once the dimmer is at 1.0, run as few servers as you can",
-            "",
-        ]
+        if self.objective == "priority-no3":
+            return _PRIORITY[:3] + [""]
+        if self.objective == "priority-scaled":
+            return _PRIORITY + _scale_lines(max_servers) + [""]
+        if self.objective == "priority-paraphrase":
+            return _PRIORITY_PARAPHRASE + [""]
+        return _PRIORITY + [""]
 
     def _formula_lines(self, max_servers: int) -> list[str]:
         """SWIM's reported utility, stated exactly, with its constants.
@@ -500,6 +500,46 @@ def _locate_scaffold_probes(text: str, search_from: int) -> dict[str, int]:
         line_end = text.find("\n", idx + len(marker))
         probes[f"P_{name.lower()}"] = line_end if line_end != -1 else len(text)
     return probes
+
+
+# The objective in words, and the variants that take it apart. The words
+# version collapses the controller -- the model applies rule 3 literally and
+# removes servers under load -- so each variant changes one thing:
+#   priority-no3         rule 3 removed
+#   priority-scaled      a line of scale added, from the utility's own constants
+#   priority-paraphrase  the same three rules reworded, to rule out one unlucky
+#                        phrasing
+OBJECTIVES = ("none", "priority", "formula",
+              "priority-no3", "priority-scaled", "priority-paraphrase")
+
+_PRIORITY = [
+    "Objective, in strict priority order:",
+    "  1. keep the SLA: a period over the threshold is heavily penalised",
+    "  2. serve as much optional content as possible (dimmer towards 1.0)",
+    "  3. only once the dimmer is at 1.0, run as few servers as you can",
+]
+
+_PRIORITY_PARAPHRASE = [
+    "What matters, most important first:",
+    "  1. stay within the SLA; any period above the threshold is scored very badly",
+    "  2. then deliver as much optional content as you can, keeping the dimmer",
+    "     high, ideally at 1.0",
+    "  3. when the dimmer is already at 1.0, keep the number of servers as low",
+    "     as possible",
+]
+
+
+def _scale_lines(max_servers: int) -> list[str]:
+    """How much a late period costs against a spare server, from the utility.
+
+    A late period scores 1.5 * (a - kappa); an on-time period at dimmer 1 scores
+    1.5 * a + 10 * spare. The gap is 1.5 * kappa less the spare-server bonus,
+    whatever the arrival rate, and one spare server earns 10 -- so a late
+    period costs about 0.15 * kappa server-periods (40 for 12 servers).
+    """
+    ratio = round(1.5 * kappa(max_servers) / 10)
+    return [f"  For scale: one period over the threshold costs about as much as",
+            f"  running an extra server for {ratio} periods."]
 
 
 def _exemplar_obs(max_servers: int, *, servers: int, dimmer: float, rt: float,
