@@ -192,8 +192,13 @@ collect_results() {
     python collect.py "${dirs[@]}" -o "$OUT/runs.json" 2>&1 | tee "$OUT/collect.txt" \
         || echo "collect.py failed"
     local labels=(); for t in $ARMS; do labels+=("${t/@/-s}"); done
+    # The seeds the arms actually ran on: "arm@N" overrides SEED_SET, so the
+    # job default alone mislabelled a run of k0@0 ... as seed-set 1.
+    local seeds
+    seeds=$(for t in $ARMS; do case "$t" in *@*) echo "${t##*@}" ;; *) echo "$SEED_SET" ;; esac; done \
+            | sort -un | paste -sd, -)
     python plot.py "$OUT/runs.json" -o "$OUT/comparison" --labels "${labels[@]}" \
-        --title "SWIM run $RUN_INDEX, seed-set $SEED_SET, $MODEL" 2>&1 \
+        --title "SWIM run $RUN_INDEX, seed-set $seeds, $MODEL" 2>&1 \
         || echo "plot.py failed"
     ls -la "$OUT" 2>/dev/null
 

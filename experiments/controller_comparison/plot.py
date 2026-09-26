@@ -73,7 +73,7 @@ def _series_from(result: dict, key: str) -> tuple[list[float], list[float]]:
 
 
 def plot(results: list[dict], out: Path, sla: float = 0.75,
-         warmup: float = 900.0, title: str | None = None) -> None:
+         warmup: float = 900.0, legend_cols: int | None = None, title: str | None = None) -> None:
     _style()
     fig, axes = plt.subplots(4, 1, figsize=(7.0, 8.0), sharex=True,
                              gridspec_kw={"hspace": 0.18})
@@ -169,7 +169,12 @@ def plot(results: list[dict], out: Path, sla: float = 0.75,
     handles, labels = ax_srv.get_legend_handles_labels()
     if not handles:
         handles, labels = ax_util.get_legend_handles_labels()
-    if len(handles) >= 2:
+    if len(handles) >= 2 and legend_cols and legend_cols < len(handles):
+        # Wrapped, and under the plot: a multi-row legend on top collides with
+        # the title, and one row of long labels widens the whole figure.
+        fig.legend(handles, labels, loc="upper center", ncol=legend_cols,
+                   bbox_to_anchor=(0.5, ax_util.get_position().y0 - 0.05), fontsize=9)
+    elif len(handles) >= 2:
         fig.legend(handles, labels, loc="upper center", ncol=len(handles),
                    bbox_to_anchor=(0.5, 0.965), fontsize=9)
 
@@ -192,13 +197,16 @@ def main() -> int:
     ap.add_argument("--sla", type=float, default=0.75)
     ap.add_argument("--warmup", type=float, default=900.0)
     ap.add_argument("--title", default=None)
+    ap.add_argument("--legend-cols", type=int, default=None,
+                    help="wrap the legend into this many columns, under the plot")
     args = ap.parse_args()
 
     results = json.loads(args.results_json.read_text())
     if args.labels:
         for r, lab in zip(results, args.labels):
             r["label"] = lab
-    plot(results, args.out, sla=args.sla, warmup=args.warmup, title=args.title)
+    plot(results, args.out, sla=args.sla, warmup=args.warmup, title=args.title,
+         legend_cols=args.legend_cols)
     return 0
 
 
