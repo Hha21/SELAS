@@ -304,7 +304,7 @@ class OpenRouterBackend(OpenAICompatBackend):
     BASE_URL = "https://openrouter.ai/api/v1"
 
     def __init__(self, model: str, provider: str | None = None,
-                 timeout: float = 60.0, top_logprobs: int = 20, retries: int = 3) -> None:
+                 timeout: float = 45.0, top_logprobs: int = 20, retries: int = 5) -> None:
         key = os.environ.get("OPENROUTER_API_KEY")
         if not key:
             raise RuntimeError("OPENROUTER_API_KEY is not set; source ~/.config/selas/openrouter.env")
@@ -349,6 +349,24 @@ class OpenRouterBackend(OpenAICompatBackend):
             self.last_provider = data.get("provider")
             return data
         raise RuntimeError("unreachable")
+
+    def generate_chat(self, messages: list[dict], **kwargs) -> str:
+        """As the base class, but an empty reply is asked for again.
+
+        Under rate limiting a provider occasionally answered 200 with empty
+        content. Scored with no reasoning, the model then tries to *start*
+        reasoning after "Action:" -- no option letter in the top-20 -- and the
+        decision falls back to the reactive rule: a decision that is not the
+        model's. An empty reply is a transport fault, not an answer, so it is
+        retried; vLLM on CSF has never returned one.
+        """
+        for attempt in range(3):
+            text = super().generate_chat(messages, **kwargs)
+            if text.strip():
+                return text
+            log.warning("openrouter returned empty reasoning (attempt %d); asking again", attempt + 1)
+            time.sleep(1 + attempt)
+        return text
 
     def generate(self, *args, **kwargs):
         raise NotImplementedError("OpenRouter is used through the chat interface only")
