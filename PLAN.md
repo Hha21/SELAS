@@ -5,7 +5,32 @@ records everything measured so far.
 
 ## Direction
 
-Working abstract:
+Working abstract (revised 2026-09-27, draft for review — replaces the one
+below, which predates the cross-model and rule-3 results):
+
+> LLM-based managing systems are steered by objectives written in natural
+> language. We show that a single clause of such an objective can decide
+> whether the controller is among the best or the worst. On the SWIM exemplar,
+> six LLMs from four families, given the objective as a priority order in
+> words, all perform worse than doing nothing — while the same models given no
+> objective, or the utility function itself, perform best. The cause is one
+> rule, "only once the dimmer is at 1.0, run as few servers as you can":
+> removing it restores full performance; rewording it, or stating how much a
+> late period costs, does not. The models' reasoning names the rule, so the
+> failure is visible in the explanation — but visible is not the same as
+> causal. We measure how far each configuration's reasoning can be trusted as
+> an explanation of its decisions (faithfulness, counterfactual,
+> simulatability), and use objective-swap mediation to separate the part of the
+> objective's effect that passes through the written reasoning from the part
+> that bypasses it. [results pending: RESULTS.md §3, mediation]
+
+Framing notes for the revision: "worse than doing nothing" holds for every
+model's words runs except Llama-3.3-70B's (1310, still ~8000 below its own
+other prompts) — say "collapse" or "worst of the three prompts" if the
+abstract must hold for all six. The claim is within-model (what the prompt does
+to a model), not which model is best.
+
+Previous working abstract (2026-09-25):
 
 > Small changes in how the objective is communicated to an LLM managing system
 > swing it from the worst controller to the best, and its reasoning trace does
