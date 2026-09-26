@@ -136,10 +136,13 @@ per-period utility feedback); the ablation below separates them.
    (Llama-3.3-70B) if the flip holds on gemma. **Across models done
    (RESULTS.md §2c):** the words objective is the worst prompt for every model
    on every seed — gemma (CSF and OpenRouter), gpt-4o-mini, Llama-4-Maverick,
-   Qwen3-235B. Llama-3.3-70B on CSF, the words variants and the random baseline
-   are running there, waiting on the VPN. Next: read Llama-4/Qwen3 reasoning
-   under the words (they do not cut servers the way gemma does); then the
-   configurations (WorldCup, boot delay, pool size).
+   Qwen3-235B. Llama-3.3-70B on CSF agrees (words 1310 against 9184 / 11227).
+   **Rule 3 is the cause (RESULTS.md §2d):** without it gemma recovers fully;
+   reworded or given the scale of a late period, it still collapses. Every
+   model removes servers while on time far more under the words (§2c).
+   Next: the configurations (WorldCup, boot delay, pool size) with no
+   objective / words / words-without-rule-3 / formula; then interpretability
+   on these runs — does the reasoning say it is following rule 3?
 5. **Interpretability** on every cell (replay_all.sbatch + spider), then NLA:
    for the same states, compare what the model represents at the decision
    point under each prompt — does it encode server cost, the breach penalty,

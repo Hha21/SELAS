@@ -220,7 +220,8 @@ per model, a dot per seed; CSF gemma (section 2b) included for reference.
 
 | model (provider) | no objective | **objective in words** | utility formula |
 |---|---|---|---|
-| gemma-3-27b, CSF vLLM (section 2b) | 11020 ± 390 | **−6208 ± 1694** | 11864 ± 342 |
+| gemma-3-27b, CSF vLLM (section 2b + seed 3) | 11281 ± 612 (n=4) | **−6754 ± 1762** | 11935 ± 313 |
+| Llama-3.3-70B-Instruct FP8, CSF vLLM | 9184 ± 3547 (12524, 11620, 4886, 7705) | **1310 ± 1781** (1303, 289, 3818, −170) | 11227 ± 2515 (13257, 11546, 12500, 7604) |
 | gemma-3-27b (Parasail) | 10229 ± 2152 (12177, 10591, 7919) | **−6674 ± 845** (−6262, −6113, −7646) | 11472 ± 187 (11651, 11487, 11277) |
 | gpt-4o-mini (OpenAI) | 6570 ± 1265 (7280, 7321, 5110) | **−5234 ± 493** (−4908, −4992, −5801) | 9083 ± 612 (9120, 8454, 9677) |
 | Llama-4-Maverick (Parasail) | 1807 ± 1290 (3144, 570, 1708) | **−5544 ± 768** (−5532, −6318, −4782) | 1771 ± 3980 (2118, −2371, 5566) |
@@ -240,7 +241,9 @@ Late periods of 90 (seeds 0, 1, 2), and mean servers:
 1. **The objective in words is the worst prompt for every model, on every
    seed**, and never close: for each model the best words run is below the
    worst run of either other prompt. Words runs are late in 30–39 of 90
-   periods for every model.
+   periods for every OpenRouter model and 20–27 for Llama-3.3-70B (0–2 for its
+   other prompts); Llama-3.3-70B is the one model whose words runs stay
+   positive (1310), still ~8000 below its other two prompts.
 2. **Not a gemma quirk, and not an infrastructure one:** gemma through
    OpenRouter reproduces gemma on CSF within the seed spread (10229 / −6674 /
    11472 against 11020 / −6208 / 11864).
@@ -316,10 +319,57 @@ experiments/controller_comparison/run_local.sh --model <model> --provider <provi
 with the OpenRouter key in `~/.config/selas/openrouter.env`. Figure:
 `experiments/controller_comparison/models_plot.py` (command in its docstring).
 
-**Pending on CSF (VPN down since 2026-09-26 18:00):** Llama-3.3-70B on the
-three prompts, seeds 0–3 (vLLM scoring, like gemma); the three words variants
-(PLAN.md) on gemma; a fourth gemma seed; the random baseline. Jobs 21392438,
-21392444, 21392445, 21392449 and 21392112–4.
+**Random baseline** (uniform over the legal options, the same action space;
+`--policy random`, seeded by the seed-set): 2931, 5046, −15705 for seed-sets
+0–2 (mean −2576 ± 11419; late 5, 1, 52). Its spread is the random walk of the
+server count: seed 2 drifted to 1.7 servers on average. Seeds 3–9 are running
+locally (`results-local/local-random-s3to9-*`). CSF runs: jobs 21392112–4,
+`~/selas-results/published-random-s{0,1,2}-20260926-161650`.
+
+**Local and CSF are the same simulation.** The random runs made on CSF and on
+the laptop took the identical 105-action sequence for each seed, and their
+utilities agree to 0.05 in thousands (2930.85 / 2930.80, 5045.73 / 5045.66,
+−15704.67 / −15704.69) — the remainder is sub-second timing of when commands
+land.
+
+**CSF provenance:** Llama-3.3-70B jobs 21392438 (seeds 0–1) and 21392444
+(seeds 2–3), `~/selas-results/llama70b-prompts-s{01,23}-20260926-*`; gemma
+seed 3 in job 21392449, `~/selas-results/words-apart-s2-main-s3-20260926-162446`.
+All 24 runs pass the integration check (21392444 was marked FAILED only because
+the checker then on CSF could not date a run with no dimmer change; the current
+one passes it).
+
+---
+
+## 2d. Which part of the words breaks it — done (2026-09-27)
+
+The objective in words has three rules; the variants change one thing each
+(`controller/context.py`, arms `k2-words-*`). gemma-3-27b on CSF (vLLM
+scoring), seed-sets 0–2, published configuration.
+
+**Figure:** `figures/prompts-clarknet/words_apart.pdf`.
+
+| prompt | utility (seeds 0, 1, 2) | late periods | mean servers |
+|---|---|---|---|
+| no objective (`k2`, n=4) | 11281 ± 612 | 2, 2, 2, 1 | 3.9 |
+| words, rules 1–3 (`k2-words`, n=4) | **−6754 ± 1762** | 27, 34, 33, 36 | 2.3 |
+| same rules reworded (`k2-words-para`) | −4863 ± 2318 (−2878, −4299, −7410) | 27, 30, 38 | 2.53 |
+| rules 1–3 + a line of scale (`k2-words-scaled`) | −6426 ± 1293 (−6078, −5342, −7857) | 33, 32, 36 | 2.49 |
+| **rules 1–2 only (`k2-words-no3`)** | **11783 ± 620** (11902, 11112, 12335) | 2, 2, 1 | 3.67 |
+| utility formula (`k2-formula`, n=4) | 11935 ± 313 | 1, 1, 2, 1 | 4.0 |
+
+**What it shows.** Rule 3 — "only once the dimmer is at 1.0, run as few
+servers as you can" — is the whole effect: removing it restores the
+controller to the formula's level (11783 against 11935). It is not the
+phrasing (reworded, it still collapses) and not missing magnitudes (told that a
+late period costs as much as 40 periods of an extra server, it collapses just
+the same). The model is not short of the information; it acts on the
+instruction.
+
+The words variants were run on CSF, jobs 21392445 (seeds 0–1) and 21392449
+(seed 2), `~/selas-results/words-apart-*-20260926-*`; all pass the integration
+check. The same variants are running locally on gemma and gpt-4o-mini through
+OpenRouter (`results-local/wv-*`).
 
 ---
 
