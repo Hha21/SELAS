@@ -25,7 +25,7 @@ PY="${SELAS_PYTHON:-python3}"
 PLOT_PY="${SELAS_PLOT_PYTHON:-$REPO/.venv/bin/python}"
 
 MODEL=""; PROVIDER=""; ARMS=""; TAG="local"; PORT_BASE=15000; DECIDE=score
-RUN_INDEX=8; INITIAL_SERVERS=3; MAX_SERVERS=12; BROWNOUT_LEVELS=10; BOOT_DELAY=180
+TRACE=clarknet; INITIAL_SERVERS=3; MAX_SERVERS=12; BROWNOUT_LEVELS=10; BOOT_DELAY=180
 PERIOD=60; TEMPERATURE=0
 SIM_LIMIT="${SELAS_SIM_LIMIT:-}"      # e.g. 180s for a smoke test; empty = SWIM's 6300 s
 while [ $# -gt 0 ]; do
@@ -36,15 +36,26 @@ while [ $# -gt 0 ]; do
         --arms) ARMS="$2"; shift 2 ;;
         --tag) TAG="$2"; shift 2 ;;
         --port-base) PORT_BASE="$2"; shift 2 ;;
-        --trace)
-            case "$2" in clarknet) RUN_INDEX=8 ;; worldcup) RUN_INDEX=3 ;;
-                *) echo "--trace must be clarknet or worldcup" >&2; exit 1 ;; esac
-            shift 2 ;;
+        --trace) TRACE="$2"; shift 2 ;;                 # clarknet | worldcup
+        --boot-delay) BOOT_DELAY="$2"; shift 2 ;;       # 0 | 60 | 120 | 180 | 240
+        --max-servers) MAX_SERVERS="$2"; shift 2 ;;
+        --initial-servers) INITIAL_SERVERS="$2"; shift 2 ;;
         -h|--help) sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) echo "unknown option $1" >&2; exit 1 ;;
     esac
 done
 [ -n "$ARMS" ] || { echo "--arms is required" >&2; exit 1; }
+
+# bootDelay is a sweep variable in swim.ini, selected by run index (`swim -q
+# runs`): WorldCup is runs 0-4 and ClarkNet runs 5-9, at boot delays 0, 60,
+# 120, 180, 240 s in that order. The published configuration is ClarkNet at
+# 180 s, run 8. The controller is told the same delay, since SWIM does not
+# report it over the socket.
+case "$TRACE" in clarknet) base=5 ;; worldcup) base=0 ;;
+    *) echo "--trace must be clarknet or worldcup" >&2; exit 1 ;; esac
+case "$BOOT_DELAY" in 0|60|120|180|240) ;;
+    *) echo "--boot-delay must be one of 0 60 120 180 240 (SWIM's sweep)" >&2; exit 1 ;; esac
+RUN_INDEX=$(( base + BOOT_DELAY / 60 ))
 
 # The arms, from the one place they are defined.
 eval "$(sed -n '/^declare -A ARM_SPEC=(/,/^)/p' "$HERE/run_comparison.sbatch")"
@@ -60,7 +71,7 @@ exec > >(tee -a "$OUT/job.log") 2>&1
 echo "run       $RUN_ID"
 echo "model     ${MODEL:-<none>} @ ${PROVIDER:-any provider}, decide=$DECIDE"
 echo "arms      $ARMS"
-echo "config    run $RUN_INDEX, servers $INITIAL_SERVERS..$MAX_SERVERS, boot $BOOT_DELAY s, $BROWNOUT_LEVELS levels"
+echo "config    $TRACE (run $RUN_INDEX), servers $INITIAL_SERVERS..$MAX_SERVERS, boot $BOOT_DELAY s, $BROWNOUT_LEVELS levels"
 
 # The same edit of the repository's swim.ini as the CSF job.
 SWIM_INI="$OUT/swim.ini"
