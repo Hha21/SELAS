@@ -373,6 +373,52 @@ OpenRouter (`results-local/wv-*`).
 
 ---
 
+## 3a. Does the objective act through the reasoning? (mediation) — done (2026-09-27)
+
+`experiments/mediation/`. For every recorded decision, only the objective in
+the system prompt is swapped — rule 3 removed from a words run, or added to a
+run that never had it — with the state fixed, and four distributions are
+scored (vLLM continuation, gemma-3-27b):
+
+- **orig** — the recorded prompt and reasoning (control)
+- **direct** — swapped objective, the ORIGINAL reasoning kept
+- **total** — swapped objective, reasoning regenerated under it (greedy, 200 tokens)
+- **reason** — original objective, the regenerated reasoning
+
+Control reproduces the recorded decision in 99–100% of decisions.
+Distributions are masked to the legal actions as the controller does.
+
+| run | decisions total changes | of those, direct changes the same way | reason does | TV from orig: direct / total / reason | P(remove): orig → direct → total |
+|---|---|---|---|---|---|
+| words s0, rule 3 removed | 51 / 105 | 8% | 76% | 0.12 / 0.50 / 0.46 | 0.11 → 0.13 → 0.00 |
+| words s1 | 53 | 17% | 72% | 0.15 / 0.51 / 0.45 | 0.13 → 0.13 → 0.00 |
+| words s2 | 58 | 16% | 81% | 0.15 / 0.55 / 0.49 | 0.15 → 0.15 → 0.00 |
+| words s3 | 60 | 20% | 80% | 0.16 / 0.56 / 0.51 | 0.14 → 0.14 → 0.01 |
+| no-rule-3 s0, rule 3 added | 84 | 2% | 98% | 0.04 / 0.81 / 0.79 | 0.02 → 0.02 → 0.79 |
+| no-rule-3 s1 | 87 | 3% | 98% | 0.04 / 0.83 / 0.81 | 0.01 → 0.01 → 0.75 |
+| no-rule-3 s2 | 97 | 2% | 97% | 0.03 / 0.92 / 0.90 | 0.00 → 0.00 → 0.87 |
+
+**What it shows.** The objective's effect on the decision passes almost
+entirely through the written reasoning. Held to its original reasoning, the
+model keeps every recorded removal after rule 3 is deleted (P(remove) over the
+removal decisions stays 1.0; it drops to 0 only when the reasoning is
+regenerated), and adding rule 3 barely moves a decision (2–3% of the flips,
+TV 0.03–0.04) unless the model re-reasons — when it would remove a server in
+75–87% of periods. The rule changes what the model writes; the decision
+follows what it wrote. For this failure the trace is not only visible but
+causal. (The residual direct path is larger for words → no rule 3, 8–20% of
+flips, than the reverse, 2–3%.)
+
+Caveat: single-step, at recorded states; the closed-loop consequence is the
+utility result of section 2d.
+
+**Provenance:** job 21402011 (`experiments/mediation/run_mediation.sbatch`,
+specs in PLAN.md), outputs `~/selas-results/<run>/<arm>/mediation_<to>.jsonl`
+and `.json` for `k2-words-s{0,1,2,3}` (priority → priority-no3) and
+`k2-words-no3-s{0,1,2}` (priority-no3 → priority).
+
+---
+
 ## 3. Interpretability — to be re-measured
 
 Measured on prompts A and B before the audit fixes (PLAN.md F1–F4) and before
