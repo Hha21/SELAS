@@ -437,28 +437,39 @@ and `.json` for `k2-words-s{0,1,2,3}` (priority → priority-no3) and
 
 ---
 
-## 3. Interpretability — re-measured on the fixed code (preliminary, 2026-09-27)
+## 3. Interpretability — re-measured on the fixed code (2026-09-27)
 
-The full battery (`replay_all.sbatch`, audit fixes F1–F4 in) on the section 2b
-runs, gemma-3-27b, over all decisions, seed-sets 0–2 (jobs 21401939–41;
-`~/selas-results/interp-prompts/spider_prelim.{png,json}`, local copy
-`figures/interp/`). The runs without rule 3 and seed 3 are in jobs 21401942–3.
+The full battery (`replay_all.sbatch`, audit fixes F1–F4 in) on gemma-3-27b,
+CSF: no objective, words and formula at seed-sets 0–3, rule 3 removed at 0–2
+(jobs 21401939–43). Figures: `~/selas-results/interp-prompts/spider{,_active}.{png,pdf,json}`,
+local copies in `figures/interp/`.
 
-| axis | no objective | **words** | formula |
-|---|---|---|---|
-| Robustness (paraphrase leaves it) | 0.994 | 0.937 | 0.981 |
-| Sensitivity (ablating the reasoning moves it) | 0.114 | **0.483** | 0.130 |
-| Mistakes (corrupted premise, conclusion dropped) | 0.102 | **0.222** | 0.054 |
-| Counterfactual (flip rate under paired telemetry edits) | 0.851 | **0.596** | 0.877 |
-| Simulatability | 0.391 | **0.541** | 0.437 |
-| *shuffled reasoning moves it (ceiling)* | *0.197* | ***0.676*** | *0.238* |
+| axis | pool | no objective | **words** | formula | rule 3 removed |
+|---|---|---|---|---|---|
+| Robustness | all | 0.995 | 0.940 | 0.986 | 0.997 |
+| | active | 0.981 | 0.928 | 0.906 | 0.963 |
+| Sensitivity | all | 0.121 | **0.481** | 0.121 | 0.098 |
+| | active | 0.797 | 0.623 | 0.882 | 0.696 |
+| Mistakes | all | 0.095 | **0.233** | 0.062 | 0.038 |
+| | active | 0.316 | 0.268 | 0.313 | 0.181 |
+| Counterfactual | — | 0.852 | **0.594** | 0.880 | 0.813 |
+| Simulatability | all | 0.407 | 0.546 | 0.437 | 0.176 |
+| | active | 0.526 | 0.558 | 0.608 | 0.519 |
+| *shuffled ceiling* | all / active | 0.20 / 0.95 | 0.67 / 0.77 | 0.23 / 0.95 | 0.18 / 0.97 |
 
-The words controller's decisions depend on its reasoning far more, and track
-its telemetry less, than either well-performing configuration's — consistent
-with the mediation (§3a): its reasoning is what carries the rule to the
-decision. Caution before interpreting: the good configurations choose no_op in
-~75% of periods and the words one acts in ~80%, so more of its decisions can
-move; the active-decisions pool (`--pool ACTIVE`) is the check.
+Controls: re-scoring the unmodified reasoning moves nothing (0.000–0.003).
+
+**Reading it, carefully.** Over all decisions the words controller looks far
+more dependent on its reasoning (sensitivity 0.48 against 0.10–0.12), but that
+is mostly the base rate: the good configurations choose no_op in ~75% of
+periods, and a no_op rarely depends on the reasoning. Over the decisions where
+a controller acts, *every* configuration's action depends heavily on its
+reasoning (sensitivity 0.62–0.88), the words one if anything least. Two
+differences survive the base rate: the words controller acts far more often,
+and its decisions follow the telemetry less (counterfactual 0.59 against
+0.81–0.88). The mediation (§3a) is the sharper instrument for the question
+the paper asks: the rule's effect on the decision passes through the written
+reasoning.
 
 The earlier A/B numbers below were measured before the fixes and on the old
 prompt; they are superseded by the table above.
