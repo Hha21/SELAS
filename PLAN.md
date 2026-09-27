@@ -60,30 +60,53 @@ integration check itself; check it reads bootDelay 60 for cn60.
 Present the active-decision pool as primary and state the no_op base rate up
 front. Possible addition: per-seed spread on the spider axes.
 
-**Part 3 — not started.** Pilot first (below).
+**Part 3 — pilot submitted (2026-09-27 ~13:30).** Job 21421919
+(`experiments/nla/run_pilot.sbatch`), output `~/selas-results/nla-pilot-clarknet/`,
+on the three prompts-clarknet seed-0 runs (k2, k2-words, k2-formula; 315
+decisions). It captures gemma-3-27b-it's layer-41 vectors at seven probes per
+decision -- end of the state (P0_state_end), the opened model turn before any
+reasoning (P0_turn), the end of each reasoning field (P_sla, P_capacity,
+P_trend, P_therefore), the action cue (P_action) -- then the released AV
+explains each (greedy) and the AR reconstructs it (fve_nrm). The pair
+(`kitft/nla-gemma3-27b-L41-{av,ar}`) is downloaded to the CSF HF cache
+(AV 101 GB fp32, AR 36 GB); the job runs offline, about 30–45 min.
+
+How the pair is run (`experiments/nla/nla_pair.py`): the kitft/nla-inference
+recipe under transformers, NOT `NLA/src` (our Qwen-0.5B reproduction). The
+gemma pair injects `㈜` at L2 norm 60000 after Gemma's sqrt(d) embedding
+scale, the AR needs BOS and no final norm, and fve_nrm = 1 - mse_nrm/0.0579
+(training variance; at this layer cos is ~0.99 everywhere, so read fve_nrm).
+Checked offline: injection site and AR suffix against the real tokenizer and
+sidecar; generate/reconstruct on a tiny random Gemma-3; probe tokens on real
+decisions (`\n` after `model`, the `.` ending each field, the `:` of
+`Action:`). Checked in the job: it first reproduces the pair's published
+worked example ("What is the capital of France...", 22 prompt tokens) --
+raw norms must match within 3% (exit 2 otherwise), and its fve_nrm (published
+mean 0.82 over positions 4+) and the ' France' decode are reported in
+`reference.json`.
 
 ## Next
 
 1. **Collect the robustness jobs** (above): tables per configuration with
    paired intervals (as in §2d), update §2e, replace the figures.
-2. **NLA pilot** on CSF (needs a GPU; gemma-3-27b-it, layer 41):
-   - find what already exists: `experiments/activations/` (has
-     `test_render.py`), `NLA/src/` (capture, av.py, ar.py, server/),
-     `NLA/METHOD_PIPELINE.md`, `NLA/WORK_PLAN.md`;
-   - capture layer-41 residual activations for ~100 recorded decisions of one
-     gemma run with no objective (`~/selas-results/prompts-clarknet-20260925-220652/k2-s0`,
-     chat messages are in decisions.jsonl) at P0 (end of the state, before any
-     reasoning) and P_action (the position the action letter is read after);
-     the chat path records no probe offsets, so positions must be found in the
-     templated token sequence;
-   - decode with the AV, check reconstruction with the AR (fraction of
-     variance explained) before interpreting anything.
-   Questions, in order: is the action already decodable at P0 (fits the
-   behavioural finding that no_op decisions do not depend on the reasoning)?
-   does the P_action explanation agree with the written reasoning? what does
-   it contain that the trace omits (e.g. SLA risk in the rule-3 removals)?
-   does it move under the counterfactual telemetry edits when the action does
-   not?
+2. **Read the NLA pilot** when job 21421919 finishes: copy
+   `~/selas-results/nla-pilot-clarknet/` (small: vectors.npy ~50 MB) and run
+   `experiments/nla/analyse_pilot.py OUT -o OUT/summary.json`. In order:
+   - reference reproduced? If not, stop and fix before reading anything else;
+   - fidelity: fve_nrm per probe on our (long, structured) prompts against
+     the 0.82 of ordinary chat -- low values mean the AV's words cannot be
+     taken as the model's;
+   - decodability: cross-validated linear read-out of the action kind at each
+     probe, against the telemetry alone. P0_turn ~ P_action means the action
+     was settled before the reasoning (fits the behavioural finding that the
+     no_op decisions do not depend on it);
+   - words: at P_action the letter the explanation expects vs the letter
+     chosen; topics (remove / add / dimmer / no_op / response-time risk) per
+     probe and action kind, especially whether the rule-3 removals under
+     words carry response-time risk the trace omits;
+   - read the printed examples.
+   Then, if fidelity holds: the counterfactual telemetry edits (does the P0
+   explanation move when the action does not?) and all four seeds.
 3. **Write** the abstract and introduction around the three parts.
 4. **Poster** (due ~2026-09-29): `LaTeX_Poster/feedback.md` lists the changes
    (three passages now wrong; new results and figure paths). Parts 1–2 go on
