@@ -320,10 +320,14 @@ with the OpenRouter key in `~/.config/selas/openrouter.env`. Figure:
 `experiments/controller_comparison/models_plot.py` (command in its docstring).
 
 **Random baseline** (uniform over the legal options, the same action space;
-`--policy random`, seeded by the seed-set): 2931, 5046, −15705 for seed-sets
-0–2 (mean −2576 ± 11419; late 5, 1, 52). Its spread is the random walk of the
-server count: seed 2 drifted to 1.7 servers on average. Seeds 3–9 are running
-locally (`results-local/local-random-s3to9-*`). CSF runs: jobs 21392112–4,
+`--policy random`, seeded by the seed-set), seed-sets 0–9: 2931, 5046, −15705,
+−1703, −352, −3097, 4842, 5278, 118, 3191 — **mean 55 ± 6278, median 1524**
+(late periods 5, 1, 52, 17, 13, 20, 0, 0, 12, 5). Its spread is the random walk
+of the server count: seed 2 drifted to 1.7 servers on average. The words runs
+of five of the six models (means −5234 to −6754) are below both the random
+mean and median; Llama-3.3-70B's (1310) is near the random median. All ten
+pass the integration check; seeds 3–9 in
+`results-local/local-random-s3to9-20260926-225032`. CSF runs: jobs 21392112–4,
 `~/selas-results/published-random-s{0,1,2}-20260926-161650`.
 
 **Local and CSF are the same simulation.** The random runs made on CSF and on
