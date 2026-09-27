@@ -372,8 +372,22 @@ instruction.
 
 The words variants were run on CSF, jobs 21392445 (seeds 0–1) and 21392449
 (seed 2), `~/selas-results/words-apart-*-20260926-*`; all pass the integration
-check. The same variants are running locally on gemma and gpt-4o-mini through
-OpenRouter (`results-local/wv-*`).
+check.
+
+**The same holds on two models through OpenRouter** (generate+logprobs,
+seed-sets 0–2, `results-local/wv-{gemma27b,gpt4omini}-20260926-*`, all 18 runs
+pass the integration check):
+
+| prompt | gemma-3-27b (OR) | gpt-4o-mini |
+|---|---|---|
+| no objective | 10229 ± 2152 | 6570 ± 1265 |
+| words, rules 1–3 | −6674 ± 845 | −5234 ± 493 |
+| same rules, reworded | −4739 ± 1676 (−5640, −5772, −2805) | −2593 ± 371 (−3014, −2316, −2448) |
+| rules 1–3 + scale | −5945 ± 1220 (−7318, −4985, −5533) | −4656 ± 1504 (−5970, −4982, −3015) |
+| **rule 3 removed** | **12255 ± 135** (12411, 12164, 12191) | **8866 ± 858** (7949, 9000, 9649) |
+| utility formula | 11472 ± 187 | 9083 ± 612 |
+
+Figure across the three setups: `figures/prompts-clarknet/words_apart_models.pdf`.
 
 ---
 
