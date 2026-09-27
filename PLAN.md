@@ -1,9 +1,113 @@
 # Plan
 
-Agreed with supervisor, 2026-09-25. Read with [RESULTS.md](RESULTS.md), which
-records everything measured so far.
+Read with [RESULTS.md](RESULTS.md), which records every measurement and where it
+lives. This file says what the paper argues, what is established, and what is
+next. Updated 2026-09-27 (pivot agreed with Harry).
 
-## Direction
+## The story (agreed 2026-09-27)
+
+**SELAS: an LLM as a self-explaining managing system.** Three parts:
+
+1. **Proof of concept, and its robustness.** An LLM (gemma-3-27b) runs SWIM
+   as its managing system and is competitive under SWIM's reported utility.
+   How the objective is stated matters little: no objective, the priority
+   order without rule 3, and the utility formula are statistically
+   indistinguishable for gemma (RESULTS §2d statistics). The one exception is
+   a single over-applied clause, rule 3 ("only once the dimmer is at 1.0, run
+   as few servers as you can"), which collapses every model tested; it is a
+   case study, not the headline (a reviewer can fairly read it as "told to
+   minimise servers, it did"). The choice of model matters far more than the
+   prompt (gemma ~11–12k; Llama-4 and Qwen3 below doing nothing).
+2. **Self-explanation: can the reasoning be trusted as an explanation?**
+   Behavioural measures on gemma (RESULTS §3): over the decisions where the
+   controller acts, its action depends heavily on its reasoning (sensitivity
+   0.70–0.88), is robust to paraphrase, and tracks its telemetry
+   (counterfactual 0.81–0.88). Mediation (§3a): the objective's effect passes
+   through the written reasoning (direct path 2–20% of flips). The rule-3
+   failure is diagnosable from the trace: all 43 on-time removals cite
+   reducing servers.
+3. **Mechanistic interpretability (next).** What does the model represent at
+   the decision point that the trace does not say? Released NLA checkpoint
+   pair for gemma-3-27b-it at layer 41 (`kitft/nla-gemma3-27b-L41-{av,ar}`,
+   listed in `NLA/src/config.py`; also Llama-3.3-70B L53).
+
+Working abstract: to be rewritten around the three parts above; the draft
+further down (rule 3 as headline) is superseded by this pivot.
+
+## Status
+
+**Part 1 — established.** Six models, four families, 3–4 seeds on the
+published configuration (§2b–2c); rule 3 isolated on three setups (§2d);
+two more configurations for gemma, 3 seeds (§2e); baselines: do nothing,
+SWIM reactive (10 seeds), PLA and Thallium (shipped, one run each, objective
+unknown), random (10 seeds). Every run passes the integration check; the
+laptop and CSF are the same simulation (§2c). Caveats to state, not fix: PLA
+and Thallium are single shipped runs; gemma's lead over them is SWIM's
+cost bonus at dimmer 1 (§2).
+
+Running (CSF, submitted 2026-09-27 ~02:30, vLLM scoring like the main gemma
+results): gemma in the two extra configurations, four prompts (k2, k2-words,
+k2-words-no3, k2-formula) x seed-sets 0–3 — jobs 21419243–5 (ClarkNet boot
+60 s, tag `rb-cn60`) and 21419247–9 (WorldCup boot 180 s, tag `rb-wc180`),
+results `~/selas-results/rb-{cn60,wc180}-*`. They replace the 3-seed
+OpenRouter numbers in §2e as the primary figures for those configurations
+(and settle WorldCup, where 3 seeds spread widely). Each job runs the
+integration check itself; check it reads bootDelay 60 for cn60.
+
+**Part 2 — established; small gaps.** Battery re-measured on the fixed code
+(§3, 15 runs, both pools); mediation (§3a, 7 runs, figure
+`figures/interp/mediation.pdf`); the trace-names-the-cause count (§2d).
+Present the active-decision pool as primary and state the no_op base rate up
+front. Possible addition: per-seed spread on the spider axes.
+
+**Part 3 — not started.** Pilot first (below).
+
+## Next
+
+1. **Collect the robustness jobs** (above): tables per configuration with
+   paired intervals (as in §2d), update §2e, replace the figures.
+2. **NLA pilot** on CSF (needs a GPU; gemma-3-27b-it, layer 41):
+   - find what already exists: `experiments/activations/` (has
+     `test_render.py`), `NLA/src/` (capture, av.py, ar.py, server/),
+     `NLA/METHOD_PIPELINE.md`, `NLA/WORK_PLAN.md`;
+   - capture layer-41 residual activations for ~100 recorded decisions of one
+     gemma run with no objective (`~/selas-results/prompts-clarknet-20260925-220652/k2-s0`,
+     chat messages are in decisions.jsonl) at P0 (end of the state, before any
+     reasoning) and P_action (the position the action letter is read after);
+     the chat path records no probe offsets, so positions must be found in the
+     templated token sequence;
+   - decode with the AV, check reconstruction with the AR (fraction of
+     variance explained) before interpreting anything.
+   Questions, in order: is the action already decodable at P0 (fits the
+   behavioural finding that no_op decisions do not depend on the reasoning)?
+   does the P_action explanation agree with the written reasoning? what does
+   it contain that the trace omits (e.g. SLA risk in the rule-3 removals)?
+   does it move under the counterfactual telemetry edits when the action does
+   not?
+3. **Write** the abstract and introduction around the three parts.
+4. **Poster** (due ~2026-09-29): `LaTeX_Poster/feedback.md` lists the changes
+   (three passages now wrong; new results and figure paths). Parts 1–2 go on
+   the poster; part 3 as work in progress.
+
+## Local and remote results
+
+- CSF: `~/selas-results/` (all CSF runs; `interp-prompts/` spider figures;
+  `mediation_*.json` inside each mediated arm).
+- Laptop (gitignored): `results-local/` — OpenRouter and local runs; backed up
+  to CSF at `~/selas-results/local-backup/` (without .vec) and
+  `~/scratch/selas-results-local/` (full).
+- Figures (gitignored, local): `figures/` — `models/`, `prompts-clarknet/`,
+  `robustness/`, `interp/`.
+- OpenRouter: key in `~/.config/selas/openrouter.env`; ~$2 used of the $50
+  limit. OpenRouter providers do not continue a prefilled turn, so use
+  `run_local.sh --decide generate` (the letter the model writes, with its
+  logprobs, masked as on CSF).
+
+---
+
+# History (before the 2026-09-27 pivot)
+
+## Direction (2026-09-25)
 
 Working abstract (revised 2026-09-27, draft for review — replaces the one
 below, which predates the cross-model and rule-3 results):
@@ -54,7 +158,7 @@ magnitudes the words do not — so "the same objective in different forms", not
 "equivalent prompts". And A and B differ in two things at once (formula, and
 per-period utility feedback); the ablation below separates them.
 
-## Order of work
+## Order of work (2026-09-25)
 
 1. **Independent testing — done (2026-09-25).** An independent audit found
    nothing that inflates the performance result. A live integration test on
