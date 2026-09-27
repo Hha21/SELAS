@@ -54,6 +54,19 @@ OpenRouter numbers in §2e as the primary figures for those configurations
 (and settle WorldCup, where 3 seeds spread widely). Each job runs the
 integration check itself; check it reads bootDelay 60 for cn60.
 
+**A100 twins (submitted 2026-09-28 00:45).** gpuH_short is one 8xH200 node
+held by long gpuH jobs (first estimated start 28/09 19:18, pilot last at 29/09
+19:20). gpuA (A100 80 GB; free at the point of use, 4 GPUs at once, no `-A`)
+was estimated ~05:51, so the same work is queued there too: pilot 21458274
+(output `~/selas-results/nla-pilot-clarknet-a100/`), robustness 21458275/6/81
+(`rb-cn60-a100-*`) and 21458282/3/4 (`rb-wc180-a100-*`), same arm splits as
+the H200 jobs. A100 nodes read the HF cache and SWIM image from copies on
+`~/scratch` (`submit_comparison.sh --partition gpuA`, `SELAS_HF_HOME`). Rule:
+whichever copy of a job finishes and passes its checks first is kept, and its
+twin is cancelled while still pending. Within a configuration all prompts
+should come from the same hardware; if a configuration ends up split between
+A100 and H200, say so.
+
 **Part 2 — established; small gaps.** Battery re-measured on the fixed code
 (§3, 15 runs, both pools); mediation (§3a, 7 runs, figure
 `figures/interp/mediation.pdf`); the trace-names-the-cause count (§2d).
