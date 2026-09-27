@@ -11,11 +11,8 @@ from pathlib import Path
 
 import pytest
 
-# Import the string helpers without pulling in torch.
-_src = (Path(__file__).parent / "capture.py").read_text()
-_ns: dict = {}
-exec(_src[_src.index("SCAFFOLD_FIELDS"):_src.index("def load_decisions")], _ns)
-render_chat, locate_probes = _ns["render_chat"], _ns["locate_probes"]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from render import locate_probes, render_chat  # noqa: E402
 
 
 class FakeTok:
@@ -94,3 +91,20 @@ def test_a_field_the_model_skipped_gets_no_probe():
     msgs = _messages(reasoning="Reasoning:\n  SLA: met, that is all.\nAction:")
     p = locate_probes(render_chat(FakeTok(), msgs), msgs)
     assert "P_sla" in p and "P_capacity" not in p
+
+
+def test_turn_probe_is_the_last_position_before_the_reasoning():
+    msgs = _messages()
+    r = render_chat(FakeTok(), msgs)
+    p = locate_probes(r, msgs)["P0_turn"]
+    assert r[:p].endswith("<start_of_turn>model\n") and r[p:].startswith("Reasoning:")
+    assert locate_probes(r, msgs)["P0_state_end"] < p
+
+
+def test_token_index_is_the_token_holding_the_character_before_the_offset():
+    from render import probe_token_indices
+    # "ab|cd|\n|ef" with offsets as a fast tokenizer reports them; (0, 0) is a special token.
+    offsets = [(0, 0), (0, 2), (2, 4), (4, 5), (5, 7)]
+    got = probe_token_indices(offsets, {"end": 7, "after_cd": 4, "mid_cd": 3, "nl": 5})
+    assert got == {"end": 4, "after_cd": 2, "mid_cd": 2, "nl": 3}
+
