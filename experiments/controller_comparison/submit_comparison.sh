@@ -115,6 +115,13 @@ while [ $# -gt 0 ]; do
                 *) echo "--trace must be clarknet or worldcup" >&2; exit 1 ;;
             esac
             shift 2 ;;
+        # After --classic/--trace: SWIM selects bootDelay by run index
+        # (WorldCup 0-4, ClarkNet 5-9, at 0/60/120/180/240 s).
+        --boot-delay)
+            case "$2" in 0|60|120|180|240) ;; *) echo "--boot-delay must be 0 60 120 180 or 240" >&2; exit 1 ;; esac
+            base=$([ "${SELAS_RUN_INDEX:-8}" -ge 5 ] && echo 5 || echo 0)
+            export SELAS_RUN_INDEX=$(( base + $2 / 60 )) SELAS_BOOT_DELAY="$2"
+            shift 2 ;;
         --arms)    export SELAS_ARMS="$2"; shift 2 ;;
         --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)"; shift 2 ;;
         --gpus)  GPUS="$2"; shift 2 ;;
