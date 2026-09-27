@@ -419,11 +419,31 @@ and `.json` for `k2-words-s{0,1,2,3}` (priority → priority-no3) and
 
 ---
 
-## 3. Interpretability — to be re-measured
+## 3. Interpretability — re-measured on the fixed code (preliminary, 2026-09-27)
 
-Measured on prompts A and B before the audit fixes (PLAN.md F1–F4) and before
-the prompt fixes; the numbers below are placeholders until the section 2b runs
-are replayed.
+The full battery (`replay_all.sbatch`, audit fixes F1–F4 in) on the section 2b
+runs, gemma-3-27b, over all decisions, seed-sets 0–2 (jobs 21401939–41;
+`~/selas-results/interp-prompts/spider_prelim.{png,json}`, local copy
+`figures/interp/`). The runs without rule 3 and seed 3 are in jobs 21401942–3.
+
+| axis | no objective | **words** | formula |
+|---|---|---|---|
+| Robustness (paraphrase leaves it) | 0.994 | 0.937 | 0.981 |
+| Sensitivity (ablating the reasoning moves it) | 0.114 | **0.483** | 0.130 |
+| Mistakes (corrupted premise, conclusion dropped) | 0.102 | **0.222** | 0.054 |
+| Counterfactual (flip rate under paired telemetry edits) | 0.851 | **0.596** | 0.877 |
+| Simulatability | 0.391 | **0.541** | 0.437 |
+| *shuffled reasoning moves it (ceiling)* | *0.197* | ***0.676*** | *0.238* |
+
+The words controller's decisions depend on its reasoning far more, and track
+its telemetry less, than either well-performing configuration's — consistent
+with the mediation (§3a): its reasoning is what carries the rule to the
+decision. Caution before interpreting: the good configurations choose no_op in
+~75% of periods and the words one acts in ~80%, so more of its decisions can
+move; the active-decisions pool (`--pool ACTIVE`) is the check.
+
+The earlier A/B numbers below were measured before the fixes and on the old
+prompt; they are superseded by the table above.
 
 **Regenerate** (on CSF, after the performance runs exist):
 
