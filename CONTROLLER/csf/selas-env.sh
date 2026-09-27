@@ -42,6 +42,9 @@ else
     echo "selas-env.sh: no venv at $SELAS_VENV; falling back to the shared user site" >&2
 fi
 
-export HF_HOME="$HOME/h200-scratch/hf"       # token and weight cache together, on the volume the H200 nodes mount
+# Token and weight cache together, on the volume the H200 nodes mount. A100 and
+# L40S nodes cannot see h200-scratch: jobs sent there set SELAS_HF_HOME to a
+# copy on ~/scratch (submit_comparison.sh --partition does).
+export HF_HOME="${SELAS_HF_HOME:-$HOME/h200-scratch/hf}"
 export SELAS_ENDPOINTS="$HOME/h200-scratch/endpoints"
 export SELAS_MODEL="google/gemma-3-27b-it"

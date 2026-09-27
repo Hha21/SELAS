@@ -15,6 +15,7 @@ source "$ENVF"
 : "${CSF_ACCOUNT:?set CSF_ACCOUNT in CONTROLLER/csf/local.env}"
 
 TIME=0-04
+PARTITION=gpuH_short
 GPUS=""         # resolved from the model below unless given explicitly
 CORES=""
 
@@ -124,6 +125,17 @@ while [ $# -gt 0 ]; do
             shift 2 ;;
         --arms)    export SELAS_ARMS="$2"; shift 2 ;;
         --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)"; shift 2 ;;
+        # gpuA (A100 80 GB) and gpuL are free at the point of use (4 GPUs at a
+        # time) and take no -A; their nodes cannot see h200-scratch, so the
+        # weights and the SWIM image are read from copies on ~/scratch.
+        --partition)
+            PARTITION="$2"
+            case "$PARTITION" in
+                gpuH|gpuH_short) ;;
+                *) export SELAS_HF_HOME="${SELAS_HF_HOME:-$HOME/scratch/hf}"
+                   export SELAS_SIF="${SELAS_SIF:-$HOME/scratch/selas-images/swim.sif}" ;;
+            esac
+            shift 2 ;;
         --gpus)  GPUS="$2"; shift 2 ;;
         --time)  TIME="$2"; shift 2 ;;
         -h|--help) sed -n '2,8p' "$0" | sed 's/^# \?//'; exit 0 ;;
@@ -137,5 +149,9 @@ export SELAS_MODEL="$MODEL"
 [ -n "$CORES" ] || CORES=$(( GPUS * 8 ))       # 8 cores/GPU is the partition maximum
 
 mkdir -p "$HERE/logs"
-echo "submitting: $MODEL on ${GPUS}x GPU, ${CORES} cores, walltime $TIME"
-sbatch -A "$CSF_ACCOUNT" -t "$TIME" -G "$GPUS" -n 1 -c "$CORES" "$HERE/run_comparison.sbatch"
+case "$PARTITION" in
+    gpuH|gpuH_short) where=(-p "$PARTITION" -A "$CSF_ACCOUNT") ;;
+    *)               where=(-p "$PARTITION") ;;
+esac
+echo "submitting: $MODEL on ${GPUS}x GPU ($PARTITION), ${CORES} cores, walltime $TIME"
+sbatch "${where[@]}" -t "$TIME" -G "$GPUS" -n 1 -c "$CORES" "$HERE/run_comparison.sbatch"
