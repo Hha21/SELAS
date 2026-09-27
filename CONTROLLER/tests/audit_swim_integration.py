@@ -244,6 +244,24 @@ def value_at(series, t, strict=True):
     return v
 
 
+def _boot_delay(sca: Path) -> float:
+    """The boot delay the simulation actually used, from its own scalars.
+
+    A fixed 180 s -- the published configuration -- flagged every server add of
+    a 60 s-boot run as mismatched: the add landed 60 s after its command, where
+    the check was looking 180 s after it.
+    """
+    try:
+        c = sqlite3.connect(f"file:{sca}?mode=ro", uri=True)
+        row = c.execute("SELECT scalarValue FROM scalar WHERE scalarName LIKE '%bootDelay%' LIMIT 1").fetchone()
+        c.close()
+        if row is not None:
+            return float(row[0])
+    except sqlite3.Error:
+        pass
+    return BOOT
+
+
 def _latency(d) -> float:
     return float(d["decision"].get("latency_s") or 0.0)
 
@@ -273,6 +291,7 @@ def _estimate_offset(decisions, bchg) -> float:
 
 def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
     vec = next(results.rglob("*.vec"))
+    boot = _boot_delay(vec.with_suffix(".sca"))
     dec_path = next(results.rglob("decisions.jsonl"))
     decisions = [json.loads(l) for l in dec_path.read_text().splitlines() if l.strip()]
     servers = read_vec(vec, "serverCost:vector")
@@ -303,6 +322,7 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
         offset = 0.93
         report["notes"].append("no dimmer change to estimate the clock offset from; assumed 0.93 s")
     report["offset_s"] = offset
+    report["boot_delay_s"] = boot
     if not (-1.0 <= offset <= 15.0):
         P.append(f"implausible clock offset {offset:.2f}s")
 
@@ -322,7 +342,7 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
             if abs(val - d["observation"]["dimmer"]) > 1e-9:
                 exp_brown.append((t, 1.0 - val))
         elif kind == "add_server":
-            exp_srv.append((t, +1)); exp_act.append((t + BOOT, +1))
+            exp_srv.append((t, +1)); exp_act.append((t + boot, +1))
         elif kind == "remove_server":
             exp_srv.append((t, -1)); exp_act.append((t, -1))
 

@@ -391,6 +391,41 @@ Figure across the three setups: `figures/prompts-clarknet/words_apart_models.pdf
 
 ---
 
+## 2e. Other configurations — done (2026-09-27)
+
+gemma-3-27b through OpenRouter (generate+logprobs), seed-sets 0–2, the four
+prompts that matter, and doing nothing, in two more of SWIM's configurations.
+Full report: `results-local/robustness-report.md`; figures
+`figures/robustness/rb-{clarknet-boot60,worldcup-boot180}.pdf`.
+
+| configuration | no objective | **words** | words without rule 3 | formula | do nothing |
+|---|---|---|---|---|---|
+| ClarkNet, boot 180 s (published; §2c) | 10229 ± 2152 | **−6674 ± 845** | 12255 ± 135 | 11472 ± 187 | 5101 |
+| ClarkNet, boot 60 s (run 6) | 12204 ± 495 | **−3169 ± 1274** | 12393 ± 585 | 12780 ± 181 | 5101 |
+| WorldCup, boot 180 s (run 3) | 5798 ± 1945 | **−1845 ± 1160** | 7467 ± 3315 | 3523 ± 888 | 3222 |
+
+1. **Words is worst on every seed in both new configurations**, below the
+   worst run of any other prompt and below doing nothing; removing rule 3
+   restores it in both.
+2. **The same mechanism**: under words the model removes servers while on
+   time and then breaches; the other prompts' on-time removals are not
+   followed by breaches.
+3. **The 60 s prediction failed.** A short boot delay barely helps: the gap
+   to no objective is 15373 against 16903, words runs are still late in 26–28
+   periods, and the model removes *more* (41 on-time removals, 66% followed by
+   a breach, against 31 and 97%). A removal lets a queue build that takes 2–3
+   periods to clear even when the replacement is up in 60 s — the cost is the
+   queue, not only the boot.
+4. On WorldCup every prompt is within ~4300 of doing nothing and seeds spread
+   widely (formula only level with doing nothing); with n = 3 only the words
+   gap is firm there.
+
+Every run passes the integration check (the checker now reads each run's boot
+delay from its .sca; it had assumed 180 s). One decision in 1,260 fell back to
+no_op after a rate limit.
+
+---
+
 ## 3a. Does the objective act through the reasoning? (mediation) — done (2026-09-27)
 
 `experiments/mediation/`. For every recorded decision, only the objective in
