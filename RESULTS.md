@@ -370,6 +370,27 @@ late period costs as much as 40 periods of an extra server, it collapses just
 the same). The model is not short of the information; it acts on the
 instruction.
 
+**Statistics** (gemma, CSF; differences paired by seed, 95% t-intervals):
+
+| comparison | difference | 95% CI | n |
+|---|---|---|---|
+| no objective − words | +18035 | [+14305, +21766] | 4 |
+| rule 3 removed − words | +17991 | [+14279, +21703] | 3 |
+| formula − no objective | +653 | [−343, +1649] | 4 |
+| rule 3 removed − no objective | +763 | [−1452, +2977] | 3 |
+| formula − rule 3 removed | +81 | [−637, +798] | 3 |
+| scaled − words | −218 | [−5775, +5339] | 3 |
+| reworded − words | +1345 | [−3934, +6625] | 3 |
+
+Without rule 3, no objective, words without rule 3 and the formula are
+indistinguishable (every interval includes 0); rewording the rules or adding
+scale does not measurably help.
+
+**The trace names the cause.** Every one of the 43 on-time server removals in
+gemma's words runs (seeds 0–3) gives reducing the number of servers as the
+reason (regex over the reasoning); 25% of all its decisions mention it,
+against 0–1% for no objective, rule 3 removed and formula.
+
 The words variants were run on CSF, jobs 21392445 (seeds 0–1) and 21392449
 (seed 2), `~/selas-results/words-apart-*-20260926-*`; all pass the integration
 check.
@@ -450,6 +471,8 @@ Distributions are masked to the legal actions as the controller does.
 | no-rule-3 s0, rule 3 added | 84 | 2% | 98% | 0.04 / 0.81 / 0.79 | 0.02 → 0.02 → 0.79 |
 | no-rule-3 s1 | 87 | 3% | 98% | 0.04 / 0.83 / 0.81 | 0.01 → 0.01 → 0.75 |
 | no-rule-3 s2 | 97 | 2% | 97% | 0.03 / 0.92 / 0.90 | 0.00 → 0.00 → 0.87 |
+
+**Figure:** `figures/interp/mediation.pdf` (`experiments/mediation/plot_mediation.py`).
 
 **What it shows.** The objective's effect on the decision passes almost
 entirely through the written reasoning. Held to its original reasoning, the
