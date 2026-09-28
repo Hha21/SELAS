@@ -54,18 +54,12 @@ OpenRouter numbers in §2e as the primary figures for those configurations
 (and settle WorldCup, where 3 seeds spread widely). Each job runs the
 integration check itself; check it reads bootDelay 60 for cn60.
 
-**A100 twins (submitted 2026-09-28 00:45).** gpuH_short is one 8xH200 node
-held by long gpuH jobs (first estimated start 28/09 19:18, pilot last at 29/09
-19:20). gpuA (A100 80 GB; free at the point of use, 4 GPUs at once, no `-A`)
-was estimated ~05:51, so the same work is queued there too: pilot 21458274
-(output `~/selas-results/nla-pilot-clarknet-a100/`), robustness 21458275/6/81
-(`rb-cn60-a100-*`) and 21458282/3/4 (`rb-wc180-a100-*`), same arm splits as
-the H200 jobs. A100 nodes read the HF cache and SWIM image from copies on
-`~/scratch` (`submit_comparison.sh --partition gpuA`, `SELAS_HF_HOME`). Rule:
-whichever copy of a job finishes and passes its checks first is kept, and its
-twin is cancelled while still pending. Within a configuration all prompts
-should come from the same hardware; if a configuration ends up split between
-A100 and H200, say so.
+**Robustness replication — done 2026-09-28** (RESULTS §2e, CSF
+replication): all 32 A100 runs pass; words worst on every seed in both
+configurations, rule 3 removed restores it, WorldCup now separates. H200
+twins: cn60 jobs 21419243/4 done and 21419245 running (a full H200 ClarkNet-60
+set for a hardware comparison); wc180 21419247 running, 21419248/9 pending
+(keep or cancel -- asked 2026-09-28). The H200 pilot twin was cancelled.
 
 **Part 2 — established; small gaps.** Battery re-measured on the fixed code
 (§3, 15 runs, both pools); mediation (§3a, 7 runs, figure
@@ -73,53 +67,22 @@ A100 and H200, say so.
 Present the active-decision pool as primary and state the no_op base rate up
 front. Possible addition: per-seed spread on the spider axes.
 
-**Part 3 — pilot submitted (2026-09-27 ~13:30).** Job 21421919
-(`experiments/nla/run_pilot.sbatch`), output `~/selas-results/nla-pilot-clarknet/`,
-on the three prompts-clarknet seed-0 runs (k2, k2-words, k2-formula; 315
-decisions). It captures gemma-3-27b-it's layer-41 vectors at seven probes per
-decision -- end of the state (P0_state_end), the opened model turn before any
-reasoning (P0_turn), the end of each reasoning field (P_sla, P_capacity,
-P_trend, P_therefore), the action cue (P_action) -- then the released AV
-explains each (greedy) and the AR reconstructs it (fve_nrm). The pair
-(`kitft/nla-gemma3-27b-L41-{av,ar}`) is downloaded to the CSF HF cache
-(AV 101 GB fp32, AR 36 GB); the job runs offline, about 30–45 min.
-
-How the pair is run (`experiments/nla/nla_pair.py`): the kitft/nla-inference
-recipe under transformers, NOT `NLA/src` (our Qwen-0.5B reproduction). The
-gemma pair injects `㈜` at L2 norm 60000 after Gemma's sqrt(d) embedding
-scale, the AR needs BOS and no final norm, and fve_nrm = 1 - mse_nrm/0.0579
-(training variance; at this layer cos is ~0.99 everywhere, so read fve_nrm).
-Checked offline: injection site and AR suffix against the real tokenizer and
-sidecar; generate/reconstruct on a tiny random Gemma-3; probe tokens on real
-decisions (`\n` after `model`, the `.` ending each field, the `:` of
-`Action:`). Checked in the job: it first reproduces the pair's published
-worked example ("What is the capital of France...", 22 prompt tokens) --
-raw norms must match within 3% (exit 2 otherwise), and its fve_nrm (published
-mean 0.82 over positions 4+) and the ' France' decode are reported in
-`reference.json`.
+**Part 3 — first iteration done (2026-09-28), RESULTS §3b.** The released
+pair reproduces its published example on our pipeline; explanations are
+faithful at the reasoning fields (fve_nrm 0.67–0.75), less at the action cue
+(0.46), not at the end of the telemetry (0.15); the action kind is linearly
+readable before any reasoning (0.84 vs 0.77 from telemetry alone); the
+explanations name the chosen letter in 85–101/105 decisions; no SLA-risk
+content at the rule-3 removals. Code: `experiments/nla/` (pilot.py,
+analyse_pilot.py, run_pilot.sbatch; on gpuA set SELAS_HF_HOME=$HOME/scratch/hf).
 
 ## Next
 
 1. **Collect the robustness jobs** (above): tables per configuration with
    paired intervals (as in §2d), update §2e, replace the figures.
-2. **Read the NLA pilot** when job 21421919 finishes: copy
-   `~/selas-results/nla-pilot-clarknet/` (small: vectors.npy ~50 MB) and run
-   `experiments/nla/analyse_pilot.py OUT -o OUT/summary.json`. In order:
-   - reference reproduced? If not, stop and fix before reading anything else;
-   - fidelity: fve_nrm per probe on our (long, structured) prompts against
-     the 0.82 of ordinary chat -- low values mean the AV's words cannot be
-     taken as the model's;
-   - decodability: cross-validated linear read-out of the action kind at each
-     probe, against the telemetry alone. P0_turn ~ P_action means the action
-     was settled before the reasoning (fits the behavioural finding that the
-     no_op decisions do not depend on it);
-   - words: at P_action the letter the explanation expects vs the letter
-     chosen; topics (remove / add / dimmer / no_op / response-time risk) per
-     probe and action kind, especially whether the rule-3 removals under
-     words carry response-time risk the trace omits;
-   - read the printed examples.
-   Then, if fidelity holds: the counterfactual telemetry edits (does the P0
-   explanation move when the action does not?) and all four seeds.
+2. **NLA, second iteration:** telemetry-plus-prompt baseline for the
+   read-out; counterfactual telemetry edits at P0_turn (does the explanation
+   move when the action does not?); all four seeds; the rule-3-removed prompt.
 3. **Write** the abstract and introduction around the three parts.
 4. **Poster** (due ~2026-09-29): `LaTeX_Poster/feedback.md` lists the changes
    (three passages now wrong; new results and figure paths). Parts 1–2 go on
