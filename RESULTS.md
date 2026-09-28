@@ -705,15 +705,36 @@ already scores high, and beats the explanations at five of seven positions:
 than the typical SELAS vector.) The published example's 0.76–0.82 is on
 diverse text, where the mean vector predicts almost nothing; here most of each
 vector is what every SELAS decision shares ("a structured analysis log"), and
-the explanations' reconstructions capture decision-specific content beyond
-that only at the Trend and Therefore lines. The explanations' *text* can still
-carry decision-specific content the reconstructor does not turn into a better
-vector (the letter they name at P_action matches the chosen action in 283/315);
-the decisive check is a centred one -- whether the reconstructions' deviations
-from their mean point along the vectors' deviations, against a
-shuffled-explanation control -- which needs the reconstructions saved
-(`experiments/nla/reconstruct.py`). Until then, do not quote fve_nrm as
-"faithful as on ordinary text".
+the uncentred score is dominated by that shared part.
+
+**Decision-specific content (centred check, done 2026-09-28).** With the
+reconstructions saved (`reconstruct.py`, job 21489028; they reproduce the
+stored scores exactly), each reconstruction and each activation is scaled to
+unit norm and its mean over the 315 decisions at that position subtracted;
+the deviations are compared by cosine, against every other decision's
+explanation as the shuffled control:
+
+| position | centred cos, matched | shuffled | own decision ranked (chance 0.50) | own decision first of 315 (chance 0.003) |
+|---|---|---|---|---|
+| end of the telemetry | 0.35 | 0.00 | 0.99 | 0.45 |
+| model turn opened (P0_turn) | 0.27 | 0.01 | 0.92 | 0.13 |
+| end of SLA line | 0.58 | 0.04 | 0.97 | 0.33 |
+| end of Capacity line | 0.66 | 0.00 | 0.98 | 0.39 |
+| end of Trend line | 0.65 | 0.03 | 0.99 | 0.70 |
+| end of Therefore line | 0.70 | 0.03 | 0.99 | 0.65 |
+| action cue | 0.49 | 0.13 | 0.85 | 0.10 |
+
+**The explanations do carry what is specific to each decision**, at every
+position, far above the shuffled control; the low uncentred scores come from
+an offset shared by all SELAS decisions, not from missing the decision. And
+the content is decision-relevant: the action read-out from the
+*reconstructions* -- that is, from the words -- recovers 0.82 overall at
+P0_turn (removals 0.57, against 0.79 from the activation and 0.00 from
+telemetry + prompt), 0.84 at the Therefore line and 0.99 at the action cue.
+Before any reasoning is written, the NLA's explanation already carries much of
+the pending removal. Caveats: identification can use surface detail specific
+to a decision (its period, its numbers), so the read-out is the better test of
+relevance; n = 14 removals; one seed per prompt.
 
 **When does the action become readable?** A cross-validated linear read-out
 of the action kind (5-fold ridge; vectors on 32 PCs; 315 decisions, majority

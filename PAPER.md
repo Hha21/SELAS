@@ -67,11 +67,15 @@ gap?** In progress.
   283/315 decisions (§3b).
 - Before NLA can fill the gap, it must meet the same standard as the trace.
   Two tests:
-  1. *Centred reconstruction* (running): our activations are narrowly
-     distributed, so the published reconstruction score flatters the
-     explanations (the average SELAS activation beats them at 5 of 7
-     positions, §3b). Do the reconstructions carry what is *specific* to each
-     decision, against shuffled explanations?
+  1. *Centred reconstruction* (done): our activations are narrowly
+     distributed, so the published reconstruction score is dominated by what
+     all SELAS decisions share (the average SELAS activation beats it at 5 of
+     7 positions). With that removed, the explanations carry what is specific
+     to each decision: centred cosine 0.27–0.70 against ~0 for shuffled
+     explanations; an explanation picks out its own decision first of 315 in
+     65–70% of cases at the Trend/Therefore lines (chance 0.3%); and the
+     action read from the reconstructions — from the words — recovers 57% of
+     removals before any reasoning is written (telemetry + prompt: 0%) (§3b).
   2. *Edit and patch* (to build): at the action cue, edit the explanation to
      name a different action, reconstruct, add the difference to the true
      activation, and see whether the model's choice moves as the words say
