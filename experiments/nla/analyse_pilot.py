@@ -53,10 +53,10 @@ def load(out: Path):
     return index, expl, V
 
 
-def ridge_cv(X: np.ndarray, y: np.ndarray, k: int = 5, pcs: int = 32, lam: float = 1.0,
-             seed: int = 0) -> float:
-    """Accuracy of a one-vs-rest ridge classifier, stratified k-fold; the
-    standardisation and PCA are fitted inside each training fold."""
+def ridge_cv_predict(X: np.ndarray, y: np.ndarray, k: int = 5, pcs: int = 32, lam: float = 1.0,
+                     seed: int = 0) -> np.ndarray:
+    """Out-of-fold predictions of a one-vs-rest ridge classifier, stratified
+    k-fold; the standardisation and PCA are fitted inside each training fold."""
     rng = np.random.default_rng(seed)
     classes = sorted(set(y))
     folds = np.empty(len(y), int)
@@ -64,7 +64,7 @@ def ridge_cv(X: np.ndarray, y: np.ndarray, k: int = 5, pcs: int = 32, lam: float
         idx = np.flatnonzero(y == c)
         rng.shuffle(idx)
         folds[idx] = np.arange(len(idx)) % k
-    correct = 0
+    pred = np.empty(len(y), dtype=object)
     for f in range(k):
         tr, te = folds != f, folds == f
         mu, sd = X[tr].mean(0), X[tr].std(0) + 1e-6
@@ -75,9 +75,36 @@ def ridge_cv(X: np.ndarray, y: np.ndarray, k: int = 5, pcs: int = 32, lam: float
         A1, B1 = np.c_[A, np.ones(len(A))], np.c_[B, np.ones(len(B))]
         Y = np.stack([(y[tr] == c).astype(float) for c in classes], 1)
         W = np.linalg.solve(A1.T @ A1 + lam * np.eye(A1.shape[1]), A1.T @ Y)
-        pred = np.array(classes)[(B1 @ W).argmax(1)]
-        correct += int((pred == y[te]).sum())
-    return correct / len(y)
+        pred[te] = np.array(classes)[(B1 @ W).argmax(1)]
+    return pred
+
+
+def ridge_cv(X: np.ndarray, y: np.ndarray, **kw) -> float:
+    return float(np.mean(ridge_cv_predict(X, y, **kw) == y))
+
+
+def recall(pred: np.ndarray, y: np.ndarray) -> dict[str, float]:
+    return {c: float(np.mean(pred[y == c] == c)) for c in KINDS if (y == c).any()}
+
+
+def readout_inputs(rows) -> tuple[list[dict], np.ndarray, dict[str, np.ndarray]]:
+    """Per decision: the action kind, and the inputs a read-out may use --
+    the telemetry, the telemetry plus which prompt (one-hot), and the vector
+    at each probe."""
+    by_dec: dict = defaultdict(dict)
+    for i, e, v in rows:
+        by_dec[(i["run"], i["period"])][i["probe"]] = (i, v, e)
+    decs = [d for d in by_dec.values() if all(p in d for p in ("P0_turn", "P_action"))]
+    y = np.array([kind(d["P_action"][0]["action"]) for d in decs])
+    tele = np.array([[d["P_action"][0]["observation"][k] or 0.0 for k in
+                      ("servers", "active_servers", "dimmer", "avg_rt", "arrival_rate")] for d in decs], float)
+    run = np.array([d["P_action"][0]["run"] for d in decs])
+    prompt = np.stack([(run == r).astype(float) for r in sorted(set(run))], 1)
+    X = {"telemetry": tele, "telemetry + prompt": np.c_[tele, prompt]}
+    for p in PROBES:
+        if all(p in d for d in decs):
+            X[p] = np.stack([d[p][1] for d in decs])
+    return decs, y, X
 
 
 def expected_letter(text: str) -> str | None:
@@ -115,25 +142,17 @@ def main() -> int:
         print(f"   {p:13s} median {np.median(f):6.3f}  IQR {np.percentile(f, 25):6.3f}-{np.percentile(f, 75):6.3f}"
               f"  <0.5: {(f < 0.5).mean():.0%}")
 
-    print("\n3. decodability of the action kind (5-fold ridge on 32 PCs; chance = majority class)")
-    by_dec: dict = defaultdict(dict)
-    for i, e, v in rows:
-        by_dec[(i["run"], i["period"])][i["probe"]] = (i, v, e)
-    decs = [d for d in by_dec.values() if all(p in d for p in ("P0_turn", "P_action"))]
-    y = np.array([kind(d["P_action"][0]["action"]) for d in decs])
-    tele = np.array([[d["P_action"][0]["observation"][k] or 0.0 for k in
-                      ("servers", "active_servers", "dimmer", "avg_rt", "arrival_rate")] for d in decs], float)
+    print("\n3. decodability of the action kind (5-fold ridge; vectors on 32 PCs; chance = majority class)")
+    decs, y, X = readout_inputs(rows)
+    by_dec = {(d["P_action"][0]["run"], d["P_action"][0]["period"]): d for d in decs}
     counts = Counter(y.tolist())
-    S["decodability"] = {"n": len(y), "classes": dict(counts),
-                         "majority": max(counts.values()) / len(y),
-                         "telemetry": ridge_cv(tele, y, pcs=0)}
-    print(f"   n={len(y)} {dict(counts)}  majority {S['decodability']['majority']:.2f}  "
-          f"telemetry only {S['decodability']['telemetry']:.2f}")
-    for p in PROBES:
-        if all(p in d for d in decs):
-            X = np.stack([d[p][1] for d in decs])
-            S["decodability"][p] = ridge_cv(X, y)
-            print(f"   {p:13s} {S['decodability'][p]:.2f}")
+    S["decodability"] = {"n": len(y), "classes": dict(counts), "majority": max(counts.values()) / len(y)}
+    print(f"   n={len(y)} {dict(counts)}  majority {S['decodability']['majority']:.2f}")
+    for name, x in X.items():
+        pred = ridge_cv_predict(x, y, pcs=0 if name.startswith("telemetry") else 32)
+        S["decodability"][name] = {"accuracy": float(np.mean(pred == y)), "recall": recall(pred, y)}
+        print(f"   {name:18s} {np.mean(pred == y):.2f}   recall "
+              + "  ".join(f"{c} {v:.2f}" for c, v in S["decodability"][name]["recall"].items()))
 
     print("\n4a. the letter the P_action explanation expects next vs the letter chosen")
     S["letters"] = {}

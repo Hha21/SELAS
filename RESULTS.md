@@ -699,15 +699,29 @@ Explanations at the reasoning fields are about as faithful as on ordinary
 text; at the action cue less so; at the end of the telemetry they should not
 be read at all.
 
-**Is the action decided before the reasoning?** A cross-validated linear
-read-out of the action kind (add / remove / no_op / dimmer; 315 decisions,
-majority class 0.64) from the vectors: telemetry numbers alone 0.77;
-P0_turn 0.84; the reasoning fields 0.74–0.85; P_action 0.98. So before any
-reasoning is written the activation predicts the action somewhat better than
-the telemetry does, and the reasoning takes it to near certainty. Caveat: the
-three prompts are pooled and have different action mixes, so part of the
-P0_turn advantage may be prompt identity; the next baseline is telemetry plus
-prompt.
+**When does the action become readable?** A cross-validated linear read-out
+of the action kind (5-fold ridge; vectors on 32 PCs; 315 decisions, majority
+class 0.64), overall and per kind (recall):
+
+| read-out from | overall | no_op (201) | dimmer (82) | add (18) | remove (14) |
+|---|---|---|---|---|---|
+| telemetry (5 numbers) | 0.77 | 0.93 | 0.68 | 0.00 | 0.00 |
+| telemetry + which prompt | 0.79 | 0.93 | 0.76 | 0.00 | 0.00 |
+| end of the telemetry (P0_state_end) | 0.80 | 0.90 | 0.73 | 0.39 | 0.21 |
+| model turn opened, before reasoning (P0_turn) | 0.84 | 0.90 | 0.79 | 0.39 | **0.79** |
+| end of Therefore line | 0.84 | 0.93 | 0.76 | 0.28 | 0.86 |
+| action cue (P_action) | 0.98 | 0.99 | 0.99 | 1.00 | 0.93 |
+
+No-ops follow from the state (the telemetry alone recovers 93%); the
+activation adds nothing there. Removals are invisible to the telemetry and
+prompt but readable from the activation where the model's turn opens, before
+it writes anything (0.79) -- and not yet at the end of the telemetry five
+tokens earlier (0.21). The intent to remove forms on opening the turn; the
+reasoning then carries it to the action (§3a: the decision follows what is
+written). Caveats: n = 14 and 18; one seed per prompt; the read-out is linear,
+so "readable before the reasoning" may be a nonlinear reading of the state
+rather than a decision. Figure: `figures/interp/nla_readout.pdf`
+(`experiments/nla/plot_readout.py`).
 
 **The explanations read the upcoming action.** At P_action the explanation
 names the letter the model then chose in 97/105 (no objective), 101/105
@@ -730,9 +744,9 @@ low ... requiring a concluding action instruction like 'Now we should reduce
 the spare instance'". At the action cue (0.19): 'requiring a button/action
 label like "B"' -- B is remove_server.
 
-Next: the telemetry-plus-prompt baseline; counterfactual telemetry edits
-(does the P0_turn explanation move when the action does not?); all four
-seeds; the same positions in the rule-3-removed prompt.
+Next: counterfactual telemetry edits (does the P0_turn explanation move
+when the action does not?); all four seeds; the same positions in the
+rule-3-removed prompt.
 
 ---
 
