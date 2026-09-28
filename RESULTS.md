@@ -445,6 +445,54 @@ Every run passes the integration check (the checker now reads each run's boot
 delay from its .sca; it had assumed 180 s). One decision in 1,260 fell back to
 no_op after a rate limit.
 
+### 2e (CSF replication). vLLM scoring, seed-sets 0–3 — done (2026-09-28)
+
+The same four prompts through vLLM with the scored-letter method of the main
+results, seed-sets 0–3, run on gpuA (A100 80 GB) because the H200 queue was
+full (jobs 21458275–84; `~/selas-results/rb-{cn60,wc180}-a100-*`, local copies
+`results-local/csf/`). All 32 runs pass the integration check with 0 problems,
+at boot delay 60 s (ClarkNet) and 180 s (WorldCup) as intended. SEAMS 2017A
+utility; mean ± SD over the four seed-sets; late periods of 90 per seed.
+
+| configuration | no objective | **words** | words without rule 3 | formula | do nothing |
+|---|---|---|---|---|---|
+| ClarkNet, boot 60 s | 11525 ± 1115 | **−4901 ± 314** | 10513 ± 3364 | 12205 ± 423 | 5101 |
+| late periods | 2, 0, 0, 0 | **31, 29, 31, 32** | 1, 0, 0, 0 | 1, 0, 1, 1 | |
+| WorldCup, boot 180 s | 8162 ± 1618 | **−248 ± 2056** | 8770 ± 2090 | 8868 ± 3315 | 3222 |
+| late periods | 4, 5, 4, 3 | **16, 13, 11, 12** | 2, 4, 3, 3 | 2, 2, 2, 1 | |
+
+Paired by seed-set, mean difference [95% t-interval, n = 4]:
+
+| difference | ClarkNet 60 s | WorldCup |
+|---|---|---|
+| no objective − words | +16425 [14894, 17956] | +8410 [5559, 11261] |
+| without rule 3 − words | +15414 [9640, 21188] | +9018 [5474, 12562] |
+| formula − words | +17106 [16546, 17665] | +9116 [3521, 14711] |
+| formula − no objective | +681 [−1400, 2762] | +706 [−6191, 7603] |
+| without rule 3 − no objective | −1011 [−7486, 5463] | +608 [−3530, 4746] |
+
+1. **Words is the worst prompt on every seed in both configurations,** and
+   removing rule 3 restores it: every interval against words excludes zero;
+   none among the other three does. This confirms the OpenRouter numbers
+   above with the main results' scoring method and a fourth seed.
+2. **WorldCup now separates cleanly** (with three OpenRouter seeds it did
+   not): all three other prompts are 8000–9000 above words and ~5000 above
+   doing nothing.
+3. **One seed of "without rule 3" on ClarkNet scores 5502** (the same value,
+   to the last digit, as that prompt's seed 2 on H200). Not a bug: both runs
+   left the dimmer at 0.9 throughout and were never late, and SEAMS 2017A
+   pays the server-cost bonus only at dimmer 1.0, so below it utility depends
+   on arrivals and dimmer alone -- any such run scores 5502 whatever it does
+   with servers. It is a behaviour (never raising the dimmer), not a failure
+   to serve, and is why that prompt's interval is wide.
+4. **Hardware.** The same arms on H200 (12 of the 16 ClarkNet runs so far,
+   jobs 21419243/4) give different utilities run by run -- e.g. no objective
+   seed 1: 12983 on H200, 10150 on A100 -- because greedy decoding is not
+   bit-reproducible across GPUs and SWIM runs in real time; the ordering and
+   the words gap are the same on both (words −5156, −5940, −5089 on H200).
+   Runs of one configuration should come from one GPU type; the table above
+   is all A100.
+
 ---
 
 ## 3a. Does the objective act through the reasoning? (mediation) — done (2026-09-27)
@@ -616,6 +664,75 @@ Most decisions are `no_op`, which is stable under almost any edit, so the
 all-decisions axes partly measure how stable the choice to hold is; the
 active-only figure separates that out. Counterfactual edits are exact substitutions into structured
 telemetry rather than rewrites by another model.
+
+---
+
+## 3b. Activations: NLA pilot — first iteration (2026-09-28)
+
+gemma-3-27b-it's layer-41 residual stream at seven positions of every
+decision of the three seed-0 ClarkNet runs (no objective, words, formula; 315
+decisions), explained by the released NLA pair (`kitft/nla-gemma3-27b-L41-
+{av,ar}`, greedy) and scored by its reconstructor. Code `experiments/nla/`
+(`pilot.py`, `analyse_pilot.py`); output
+`~/selas-results/nla-pilot-clarknet-a100/`, local copy
+`results-local/nla/nla-pilot-clarknet-a100/` (`summary.json`). Job 21458274 on
+gpuA, 28 min.
+
+**The pair works on our pipeline.** It reproduces its own published worked
+example: the raw layer-41 norms of all 22 prompt tokens agree within 0.75%
+(right layer, right positions), fve_nrm over positions 4+ is 0.752 against the
+published 0.757, and the ' France' explanation is nearly word for word the
+published one.
+
+**Fidelity** (fve_nrm, how much of the vector the explanation carries; 0 =
+no better than the mean vector; ordinary chat text ~0.76–0.82):
+
+| position | median | IQR |
+|---|---|---|
+| end of the telemetry (P0_state_end) | 0.15 | 0.01–0.27 |
+| model turn opened, before reasoning (P0_turn) | 0.57 | 0.54–0.59 |
+| end of SLA / Capacity / Trend lines | 0.67 / 0.72 / 0.71 | |
+| end of Therefore line | 0.75 | 0.71–0.78 |
+| action cue, "Action:" (P_action) | 0.46 | 0.33–0.49 |
+
+Explanations at the reasoning fields are about as faithful as on ordinary
+text; at the action cue less so; at the end of the telemetry they should not
+be read at all.
+
+**Is the action decided before the reasoning?** A cross-validated linear
+read-out of the action kind (add / remove / no_op / dimmer; 315 decisions,
+majority class 0.64) from the vectors: telemetry numbers alone 0.77;
+P0_turn 0.84; the reasoning fields 0.74–0.85; P_action 0.98. So before any
+reasoning is written the activation predicts the action somewhat better than
+the telemetry does, and the reasoning takes it to near certainty. Caveat: the
+three prompts are pooled and have different action mixes, so part of the
+P0_turn advantage may be prompt identity; the next baseline is telemetry plus
+prompt.
+
+**The explanations read the upcoming action.** At P_action the explanation
+names the letter the model then chose in 97/105 (no objective), 101/105
+(formula) and 85/105 (words) decisions.
+
+**No hidden risk in the rule-3 removals.** At the Therefore line of the words
+controller's 12 server removals, the explanations talk about reducing capacity
+in 8 and about response time or SLA risk in none; for its 12 additions, risk
+appears in 9. The activation-level account matches the trace: the model is not
+representing, and then omitting, a risk it takes. (Absence in the words is not
+absence in the vector: about a quarter of the vector is unexplained at that
+position, and n = 12.)
+
+Example (words, period 15: 2 servers, dimmer 1.0, 0.07 s; the trace ends "we
+are well within the SLA. We can now try to reduce the number of servers"; the
+model removes). Before any reasoning, P0_turn (fve 0.56): "...the shrinking
+idle count justifies a reduction action ... mirroring the 'reduce' decision
+logic". At Therefore (0.76): "the utilisation is now safe, and the load is
+low ... requiring a concluding action instruction like 'Now we should reduce
+the spare instance'". At the action cue (0.19): 'requiring a button/action
+label like "B"' -- B is remove_server.
+
+Next: the telemetry-plus-prompt baseline; counterfactual telemetry edits
+(does the P0_turn explanation move when the action does not?); all four
+seeds; the same positions in the rule-3-removed prompt.
 
 ---
 
