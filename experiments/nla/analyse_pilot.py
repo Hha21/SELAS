@@ -107,6 +107,28 @@ def readout_inputs(rows) -> tuple[list[dict], np.ndarray, dict[str, np.ndarray]]
     return decs, y, X
 
 
+def centred_match(P: np.ndarray, G: np.ndarray) -> dict[str, float]:
+    """Do the reconstructions carry what is specific to each decision?
+
+    P and G are the reconstructions and the activations at one probe position.
+    Each is scaled to unit norm, the mean over decisions subtracted, and the
+    deviations compared by cosine: C[i, j] = cos(dev P_i, dev G_j). Matched is
+    the diagonal; every off-diagonal entry is a shuffled-explanation control.
+    Identification: how often, and how highly, an explanation's reconstruction
+    ranks its own decision's activation among all of them (chance: 1/n and 0.5).
+    """
+    def dev(X):
+        X = X / np.linalg.norm(X, axis=1, keepdims=True)
+        X = X - X.mean(0)
+        return X / np.clip(np.linalg.norm(X, axis=1, keepdims=True), 1e-12, None)
+    C = dev(P.astype(np.float64)) @ dev(G.astype(np.float64)).T
+    n = len(C)
+    off = (C.sum(1) - np.diag(C)) / (n - 1)
+    pct = np.array([(C[i] < C[i, i]).sum() / (n - 1) for i in range(n)])
+    return {"n": n, "matched_cos": float(np.median(np.diag(C))), "shuffled_cos": float(np.median(off)),
+            "percentile_rank": float(pct.mean()), "top1": float(np.mean(C.argmax(1) == np.arange(n)))}
+
+
 def expected_letter(text: str) -> str | None:
     m = _LETTER.search(text)
     return next(g for g in m.groups() if g) if m else None
@@ -153,6 +175,31 @@ def main() -> int:
         S["decodability"][name] = {"accuracy": float(np.mean(pred == y)), "recall": recall(pred, y)}
         print(f"   {name:18s} {np.mean(pred == y):.2f}   recall "
               + "  ".join(f"{c} {v:.2f}" for c, v in S["decodability"][name]["recall"].items()))
+
+    rec_path = args.out / "reconstructions.npy"
+    if rec_path.exists():
+        R = np.load(rec_path)
+        is_run = np.array([i["source"] == "run" for i in index])
+        print("\n3b. decision-specific content: reconstruction deviations vs activation deviations")
+        print("    (centred cosine, matched vs shuffled; identification of the own decision, chance 0.5 / 1/n)")
+        S["centred"] = {}
+        for p in PROBES:
+            k = np.array([i.get("probe") == p for i in index]) & is_run
+            if not k.any():
+                continue
+            m = centred_match(R[k], V[k])
+            S["centred"][p] = m
+            print(f"   {p:13s} matched {m['matched_cos']:+.3f}  shuffled {m['shuffled_cos']:+.3f}  "
+                  f"rank {m['percentile_rank']:.2f}  top-1 {m['top1']:.3f} (chance {1 / m['n']:.3f})")
+        # the action read-out, from what the words reconstruct instead of from the activation
+        by_key = {(i["run"], i["period"], i["probe"]): r for i, r in zip(index, R) if i["source"] == "run"}
+        print("   action read-out from the reconstructions (compare section 3):")
+        for p in ("P0_turn", "P_therefore", "P_action"):
+            Xr = np.stack([by_key[(d["P_action"][0]["run"], d["P_action"][0]["period"], p)] for d in decs])
+            pred = ridge_cv_predict(Xr, y)
+            S["decodability"][f"reconstruction {p}"] = {"accuracy": float(np.mean(pred == y)), "recall": recall(pred, y)}
+            print(f"   {'recon ' + p:18s} {np.mean(pred == y):.2f}   recall "
+                  + "  ".join(f"{c} {v:.2f}" for c, v in recall(pred, y).items()))
 
     print("\n4a. the letter the P_action explanation expects next vs the letter chosen")
     S["letters"] = {}

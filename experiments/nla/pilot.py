@@ -24,7 +24,8 @@ fails if the norms do not match.
     python pilot.py RUN_DIR [RUN_DIR ...] -o OUT [--limit N]
 
 Output in OUT: vectors.npy (float32, one row per probe), index.jsonl (what each
-row is), explanations.jsonl (AV text and AR scores per row), reference.json.
+row is), explanations.jsonl (AV text and AR scores per row), reconstructions.npy
+(the AR's vectors), reference.json.
 """
 
 from __future__ import annotations
@@ -45,7 +46,8 @@ sys.path.insert(0, str(HERE.parent / "activations"))
 sys.path.insert(0, str(HERE.parent / "faithfulness"))
 
 import legality  # noqa: E402
-from nla_pair import AR_REPO, AV_REPO, LAYER, Reconstructor, Verbaliser, extract_explanation  # noqa: E402
+from nla_pair import (AR_REPO, AV_REPO, LAYER, Reconstructor, Verbaliser,  # noqa: E402
+                      extract_explanation, reconstruction_scores)
 from render import locate_probes, probe_token_indices, render_chat  # noqa: E402
 
 TARGET = "google/gemma-3-27b-it"
@@ -203,7 +205,9 @@ def main() -> int:
     t2 = time.time()
     ar = Reconstructor(AR_REPO)
     texts = [extract_explanation(t) for t in raw]
-    s = ar.score(texts, V)
+    P = ar.reconstruct(texts)
+    np.save(args.out / "reconstructions.npy", P.astype(np.float32))   # for the centred analysis
+    s = reconstruction_scores(P, V, ar.mse_scale)
     del ar
     _free()
     print(f"score: {time.time() - t2:.0f}s", flush=True)

@@ -684,20 +684,36 @@ example: the raw layer-41 norms of all 22 prompt tokens agree within 0.75%
 published 0.757, and the ' France' explanation is nearly word for word the
 published one.
 
-**Fidelity** (fve_nrm, how much of the vector the explanation carries; 0 =
-no better than the mean vector; ordinary chat text ~0.76–0.82):
+**Fidelity, and why fve_nrm flatters it here.** fve_nrm is measured against
+the pair's *training* mean and variance (0.0579). Our vectors sit in a narrow
+region: at a given position their spread is 14–43% of the training variance
+(68% at the end of the telemetry). So a predictor that knows nothing about the
+decision -- the mean of our own vectors at that position, leave-one-out --
+already scores high, and beats the explanations at five of seven positions:
 
-| position | median | IQR |
-|---|---|---|
-| end of the telemetry (P0_state_end) | 0.15 | 0.01–0.27 |
-| model turn opened, before reasoning (P0_turn) | 0.57 | 0.54–0.59 |
-| end of SLA / Capacity / Trend lines | 0.67 / 0.72 / 0.71 | |
-| end of Therefore line | 0.75 | 0.71–0.78 |
-| action cue, "Action:" (P_action) | 0.46 | 0.33–0.49 |
+| position | NLA fve_nrm (median) | mean-of-our-vectors fve_nrm | our spread / training spread | NLA error vs mean-vector error |
+|---|---|---|---|---|
+| end of the telemetry (P0_state_end) | 0.15 | 0.37 | 0.68 | worse (−0.35) |
+| model turn opened (P0_turn) | 0.57 | 0.90 | 0.14 | worse (−3.2) |
+| end of SLA line | 0.67 | 0.89 | 0.18 | worse (−2.1) |
+| end of Capacity line | 0.72 | 0.78 | 0.28 | worse (−0.30) |
+| end of Trend line | 0.71 | 0.67 | 0.41 | better (+0.11) |
+| end of Therefore line | 0.75 | 0.67 | 0.42 | better (+0.26) |
+| action cue (P_action) | 0.46 | 0.82 | 0.43 | worse (−2.0) |
 
-Explanations at the reasoning fields are about as faithful as on ordinary
-text; at the action cue less so; at the end of the telemetry they should not
-be read at all.
+(last column: 1 − median NLA error / median mean-vector error; 0 = no better
+than the typical SELAS vector.) The published example's 0.76–0.82 is on
+diverse text, where the mean vector predicts almost nothing; here most of each
+vector is what every SELAS decision shares ("a structured analysis log"), and
+the explanations' reconstructions capture decision-specific content beyond
+that only at the Trend and Therefore lines. The explanations' *text* can still
+carry decision-specific content the reconstructor does not turn into a better
+vector (the letter they name at P_action matches the chosen action in 283/315);
+the decisive check is a centred one -- whether the reconstructions' deviations
+from their mean point along the vectors' deviations, against a
+shuffled-explanation control -- which needs the reconstructions saved
+(`experiments/nla/reconstruct.py`). Until then, do not quote fve_nrm as
+"faithful as on ordinary text".
 
 **When does the action become readable?** A cross-validated linear read-out
 of the action kind (5-fold ridge; vectors on 32 PCs; 315 decisions, majority
