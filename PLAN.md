@@ -4,7 +4,12 @@ Read with [RESULTS.md](RESULTS.md), which records every measurement and where it
 lives. This file says what the paper argues, what is established, and what is
 next. Updated 2026-09-27 (pivot agreed with Harry).
 
-## The story (agreed 2026-09-27)
+## The story
+
+**Superseded 2026-09-28 by [PAPER.md](PAPER.md)**: the paper's framing
+(faithfulness and completeness of the trace; RQ1–RQ3), draft abstract,
+contributions and open decisions. The 2026-09-27 version is kept below for the
+record.
 
 **SELAS: an LLM as a self-explaining managing system.** Three parts:
 
