@@ -80,9 +80,17 @@ analyse_pilot.py, run_pilot.sbatch; on gpuA set SELAS_HF_HOME=$HOME/scratch/hf).
 
 1. **Collect the robustness jobs** (above): tables per configuration with
    paired intervals (as in §2d), update §2e, replace the figures.
-2. **NLA, second iteration:** telemetry-plus-prompt baseline for the
-   read-out; counterfactual telemetry edits at P0_turn (does the explanation
-   move when the action does not?); all four seeds; the rule-3-removed prompt.
+2. **NLA as new axes of the interpretability score** (the "completeness"
+   aspect behavioural tests cannot reach; motivation and table in
+   `LaTeX_Poster/poster_claims.md`, "Outlook"): run the pilot over all 16 runs
+   (4 prompts x 4 seed-sets, one gpuA job); axes per decision, all/active,
+   each with a shuffled-pairing control and reported with fve_nrm --
+   Agreement (explanation at the action cue names the chosen action; pilot
+   283/315), Consistency (explanation vs trace at each field; LLM judge),
+   Completeness (decision-relevant content the trace lacks; LLM judge),
+   Pre-commitment (action readable at P0_turn beyond telemetry + prompt);
+   add them to the spider figure. Stretch: patch the P0_turn activation from a
+   removal into an on-time no-op state and see whether the action follows.
 3. **Write** the abstract and introduction around the three parts.
 4. **Poster** (due ~2026-09-29): `LaTeX_Poster/feedback.md` lists the changes
    (three passages now wrong; new results and figure paths). Parts 1–2 go on
