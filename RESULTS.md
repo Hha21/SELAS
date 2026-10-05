@@ -492,6 +492,25 @@ Paired by seed-set, mean difference [95% t-interval, n = 4]:
    the words gap are the same on both (words −5156, −5940, −5089 on H200).
    Runs of one configuration should come from one GPU type; the table above
    is all A100.
+5. **Full H200 replicate (jobs 21419243–9, all 32 runs 0 integration
+   problems; `~/selas-results/rb-{cn60,wc180}-20260927-1046*`).** Mean ±
+   SD over seed-sets 0–3, H200 / A100:
+
+   | | ClarkNet 60 s | WorldCup |
+   |---|---|---|
+   | no objective | 12620 ± 500 / 11525 ± 1115 | 8389 ± 2846 / 8162 ± 1618 |
+   | **words** | **−5097 ± 711 / −4901 ± 314** | **−149 ± 2654 / −248 ± 2056** |
+   | without rule 3 | 9240 ± 4325 / 10513 ± 3364 | 9976 ± 158 / 8770 ± 2090 |
+   | formula | 11686 ± 747 / 12205 ± 423 | 7253 ± 3845 / 8868 ± 3315 |
+
+   On H200 every difference against words excludes zero (ClarkNet: no
+   objective +17717 [16344, 19091], without rule 3 +14336 [6619, 22054],
+   formula +16783 [14784, 18781]; WorldCup: +8539 [93, 16984], +10126
+   [5744, 14508], +7402 [361, 14443]). Among the three good prompts, one
+   H200 interval excludes zero -- formula − no objective on ClarkNet, −935
+   [−1610, −259], the opposite sign to the A100's +681 [−1400, 2762] -- so
+   state it as: the good prompts differ by at most ~1,000, with no consistent
+   direction. The conclusion holds on both GPU types.
 
 ---
 
