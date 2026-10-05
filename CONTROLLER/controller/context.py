@@ -234,6 +234,8 @@ class ContextBuilder:
             return []
         if self.objective == "formula":
             return self._formula_lines(max_servers)
+        if self.objective == "combined":
+            return self._combined_lines(max_servers)
         if self.objective == "priority-no3":
             return _PRIORITY[:3] + [""]
         if self.objective == "priority-scaled":
@@ -254,6 +256,26 @@ class ContextBuilder:
         return [
             "Objective: maximise total utility, scored each period. With a the",
             "arrival rate in req/s:",
+            f"  response time over {self.sla:g} s    1.5 * (a - {k:.1f})",
+            f"  within it, dimmer = 1.0      1.5 * a + 10 * ({max_servers} - servers)",
+            "  within it, dimmer < 1.0      a * (1 + 0.5 * dimmer)",
+            "",
+        ]
+
+    def _combined_lines(self, max_servers: int) -> list[str]:
+        """The canonical objective: the priorities in words and the function.
+
+        Rules 1-2 of the words version (rule 3 is left to the function, which
+        states when fewer servers pay and by how much), then the utility with its
+        constants. Without rule 3 the words and the formula scored the same, so
+        this gives a model both the order and the magnitudes.
+        """
+        k = kappa(max_servers)
+        return [
+            "Objective: maximise total utility, scored each period, in priority order:",
+            _PRIORITY[1],
+            _PRIORITY[2],
+            "Utility per period, with a the arrival rate in req/s:",
             f"  response time over {self.sla:g} s    1.5 * (a - {k:.1f})",
             f"  within it, dimmer = 1.0      1.5 * a + 10 * ({max_servers} - servers)",
             "  within it, dimmer < 1.0      a * (1 + 0.5 * dimmer)",
@@ -509,8 +531,10 @@ def _locate_scaffold_probes(text: str, search_from: int) -> dict[str, int]:
 #   priority-scaled      a line of scale added, from the utility's own constants
 #   priority-paraphrase  the same three rules reworded, to rule out one unlucky
 #                        phrasing
+# and the canonical objective of the final experiments:
+#   combined             rules 1-2 in words, then the utility function
 OBJECTIVES = ("none", "priority", "formula",
-              "priority-no3", "priority-scaled", "priority-paraphrase")
+              "priority-no3", "priority-scaled", "priority-paraphrase", "combined")
 
 _PRIORITY = [
     "Objective, in strict priority order:",

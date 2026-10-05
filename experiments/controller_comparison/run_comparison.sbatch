@@ -132,6 +132,11 @@ declare -A ARM_SPEC=(
     [k2-words-no3]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-no3"
     [k2-words-scaled]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-scaled"
     [k2-words-para]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective priority-paraphrase"
+    # The final experiments (PAPER.md): one canonical prompt -- rules 1-2 in
+    # words plus the utility function, each period's utility in the telemetry,
+    # two worked examples -- with and without reasoning. Nothing else differs.
+    [cot]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective combined --utility-feedback"
+    [direct]="--policy llm --reasoning none --exemplars 2 --objective combined --utility-feedback"
 )
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does
