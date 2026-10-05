@@ -25,7 +25,14 @@ Wording: "interpretability" and "self-explanation", not "trust".
 
 ## Research questions
 
-**RQ1 — Can an LLM act as the managing system, and how robustly?** Done.
+**RQ1 — Can an LLM act as the managing system, and how robustly?** Being
+re-run as a fresh, consistent set (decided 2026-10-05; see "Part A, final
+design" below). An LLM managing SWIM is already established, so RQ1 only
+needs to place ours: across model families and sizes, with and without
+reasoning, against baselines. The bullets below are the earlier results; the
+prompt ablations and rule 3 are no longer part of RQ1.
+
+*Earlier results (superseded by the final design):*
 - gemma-3-27b in a MAPE-K loop around SWIM (published configuration) is far
   above doing nothing, random actions and SWIM's reactive managers (§2, §2c).
 - Robust across three SWIM configurations, four seed-sets each (§2e), and
@@ -120,6 +127,41 @@ gap?** In progress.
 4. A first test of natural-language autoencoders as a complement to the trace
    for the part it cannot carry.
 
+## Part A, final design (decided 2026-10-05)
+
+One environment, one prompt, fresh runs, five seed-sets per cell.
+
+- **Environment:** SWIM's published configuration (ClarkNet, 12 servers from
+  3, 180 s boot, 10 dimmer levels, 60 s periods, 105 min, first 15 min
+  unscored), SEAMS 2017A utility.
+- **Prompt (`combined`):** rules 1–2 of the words objective, then the utility
+  function with its constants; each period's utility in the telemetry; two
+  worked examples. Without rule 3, words and formula scored the same, so both
+  are given.
+- **Reasoning, on vs off:** arms `cot` (scaffolded reasoning, 200 tokens, then
+  the action letter) and `direct` (the model's turn opens at "Action:"; one
+  forward pass). Paired by seed within each job. RQ2 predicts the result:
+  if no-ops are fixed by the state and actions carried by the reasoning,
+  removing it should leave no-ops largely intact and change actions.
+- **Families and sizes**, one decision method for all (vLLM, scored letter):
+  gemma-3 4B / 12B / 27B; Qwen2.5 7B / 14B / 32B; Llama-3.1-8B (needs the
+  Meta licence accepted on the HF account) and Llama-3.3-70B (FP8, 2 GPUs).
+  All open weights, so the interpretability analyses can follow on any of
+  them (NLA pairs exist for gemma-3 12B/27B, Qwen2.5-7B, Llama-3.3-70B).
+- **Baselines:** do nothing; random legal actions (10 seeds); SWIM's built-in
+  Reactive and Reactive2 (10 seeds) — existing runs, same environment, valid
+  as they are. PLA and Thallium: SWIM's shipped runs only (one each). Their
+  result files confirm they ran in exactly this environment (maxServers 12,
+  initialServers 3, bootDelay 180, 10 brownout levels, ClarkNet, seed-set 0,
+  `ProactiveAdaptationManager`); they choose 2–3 servers with a low dimmer.
+  They cannot be re-run here (SWIM ships only a mock of the PLA library), so
+  report them as reference points with their objective unknown.
+- **Rule 3** leaves RQ1. It stays only as a planted, known cause in RQ2 (the
+  trace names it; mediation shows its effect passes through the trace).
+
+Status: gemma-27B submitted (gpuA jobs 22001439/40, tag `final-gemma27b`);
+the other models' weights are being copied/downloaded to `~/scratch/hf`.
+
 ## Open decisions
 
 - Title: keep "SELAS: Self-Explaining LLM-based Adaptive Systems"?
@@ -127,5 +169,8 @@ gap?** In progress.
   the action cue only. Future work: domain adaptation of NLA (LoRA/RL, with a
   reward referenced to the domain's own mean), the full set of NLA axes beside
   the behavioural ones, patching before the reasoning, other models.
-- Whether the rule-3 result sits in RQ1 as a caution (current plan) or gets a
-  section of its own; it also serves RQ2 as the case the trace exposes.
+- ~~Whether the rule-3 result sits in RQ1~~ — decided 2026-10-05: not in
+  RQ1; kept only as the planted cause in RQ2.
+- Framing: empirical study with a light protocol (faithfulness → completeness
+  → elicitation), rather than a framework; a framework claim would need a
+  second LLM managing system or exemplar.
