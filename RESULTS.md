@@ -18,6 +18,63 @@ reduced configuration and is kept for the record, not for the poster.
 
 ---
 
+## A. Part A final design — in progress (2026-10-05)
+
+Design in PAPER.md ("Part A, final design"): published configuration, prompt
+`combined` (rules 1-2 + utility function + each period's utility), arms `cot`
+(scaffolded reasoning) and `direct` (no reasoning), seed-sets 0-4 on CSF (gpuA,
+vLLM scored letter) and 0-2/0-4 on OpenRouter (the written letter). Table from
+`experiments/controller_comparison/final_table.py` (local
+`results-local/csf/final_table.json`); every CSF and OpenRouter run so far
+passes the integration check. Utility mean ± SD; difference paired by seed.
+
+| model | method | reasoning | no reasoning | reasoning − none [95% CI] | periods acted in (r / none) |
+|---|---|---|---|---|---|
+| gemma-3-27b | CSF | 11698 ± 292 | **12892 ± 0** | −1194 [−1557, −831] | 8–12 / 2 |
+| gemma-3-27b | OpenRouter | 12159 ± 712 | 12197 ± 957 | −38 [−1887, 1810] | 8–12 / 2–6 |
+| gemma-3-12b | CSF | 9407 ± 1025 | 11738 ± 463 | −2331 [−3592, −1070] | 23–33 / 5–6 |
+| gemma-3-4b | CSF | 5798 ± 2115 | 4506 ± 17 | +1292 [−1352, 3936] | 25–64 / 76–97 |
+| Qwen2.5-32B | CSF | −3159 ± 2195 | 696 ± 2353 | −3855 [−5690, −2020] | 72–83 / 22–28 |
+| Qwen2.5-14B | CSF | 11523 ± 1300 | 5502 ± 0 | **+6021 [4406, 7635]** | 2–14 / 1 |
+| Qwen2.5-7B | CSF | 2045 ± 1869 | 1841 ± 4451 | +204 [−6061, 6468] | 65–76 / 13–90 |
+| Llama-3.1-8B | CSF | 6621 ± 920 | 8955 ± 2166 | −2334 [−4385, −283] | 52–74 / 47–70 |
+| Llama-3.1-8B | OpenRouter (n=3) | 7163 ± 1183 | 8661 ± 6506 | −1497, n.s. | 42–66 / 6–46 |
+| Llama-3.3-70B | OpenRouter (n=3) | 11299 ± 943 | 12631 ± 523 | −1332 [−4280, 1616] | 11–13 / 4–7 |
+
+Pending: Llama-3.3-70B on CSF (bf16, 4 A100s: the FP8 checkpoint needs
+compute capability ≥ 8.9 and failed on A100, folder moved to
+`~/selas-results/invalid-a100-fp8/`); DeepSeek-V3 and gpt-4o on OpenRouter.
+
+Readings so far:
+1. **Reasoning does not consistently help utility.** It hurts four models
+   significantly, helps one (Qwen-14B, which without it never raises the
+   dimmer to 1.0 and sits at exactly 5502, the value of any on-time run
+   below dimmer 1), and makes no difference to the two smallest.
+2. **Reasoning makes every model act more** (e.g. gemma-12B in 23–33 periods
+   against 5–6).
+3. **This configuration rewards finding one static setting.** gemma-27B
+   without reasoning sets the dimmer to 1, adds one server and holds: 12892 on
+   all five seeds, 0 late periods, above every adaptive run. Four servers
+   cover ClarkNet's peak (~71 req/s against ~22 req/s per server). A static
+   baseline (dimmer 1 + N servers) belongs in the comparison.
+4. **Qwen-32B over-applies the formula's server bonus**: removes servers to
+   1-2 while on time, breaches, adds them back (11 removals in a run) -- the
+   rule-3 failure mode, here from the formula alone.
+5. **The two decision methods agree** for gemma-27B (CSF vs OpenRouter
+   within ~500-700), so OpenRouter rows can be shown beside CSF ones, with the
+   method marked. Illegal letters in the no-reasoning arm (decided from the
+   written letter on OpenRouter): 0-3 per 105 decisions.
+6. The seed-set barely changes SWIM here: identical action sequences give
+   identical utility (gemma-27B direct, 5/5 seeds), so spread comes from the
+   model, not the environment.
+
+Bookkeeping: jobs submitted in the same second shared a results directory and
+each rewrote runs.json with its own arms; gemma-4b, Qwen-7B/14B/32B and
+Llama-8B were re-collected over all arms (`collect_all.txt` in each), and
+submit_comparison.sh now makes the directory unique.
+
+---
+
 ## 1. Setup (fixed)
 
 | | |
