@@ -4,6 +4,31 @@ Read with [RESULTS.md](RESULTS.md), which records every measurement and where it
 lives. This file says what the paper argues, what is established, and what is
 next. Updated 2026-09-27 (pivot agreed with Harry).
 
+## Running now (2026-10-05) — Part A final design, see PAPER.md
+
+**CSF, gpuA, `submit_comparison.sh --classic --partition gpuA`**, arms `cot`
+and `direct` x seed-sets 0-4, two jobs per model (cot/direct paired by seed
+within a job), results `~/selas-results/final-<model>-*`:
+gemma-3-27b 22001439/40 · gemma-3-12b 22002020/25 · Qwen2.5-14B 22002026/27 ·
+Llama-3.3-70B FP8 (2 GPUs, TP=2) 22002028/30 · gemma-3-4b 22002076/77 ·
+Qwen2.5-7B 22002078/79 · Qwen2.5-32B 22002210/11 · Llama-3.1-8B 22002541/42.
+Weights read from `~/scratch/hf` (SELAS_HF_HOME). Watch: Llama-70B FP8 on
+A100 (no native FP8) — move to gpuH_short with 1 GPU if vLLM fails to start.
+
+**Laptop, OpenRouter (`run_local.sh --decide generate`)**, results
+`results-local/fo-<model>-*`: gemma-3-27b bridge (cot/direct x 0-4, started
+15:21, against the CSF gemma-27B runs to measure the decision-method effect);
+then `results-local/launch/chain-or-20261005.sh` runs Llama-3.3-70B@Parasail +
+Llama-3.1-8B@CoreWeave, then DeepSeek-V3@GMICloud + gpt-4o@OpenAI, 3 seeds x
+cot/direct each (log `results-local/launch/chain-or-20261005.log`).
+OpenRouter decides from the written letter where the provider returns no
+token probabilities (open-model hosts on short replies, i.e. `direct`): count
+`illegal_choice` notes per run and report them.
+
+**When they finish:** collect (runs.json per results dir), integration check
+per job, utility table model x {cot, direct} with paired intervals, the
+bridge comparison (gemma CSF vs OpenRouter), illegal-letter counts.
+
 ## The story
 
 **Superseded 2026-09-28 by [PAPER.md](PAPER.md)**: the paper's framing
