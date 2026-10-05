@@ -73,7 +73,7 @@ Readings so far:
    within ~500-700), so OpenRouter rows can be shown beside CSF ones, with the
    method marked. Illegal letters in the no-reasoning arm (decided from the
    written letter on OpenRouter): 0-3 per 105 decisions.
-7. **The frontier models chase the server-cost bonus too** (gpt-4o,
+6. **The frontier models chase the server-cost bonus too** (gpt-4o,
    DeepSeek-V3): they drop to one server while on time ("only 1% busy … reduce
    the number of active servers … reducing costs"; "dimmer is already at
    maximum, so remove a server to save costs"), breach when the load rises
@@ -82,7 +82,7 @@ Readings so far:
    With Qwen-32B, three of the more capable models fail by the same
    short-sighted optimisation of the formula's bonus that rule 3 produced in
    words; the gemma models and Llama-70B instead set and hold.
-8. The seed-set barely changes SWIM here: identical action sequences give
+7. The seed-set barely changes SWIM here: identical action sequences give
    identical utility (gemma-27B direct, 5/5 seeds), so spread comes from the
    model, not the environment.
 
