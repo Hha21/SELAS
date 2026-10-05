@@ -40,10 +40,19 @@ passes the integration check. Utility mean ± SD; difference paired by seed.
 | Llama-3.1-8B | CSF | 6621 ± 920 | 8955 ± 2166 | −2334 [−4385, −283] | 52–74 / 47–70 |
 | Llama-3.1-8B | OpenRouter (n=3) | 7163 ± 1183 | 8661 ± 6506 | −1497, n.s. | 42–66 / 6–46 |
 | Llama-3.3-70B | OpenRouter (n=3) | 11299 ± 943 | 12631 ± 523 | −1332 [−4280, 1616] | 11–13 / 4–7 |
+| DeepSeek-V3 | OpenRouter (n=3) | 4641 ± 4116 | 2513 ± 898 | +2127 [−7709, 11964] | 31–58 / 30–40 |
+| gpt-4o | OpenRouter (n=3) | 586 ± 2030 | 2147 ± 315 | −1562 [−6919, 3795] | 65–81 / 57–60 |
 
-Pending: Llama-3.3-70B on CSF (bf16, 4 A100s: the FP8 checkpoint needs
-compute capability ≥ 8.9 and failed on A100, folder moved to
-`~/selas-results/invalid-a100-fp8/`); DeepSeek-V3 and gpt-4o on OpenRouter.
+Pending: Llama-3.3-70B on CSF (bf16, 4 A100s, jobs 22007366/67: the FP8
+checkpoint needs compute capability ≥ 8.9 and failed on A100, folder moved to
+`~/selas-results/invalid-a100-fp8/`).
+
+Illegal letters on OpenRouter (decided from the written letter; with no
+token probabilities an illegal letter becomes no_op): gemma-27B 10/525 and
+4/525, Llama-70B 0/315 and 2/315, gpt-4o 2/315 and 3/315, DeepSeek-V3 7/315
+and **43/315** (direct), Llama-8B **76/315 and 148/315** -- so the Llama-8B
+OpenRouter rows, and DeepSeek-V3's no-reasoning row, partly measure forced
+no-ops; use the CSF row for Llama-8B.
 
 Readings so far:
 1. **Reasoning does not consistently help utility.** It hurts four models
@@ -64,7 +73,16 @@ Readings so far:
    within ~500-700), so OpenRouter rows can be shown beside CSF ones, with the
    method marked. Illegal letters in the no-reasoning arm (decided from the
    written letter on OpenRouter): 0-3 per 105 decisions.
-6. The seed-set barely changes SWIM here: identical action sequences give
+7. **The frontier models chase the server-cost bonus too** (gpt-4o,
+   DeepSeek-V3): they drop to one server while on time ("only 1% busy … reduce
+   the number of active servers … reducing costs"; "dimmer is already at
+   maximum, so remove a server to save costs"), breach when the load rises
+   before a replacement can boot (180 s), add servers back, and repeat --
+   9-15 removals per run, late in 9-23 periods, with or without reasoning.
+   With Qwen-32B, three of the more capable models fail by the same
+   short-sighted optimisation of the formula's bonus that rule 3 produced in
+   words; the gemma models and Llama-70B instead set and hold.
+8. The seed-set barely changes SWIM here: identical action sequences give
    identical utility (gemma-27B direct, 5/5 seeds), so spread comes from the
    model, not the environment.
 
