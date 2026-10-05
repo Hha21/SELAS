@@ -124,7 +124,10 @@ while [ $# -gt 0 ]; do
             export SELAS_RUN_INDEX=$(( base + $2 / 60 )) SELAS_BOOT_DELAY="$2"
             shift 2 ;;
         --arms)    export SELAS_ARMS="$2"; shift 2 ;;
-        --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)"; shift 2 ;;
+        # The PID keeps two submissions in the same second apart: they would
+        # otherwise share a results directory, and each job rewrites runs.json
+        # with only its own arms.
+        --tag)     export SELAS_RUN_ID="$2-$(date -u +%Y%m%d-%H%M%S)-$$"; shift 2 ;;
         # gpuA (A100 80 GB) and gpuL are free at the point of use (4 GPUs at a
         # time) and take no -A; their nodes cannot see h200-scratch, so the
         # weights and the SWIM image are read from copies on ~/scratch.
