@@ -39,13 +39,15 @@ passes the integration check. Utility mean ± SD; difference paired by seed.
 | Qwen2.5-7B | CSF | 2045 ± 1869 | 1841 ± 4451 | +204 [−6061, 6468] | 65–76 / 13–90 |
 | Llama-3.1-8B | CSF | 6621 ± 920 | 8955 ± 2166 | −2334 [−4385, −283] | 52–74 / 47–70 |
 | Llama-3.1-8B | OpenRouter (n=3) | 7163 ± 1183 | 8661 ± 6506 | −1497, n.s. | 42–66 / 6–46 |
+| Llama-3.3-70B | CSF (bf16, 4 A100s) | 10534 ± 3770 | 12316 ± 348 | −1781 [−6259, 2696] | mean 9 / 6 |
 | Llama-3.3-70B | OpenRouter (n=3) | 11299 ± 943 | 12631 ± 523 | −1332 [−4280, 1616] | 11–13 / 4–7 |
 | DeepSeek-V3 | OpenRouter (n=3) | 4641 ± 4116 | 2513 ± 898 | +2127 [−7709, 11964] | 31–58 / 30–40 |
 | gpt-4o | OpenRouter (n=3) | 586 ± 2030 | 2147 ± 315 | −1562 [−6919, 3795] | 65–81 / 57–60 |
 
-Pending: Llama-3.3-70B on CSF (bf16, 4 A100s, jobs 22007366/67: the FP8
-checkpoint needs compute capability ≥ 8.9 and failed on A100, folder moved to
-`~/selas-results/invalid-a100-fp8/`).
+Llama-3.3-70B on CSF ran in bf16 on 4 A100s (jobs 22007366/67, 10/10 runs 0
+integration problems): the FP8 checkpoint needs compute capability ≥ 8.9 and
+failed at start-up on A100 (folder moved to `~/selas-results/invalid-a100-fp8/`).
+All runs of the design are in.
 
 Illegal letters on OpenRouter (decided from the written letter; with no
 token probabilities an illegal letter becomes no_op): gemma-27B 10/525 and
@@ -59,8 +61,15 @@ Readings so far:
    significantly, helps one (Qwen-14B, which without it never raises the
    dimmer to 1.0 and sits at exactly 5502, the value of any on-time run
    below dimmer 1), and makes no difference to the two smallest.
-2. **Reasoning makes every model act more** (e.g. gemma-12B in 23–33 periods
-   against 5–6).
+2. **Reasoning makes models act more** -- in 12 of 13 rows (mean periods
+   acted in, reasoning / none: gemma-27B 10/2, gemma-12B 28/5, Llama-70B 9/6,
+   Qwen-14B 9/1, Qwen-32B 76/26, gpt-4o 75/58). The exception is gemma-4B,
+   which flails without reasoning (89 periods) and less with it (47).
+   Utility here is roughly: reach dimmer 1.0 (the server bonus, ~6,000),
+   avoid late periods (~480 each), run no spare servers (10 per
+   server-period) -- a static "dimmer 1, 4 servers" gets all three, so extra
+   actions mostly cost. Reasoning helps where the model's default misses the
+   first term (Qwen-14B) and hurts where it already found it.
 3. **This configuration rewards finding one static setting.** gemma-27B
    without reasoning sets the dimmer to 1, adds one server and holds: 12892 on
    all five seeds, 0 late periods, above every adaptive run. Four servers
@@ -85,6 +94,12 @@ Readings so far:
 7. The seed-set barely changes SWIM here: identical action sequences give
    identical utility (gemma-27B direct, 5/5 seeds), so spread comes from the
    model, not the environment.
+8. **Models under 10B cannot manage the system reliably** (gemma-4B,
+   Qwen-7B, Llama-8B: 1,800-9,000, acting in 33-89 periods), whichever
+   family -- on CSF with letters restricted to legal ones, so it is the
+   decisions, not the format; Llama-8B on OpenRouter also writes an
+   unavailable action in up to 47% of decisions. Above that, size is not
+   monotone: Qwen-32B < Qwen-14B, by chasing the bonus.
 
 Bookkeeping: jobs submitted in the same second shared a results directory and
 each rewrote runs.json with its own arms; gemma-4b, Qwen-7B/14B/32B and
