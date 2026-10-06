@@ -9,8 +9,10 @@ next. Updated 2026-09-27 (pivot agreed with Harry).
 Seed-sets 0-4 of every model are in (RESULTS §A). Now:
 
 **CSF, gpuA**: seed-sets 5-9 for all eight models, cot and direct, two jobs
-each (Llama-3.3-70B bf16 on 4 A100s): 22067525/30 gemma-27b, 32/34
-gemma-12b, 39/41 gemma-4b, 58/61 Qwen-14B, 65/69 Qwen-32B, 71/76 Qwen-7B,
+each (Llama-3.3-70B bf16 on 4 A100s): 22067525/30 gemma-27b, 22076271/22067534
+gemma-12b (22067532 failed on node865: all six SWIMs stopped at t ~ 900 s with
+no error, others fine; folder in `~/selas-results/invalid-node865/`, resubmitted
+excluding that node), 39/41 gemma-4b, 58/61 Qwen-14B, 65/69 Qwen-32B, 71/76 Qwen-7B,
 78/82 Llama-8B, 83/87 Llama-70B. Results `~/selas-results/final-<model>-*`
 (directories now unique per job).
 
