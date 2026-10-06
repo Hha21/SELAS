@@ -161,6 +161,17 @@ TEMPERATURE="${SELAS_TEMPERATURE:-}"
 source "$HOME/selas-env.sh"
 export HF_HOME="${HF_HOME:-$HOME/h200-scratch/hf}"
 
+# Run SWIM from a copy of its image on node-local disk. Read over the shared
+# filesystem, a stall there can kill a running container that needs a page of
+# the image at that moment -- silently, mid-run: on 2026-10-06 single SWIM
+# instances on three gpuA nodes stopped at the same minute while others in the
+# same jobs finished (image on ~/scratch). The CSF manual's advice is the same:
+# stage onto $TMPDIR. 1.2 GB, seconds.
+if [ -n "${TMPDIR:-}" ] && [ -d "$TMPDIR" ] && cp "$SIF" "$TMPDIR/swim.sif" 2>/dev/null; then
+    SIF="$TMPDIR/swim.sif"
+fi
+echo "swim image $SIF"
+
 # initialServers cannot be set on the OMNeT++ command line: --<option>=<value>
 # takes *configuration options* (which is why --sim-time-limit works) and not
 # NED parameter assignments, so `--*.initialServers=1` is rejected outright with
