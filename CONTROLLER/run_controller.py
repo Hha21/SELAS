@@ -23,7 +23,7 @@ from controller import (
     ContextBuilder, ControlLoop, DimmerMode, LLMPolicy, ReactivePolicy,
     ReasoningStyle, SwimClient, Trajectory, build_backend, synthetic_observation,
 )
-from controller import NullPolicy, RandomPolicy
+from controller import NullPolicy, RandomPolicy, StaticPolicy
 from controller.context import OBJECTIVES
 from controller.actions import is_legal
 
@@ -42,12 +42,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     swim.add_argument("--timeout", type=float, default=10.0)
 
     ctrl = p.add_argument_group("controller")
-    ctrl.add_argument("--policy", choices=["reactive", "reactive2", "llm", "null", "random"],
+    ctrl.add_argument("--policy", choices=["reactive", "reactive2", "llm", "null", "random", "static"],
                       default="reactive",
                       help="null never acts -- the control for whether acting helped at all; "
                            "random picks uniformly among the legal options")
     ctrl.add_argument("--random-seed", type=int, default=0,
                       help="seed for --policy random (the job passes SWIM's seed-set)")
+    ctrl.add_argument("--static-servers", type=int, default=4, metavar="N",
+                      help="static policy: dimmer to 1.0 and N servers, then hold")
     ctrl.add_argument("--sla", type=float, default=0.75)
     ctrl.add_argument("--dimmer-levels", type=int, default=5, metavar="N",
                       help="SWIM's numberOfBrownoutLevels. The reactive rule "
@@ -270,6 +272,8 @@ def main(argv: list[str] | None = None) -> int:
         policy = NullPolicy()
     elif args.policy == "random":
         policy = RandomPolicy(seed=args.random_seed, dimmer_mode=DimmerMode(args.dimmer_mode))
+    elif args.policy == "static":
+        policy = StaticPolicy(servers=args.static_servers)
     elif args.policy in ("reactive", "reactive2"):
         policy = reactive
     else:

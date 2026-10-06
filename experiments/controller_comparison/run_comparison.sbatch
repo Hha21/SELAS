@@ -104,6 +104,8 @@ declare -A ARM_SPEC=(
     # Uniform over the legal options, seeded by the arm's seed-set: the chance
     # baseline for the LLM arms.
     [random]="--policy random"
+    # The non-adaptive reference (PAPER.md): dimmer to 1.0, four servers, hold.
+    [static]="--policy static --static-servers 4"
     [llm]="--policy llm --reasoning scaffold --max-reasoning-tokens 200"
     [free]="--policy llm --reasoning free --max-reasoning-tokens 200"
     [short]="--policy llm --reasoning scaffold --max-reasoning-tokens 60"

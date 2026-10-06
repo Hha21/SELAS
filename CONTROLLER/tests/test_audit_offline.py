@@ -428,9 +428,31 @@ def test_generate_asks_for_the_letter_when_none_is_written():
     assert b.calls[1][0][-1] == {"role": "user", "content": "Give your action as a single letter."}
 
 
-def test_generate_illegal_letter_becomes_no_op_and_is_recorded():
-    r, _ = _decide_gen("Reasoning: at max.\nAction: A", o=obs(servers=12, active=12, dimmer=0.5))
+def test_generate_illegal_letter_is_refused_once_and_a_legal_reply_taken():
+    # No probabilities (the scripted backend has no generate_chat_logprobs), as on
+    # open-model hosts for one-line replies: refuse the illegal letter, ask again.
+    r, b = _decide_gen("Reasoning: at max.\nAction: A", "C", o=obs(servers=12, active=12, dimmer=0.5))
+    assert r.action == NO_OP and r.notes["illegal_choice"] == "A" and r.notes["reasked"] == "C"
+    assert len(b.calls) == 2 and "Option A is not available" in b.calls[1][0][-1]["content"]
+    r, _ = _decide_gen("Action: A", "B", o=obs(servers=12, active=12, dimmer=0.5))
+    assert r.action == REMOVE_SERVER and r.notes["reasked"] == "B"
+
+
+def test_generate_illegal_twice_becomes_no_op_and_is_recorded():
+    r, _ = _decide_gen("Reasoning: at max.\nAction: A", "A", o=obs(servers=12, active=12, dimmer=0.5))
     assert r.action == NO_OP and r.notes["illegal_choice"] == "A"
+    assert r.notes["reasked"].startswith("still illegal")
+
+
+def test_static_policy_sets_the_dimmer_then_the_pool_then_holds():
+    from controller import StaticPolicy
+    p = StaticPolicy(servers=4)
+    assert p.decide(obs(servers=3, active=3, dimmer=0.9)).kind.value == "set_dimmer"
+    assert p.decide(obs(servers=3, active=3, dimmer=1.0)) == ADD_SERVER
+    assert p.decide(obs(servers=4, active=3, dimmer=1.0)) == NO_OP       # booting: wait
+    assert p.decide(obs(servers=4, active=4, dimmer=1.0)) == NO_OP       # there: hold
+    assert p.decide(obs(servers=6, active=6, dimmer=1.0)) == REMOVE_SERVER
+    assert StaticPolicy(servers=2).decide(obs(servers=1, active=1, dimmer=1.0)) == ADD_SERVER
 
 
 def test_generate_unparseable_reply_is_no_op_with_a_parse_error():

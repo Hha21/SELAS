@@ -204,6 +204,42 @@ class RandomPolicy:
                             latency_s=0.0, notes={"seed": self.seed})
 
 
+def _reask_message(letter: str, legal_ids: list[str]) -> str:
+    return (f"Option {letter} is not available in this state. Choose one of "
+            f"{', '.join(legal_ids)}, as a single letter.")
+
+
+class StaticPolicy:
+    """Set one configuration, then hold it: dimmer at the top, N servers.
+
+    The non-adaptive reference: what a fixed, well-chosen configuration earns
+    with no reaction to the load at all. It moves the dimmer first, then one
+    server per period (never while one is booting, which SWIM refuses) until
+    the pool is N, and does nothing after that.
+    """
+
+    name = "static"
+
+    def __init__(self, servers: int = 4, dimmer: float = 1.0) -> None:
+        self.servers = servers
+        self.dimmer = dimmer
+
+    def decide(self, obs: Observation, traj: Trajectory | None = None) -> Action:
+        if abs(obs.dimmer - self.dimmer) > 1e-6:
+            return Action(Kind.SET_DIMMER, self.dimmer)
+        if obs.booting:
+            return NO_OP
+        if obs.servers < min(self.servers, obs.max_servers):
+            return ADD_SERVER
+        if obs.servers > max(self.servers, 1):
+            return REMOVE_SERVER
+        return NO_OP
+
+    def __call__(self, period: int, obs: Observation, traj: Trajectory) -> PolicyResult:
+        return PolicyResult(action=self.decide(obs, traj), policy=self.name,
+                            latency_s=0.0, notes={"servers": self.servers, "dimmer": self.dimmer})
+
+
 class LLMPolicy:
     """One LLM call chain per period: reason, then score the action space."""
 
@@ -347,6 +383,29 @@ class LLMPolicy:
             notes=notes,
         )
 
+    def _reask_legal(self, gen_messages: list[dict], text: str, letter: str,
+                     ids: list[str], legal_ids: list[str], notes: dict[str, Any]) -> str | None:
+        """Refuse an illegal letter once and ask for a legal one.
+
+        Only reached when the provider returned no probabilities for the
+        letter, so it cannot be masked away as scoring would. The reply is
+        accepted only if it is a legal letter; the refused one is kept in
+        ``illegal_choice`` and the outcome in ``reasked``.
+        """
+        follow = gen_messages + [
+            {"role": "assistant", "content": text.strip() or f"Action: {letter}"},
+            {"role": "user", "content": _reask_message(letter, legal_ids)}]
+        try:
+            reply = self.backend.generate_chat(follow, max_tokens=4,
+                                               temperature=self.temperature, stop=["\n"]) or ""
+        except Exception as exc:
+            notes["reasked"] = f"error: {str(exc)[:120]}"
+            return None
+        m = re.search(r"\b([A-H])\b", reply)
+        again = m.group(1) if m and m.group(1) in ids else None
+        notes["reasked"] = again if again in legal_ids else f"still illegal: {reply[:20]!r}"
+        return again if again in legal_ids else None
+
     def _decide_by_generation(self, period: int, obs: Observation, traj: Trajectory,
                               start: float) -> PolicyResult:
         """Decide by reading the letter the model writes, not by scoring one.
@@ -416,7 +475,11 @@ class LLMPolicy:
             notes["illegal_choice"] = letter
         # With the letter's alternatives in hand, decide exactly as scoring does:
         # renormalise over the legal options and take the most likely. Without
-        # them, the written letter if legal, else no_op.
+        # them, the written letter if legal; an illegal one is refused once and
+        # the model asked again -- the nearest thing to scoring's "best legal
+        # option" when a provider returns no probabilities (open-model hosts
+        # give none for one-line replies, so this is the no-reasoning arm) --
+        # and only then no_op.
         masked = {k: v for k, v in raw.items() if k in legal_ids}
         total = sum(masked.values())
         if total > 0:
@@ -424,6 +487,8 @@ class LLMPolicy:
             chosen_id = max(masked, key=masked.__getitem__)
             notes["decide"] = "generate+logprobs"
         else:
+            if letter is not None and letter not in legal_ids:
+                letter = self._reask_legal(gen_messages, text, letter, ids, legal_ids, notes)
             chosen_id = letter if letter in legal_ids else no_op_id
             masked = {chosen_id: 1.0}
         action = dict(options)[chosen_id]
