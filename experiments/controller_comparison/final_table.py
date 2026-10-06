@@ -47,13 +47,31 @@ def main() -> int:
     ap.add_argument("--json", type=Path, default=None)
     args = ap.parse_args()
 
+    # Only arms that passed their integration check count: the check ran, found
+    # no problems, and saw all 105 decisions. A seed re-run after a failure
+    # appears twice; directories are read oldest first, so a later passing run
+    # replaces an earlier one.
     runs: dict[tuple[str, str], dict[tuple[str, int], dict]] = defaultdict(dict)
-    for d in args.dirs:
+    excluded = []
+    for d in sorted(args.dirs, key=lambda p: p.name):
         key = model_of(d)
+        if not (d / "runs.json").exists():
+            excluded.append(f"{d.name}: no runs.json")
+            continue
         for r in json.loads((d / "runs.json").read_text()):
             name = r["run_dir"].rstrip("/").split("/")[-1]
             m = re.match(r"(cot|direct)-s(\d+)$", name)
             if not m:
+                continue
+            check = d / name / "integration_check.json"
+            try:
+                c = json.loads(check.read_text()) if check.exists() else None
+            except json.JSONDecodeError:
+                c = None                     # a check that never finished writing
+
+            if not c or c.get("problems") or (c.get("decisions") or 0) < 105:
+                excluded.append(f"{d.name}/{name}: " + ("no check" if not c else
+                                f"{len(c.get('problems') or [])} problems, {c.get('decisions')} decisions"))
                 continue
             r = dict(r, actions=actions_taken(d / name))
             runs[key][(m.group(1), int(m.group(2)))] = r
@@ -87,6 +105,8 @@ def main() -> int:
         print(f"{model:16s} {method:10s} {cell('cot'):>22s} {cell('direct'):>22s} {dtxt:>28s}  "
               f"{str(row['cot']['late']):>9s} / {str(row['direct']['late']):9s}  "
               f"{str(row['cot']['actions'])} / {str(row['direct']['actions'])}")
+    if excluded:
+        print(f"\nexcluded ({len(excluded)}): " + "; ".join(excluded))
     if args.json:
         args.json.write_text(json.dumps(out, indent=1))
     return 0
