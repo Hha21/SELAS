@@ -16,6 +16,16 @@ excluding that node), 39/41 gemma-4b, 58/61 Qwen-14B, 65/69 Qwen-32B, 71/76 Qwen
 78/82 Llama-8B, 83/87 Llama-70B. Results `~/selas-results/final-<model>-*`
 (directories now unique per job).
 
+**Stall on 2026-10-06 ~14:16:** single SWIM instances on three gpuA nodes
+stopped silently mid-run (image read from ~/scratch); integration checks
+caught every one. Fixed in 20b9bde (image staged on $TMPDIR). Lost arms
+re-run: 22100510 gemma-12b s8-9, 22100513/15 gemma-4b s5-7 + cot s8, 22100517
+Qwen-14B cot s5,6,8,9 + direct s8,9; Llama-70B 22067583/87 cancelled before
+starting and resubmitted as 22100518/20 (fixed script). Still on the old
+script, check their arms at the end: 22067569 (Qwen-32B), 22067571/76
+(Qwen-7B), 22067578/82 (Llama-8B), 22076271 (gemma-12B s5-7).
+`final_table.py` counts only arms that passed their integration check.
+
 **Laptop, OpenRouter**: three models at 10 runs per arm, as on CSF --
 gpt-4o-mini@OpenAI (0-9), gpt-4o@OpenAI (3-9; 0-2 exist), DeepSeek-V3@GMICloud
 (0-9 afresh: the earlier 0-2 used the old illegal-letter handling, moved to
