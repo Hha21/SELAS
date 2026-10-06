@@ -4,30 +4,32 @@ Read with [RESULTS.md](RESULTS.md), which records every measurement and where it
 lives. This file says what the paper argues, what is established, and what is
 next. Updated 2026-09-27 (pivot agreed with Harry).
 
-## Running now (2026-10-05) — Part A final design, see PAPER.md
+## Running now (2026-10-06) — Part A to 10 runs per arm
 
-**CSF, gpuA, `submit_comparison.sh --classic --partition gpuA`**, arms `cot`
-and `direct` x seed-sets 0-4, two jobs per model (cot/direct paired by seed
-within a job), results `~/selas-results/final-<model>-*`:
-gemma-3-27b 22001439/40 · gemma-3-12b 22002020/25 · Qwen2.5-14B 22002026/27 ·
-Llama-3.3-70B FP8 (2 GPUs, TP=2) 22002028/30 · gemma-3-4b 22002076/77 ·
-Qwen2.5-7B 22002078/79 · Qwen2.5-32B 22002210/11 · Llama-3.1-8B 22002541/42.
-Weights read from `~/scratch/hf` (SELAS_HF_HOME). Watch: Llama-70B FP8 on
-A100 (no native FP8) — move to gpuH_short with 1 GPU if vLLM fails to start.
+Seed-sets 0-4 of every model are in (RESULTS §A). Now:
 
-**Laptop, OpenRouter (`run_local.sh --decide generate`)**, results
-`results-local/fo-<model>-*`: gemma-3-27b bridge (cot/direct x 0-4, started
-15:21, against the CSF gemma-27B runs to measure the decision-method effect);
-then `results-local/launch/chain-or-20261005.sh` runs Llama-3.3-70B@Parasail +
-Llama-3.1-8B@CoreWeave, then DeepSeek-V3@GMICloud + gpt-4o@OpenAI, 3 seeds x
-cot/direct each (log `results-local/launch/chain-or-20261005.log`).
-OpenRouter decides from the written letter where the provider returns no
-token probabilities (open-model hosts on short replies, i.e. `direct`): count
-`illegal_choice` notes per run and report them.
+**CSF, gpuA**: seed-sets 5-9 for all eight models, cot and direct, two jobs
+each (Llama-3.3-70B bf16 on 4 A100s): 22067525/30 gemma-27b, 32/34
+gemma-12b, 39/41 gemma-4b, 58/61 Qwen-14B, 65/69 Qwen-32B, 71/76 Qwen-7B,
+78/82 Llama-8B, 83/87 Llama-70B. Results `~/selas-results/final-<model>-*`
+(directories now unique per job).
 
-**When they finish:** collect (runs.json per results dir), integration check
-per job, utility table model x {cot, direct} with paired intervals, the
-bridge comparison (gemma CSF vs OpenRouter), illegal-letter counts.
+**Laptop, OpenRouter**: three models at 10 runs per arm, as on CSF --
+gpt-4o-mini@OpenAI (0-9), gpt-4o@OpenAI (3-9; 0-2 exist), DeepSeek-V3@GMICloud
+(0-9 afresh: the earlier 0-2 used the old illegal-letter handling, moved to
+`results-local/superseded/`) -- plus the static reference (`static@0`: dimmer
+1.0, 4 servers, hold). Script `results-local/launch/chain-or-20261006.sh`,
+log `chain-or-20261006.log`; ~10 h in five batches. **Resumable**: finished
+batches leave `results-local/launch/markers/<batch>.done`; after an
+interruption move the cut batch's result directories aside and re-run the
+script.
+
+Since 2026-10-06 the generate mode refuses an illegal letter once and asks
+again when the provider returns no probabilities (notes `reasked`).
+
+**When they finish:** re-run `final_table.py` over `results-local/csf/final-*`
+and `results-local/fo-*` (not `superseded/`); the plot: rows = models x arm,
+dots = runs, dashed line = static.
 
 ## The story
 
