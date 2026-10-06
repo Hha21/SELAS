@@ -162,6 +162,37 @@ One environment, one prompt, fresh runs, five seed-sets per cell.
 Status: gemma-27B submitted (gpuA jobs 22001439/40, tag `final-gemma27b`);
 the other models' weights are being copied/downloaded to `~/scratch/hf`.
 
+## Decisions and proposals of 2026-10-06 (read this first after a compaction)
+
+- **Rule 3 is dropped from the paper** (an artefact of one plain-language
+  rule; not pursued further).
+- **Terminology: "explanation", not "reasoning".** What the arms compare is
+  whether the managing system is asked to write a structured self-explanation
+  (SLA / Capacity / Trend / Therefore) before acting. Instruction-tuned models
+  with a prompted explanation are the object of study: it is the deployable
+  self-explaining design, and the one NLA pairs exist for. Reasoning-trained
+  ("thinking") models are out of scope -- a different object (RL-trained,
+  unstructured, often hidden traces) with no NLA pair; limitation / future
+  work, at most a behavioural-only data point.
+- **Part A figure:** `experiments/controller_comparison/reasoning_plot.py`
+  on `results-local/csf/final_table.json` (from `final_table.py`) ->
+  `figures/models/reasoning.{png,pdf}`; rows = models, dots = runs, bars =
+  means, dotted = do nothing (5101), dashed = static (pending: `static@0` in
+  the laptop chain's last batch). Llama-70B CSF (jobs 22100518/20) and the
+  OpenRouter batches 4-5 still to come on 2026-10-06 evening.
+- **Proposed prompt decomposition (to confirm with Harry):** fixed parts --
+  role and constraints, action legend, telemetry (including each period's
+  utility), live state; varied components -- objective {none, words (rules
+  1-2), formula, words + formula = the canonical prompt}, explanation {yes,
+  no}, worked examples {2, 0}. A diagram in the paper shows the parts. Run the
+  full factorial on gemma-3-27b only (its two canonical cells exist, 10 runs
+  each); the model comparison stays on the canonical prompt.
+- Part A with 10 runs per arm: only Qwen-14B (+6047 [5119, 6976]) and
+  Llama-8B (−3022 [−4015, −2029]) show a significant explanation effect; the
+  capable models lean slightly negative, not significant; the robust effect
+  is behavioural (asking for an explanation makes models act more, all but
+  gemma-4B).
+
 ## Open decisions
 
 - Title: keep "SELAS: Self-Explaining LLM-based Adaptive Systems"?
