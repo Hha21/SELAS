@@ -131,11 +131,32 @@ actions, not on no-ops (which stay no-ops without it 97% of the time). This
 repeats §3a (rule 3, 72-98% through the reasoning) on the canonical prompt
 without the planted rule, now with 10 runs.
 
-### B2. Intervention battery — running
+### B2. Intervention battery — faithfulness done; counterfactual and simulatability running
 
-Faithfulness, counterfactual telemetry (score / generate) and simulatability
-(students gemma-3 12B, Qwen2.5 14B; gemma-3 27B ceiling), gpuA jobs 22284596
-(cot-s0..4) and 22284597 (cot-s5..9).
+gpuA jobs 22284596 (cot-s0..4) and 22284597 (cot-s5..9). Decisions whose
+action changes when the explanation is perturbed and the letter re-scored
+(vLLM, same prompt otherwise):
+
+| perturbation of the explanation | no-op (n=946) | action (n=104) |
+|---|---|---|
+| none (control: re-score as recorded) | 0.0% | 1.0% [0, 3.1] |
+| paraphrased (robustness) | 0.0% | 11.5% [4.1, 18.8] |
+| removed (sensitivity) | 1.2% [0.4, 1.9] | **59.6% [56.7, 62.6]** |
+| same length, dots only (filler) | 1.8% | 59.6% [55.1, 64.5] |
+| another period's explanation (shuffled) | 9.4% [8.5, 10.3] | **100%** |
+| SLA verdict negated, rest kept (mistakes) | 0.1% | 6.7% [3.0, 10.0] |
+| conclusion (Therefore) removed | 5.5% [1.8, 9.8] | 39.4% [33.0, 47.5] |
+| SLA verdict negated and conclusion removed | 10.4% [6.4, 14.8] | 47.1% [41.9, 51.9] |
+| only the SLA field kept | 15.0% [11.5, 19.3] | 62.7% [51.0, 73.4] |
+
+Readings: **an action depends on its explanation; a no-op does not.**
+Remove or replace the explanation and most actions change (60%; 100% with
+another period's), while no-ops stay (1-9%). Rewording leaves both largely
+intact. The model follows the explanation's *conclusion* more than its
+premise: negating the SLA verdict while the conclusion stands moves 7% of
+actions, but with the conclusion removed the negated premise adds about 8
+points to the 39% the removal alone causes. This repeats §3 on the canonical
+prompt with 10 runs.
 
 ### B3. NLA — running
 
