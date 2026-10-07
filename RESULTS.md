@@ -18,93 +18,68 @@ reduced configuration and is kept for the record, not for the poster.
 
 ---
 
-## A. Part A final design — in progress (2026-10-05)
+## A. Part A final design — 10 runs per arm (2026-10-07)
 
-Design in PAPER.md ("Part A, final design"): published configuration, prompt
-`combined` (rules 1-2 + utility function + each period's utility), arms `cot`
-(scaffolded reasoning) and `direct` (no reasoning), seed-sets 0-4 on CSF (gpuA,
-vLLM scored letter) and 0-2/0-4 on OpenRouter (the written letter). Table from
-`experiments/controller_comparison/final_table.py` (local
-`results-local/csf/final_table.json`); every CSF and OpenRouter run so far
-passes the integration check. Utility mean ± SD; difference paired by seed.
+Design in PAPER.md ("Part A, final design"; decisions of 2026-10-06):
+published SWIM configuration (ClarkNet, 12 servers from 3, boot 180 s, 10
+dimmer levels), prompt `combined` (rules 1-2 + utility function + each
+period's utility, two worked examples), arms `cot` = **with explanation**
+(SLA / Capacity / Trend / Therefore, then the action) and `direct` = **without
+explanation** (the action only), temperature 0. CSF: vLLM, the scored letter
+(gpuA A100s). OpenRouter: the letter the model writes, probabilities masked to
+legal options as on CSF, an illegal letter refused once and re-asked when the
+provider returns no probabilities. Only arms that pass their integration check
+count (`final_table.py`); 17 arms lost to a ~14:16 scratch stall on
+2026-10-06 were re-run. Figure: `figures/models/reasoning.{png,pdf}`
+(`reasoning_plot.py`), dotted = do nothing 5101, dashed = static 12891.6.
 
-| model | method | reasoning | no reasoning | reasoning − none [95% CI] | periods acted in (r / none) |
+| model | runs | with explanation | without | with − without [95% CI] | periods acted in (with / without) |
 |---|---|---|---|---|---|
-| gemma-3-27b | CSF | 11698 ± 292 | **12892 ± 0** | −1194 [−1557, −831] | 8–12 / 2 |
-| gemma-3-27b | OpenRouter | 12159 ± 712 | 12197 ± 957 | −38 [−1887, 1810] | 8–12 / 2–6 |
-| gemma-3-12b | CSF | 9407 ± 1025 | 11738 ± 463 | −2331 [−3592, −1070] | 23–33 / 5–6 |
-| gemma-3-4b | CSF | 5798 ± 2115 | 4506 ± 17 | +1292 [−1352, 3936] | 25–64 / 76–97 |
-| Qwen2.5-32B | CSF | −3159 ± 2195 | 696 ± 2353 | −3855 [−5690, −2020] | 72–83 / 22–28 |
-| Qwen2.5-14B | CSF | 11523 ± 1300 | 5502 ± 0 | **+6021 [4406, 7635]** | 2–14 / 1 |
-| Qwen2.5-7B | CSF | 2045 ± 1869 | 1841 ± 4451 | +204 [−6061, 6468] | 65–76 / 13–90 |
-| Llama-3.1-8B | CSF | 6621 ± 920 | 8955 ± 2166 | −2334 [−4385, −283] | 52–74 / 47–70 |
-| Llama-3.1-8B | OpenRouter (n=3) | 7163 ± 1183 | 8661 ± 6506 | −1497, n.s. | 42–66 / 6–46 |
-| Llama-3.3-70B | CSF (bf16, 4 A100s) | 10534 ± 3770 | 12316 ± 348 | −1781 [−6259, 2696] | mean 9 / 6 |
-| Llama-3.3-70B | OpenRouter (n=3) | 11299 ± 943 | 12631 ± 523 | −1332 [−4280, 1616] | 11–13 / 4–7 |
-| DeepSeek-V3 | OpenRouter (n=3) | 4641 ± 4116 | 2513 ± 898 | +2127 [−7709, 11964] | 31–58 / 30–40 |
-| gpt-4o | OpenRouter (n=3) | 586 ± 2030 | 2147 ± 315 | −1562 [−6919, 3795] | 65–81 / 57–60 |
+| gemma-3 4B | 10/10 | 5333 ± 1551 | 4504 ± 13 | +828 [−287, 1944] | 51 / 85 |
+| gemma-3 12B | 10/10 | 10149 ± 1321 | 11053 ± 1687 | −905 [−2718, 909] | 25 / 6 |
+| gemma-3 27B | 10/10 | 11469 ± 581 | 12289 ± 1907 | −820 [−2148, 509] | 10 / 3 |
+| Qwen2.5 7B | 10/10 | 2244 ± 2497 | 737 ± 4872 | +1507 [−2919, 5932] | 67 / 25 |
+| Qwen2.5 14B | 10/10 | 11509 ± 1243 | 5462 ± 127 | **+6047 [5119, 6976]** | 9 / 1 |
+| Qwen2.5 32B | 10/10 | −2805 ± 2081 | −602 ± 3233 | −2203 [−4407, 1] | 76 / 27 |
+| Llama-3.1 8B | 10/10 | 6826 ± 808 | 9848 ± 1734 | **−3022 [−4015, −2029]** | 60 / 51 |
+| Llama-3.3 70B (bf16) | 5/5 (5-9 pending) | 10534 ± 3770 | 12316 ± 348 | −1781 [−6259, 2696] | 9 / 6 |
+| gpt-4o-mini (OpenRouter) | 10/10 | 10807 ± 1288 | 11954 ± 1793 | −1147 [−2782, 488] | 35 / 12 |
+| gpt-4o (OpenRouter) | 10/10 | −224 ± 1560 | 796 ± 2711 | −1020 [−3074, 1035] | 75 / 57 |
+| DeepSeek-V3 (OpenRouter) | 10/10 | 2991 ± 3515 | 3775 ± 1468 | −784 [−3151, 1584] | 48 / 38 |
 
-Llama-3.3-70B on CSF ran in bf16 on 4 A100s (jobs 22007366/67, 10/10 runs 0
-integration problems): the FP8 checkpoint needs compute capability ≥ 8.9 and
-failed at start-up on A100 (folder moved to `~/selas-results/invalid-a100-fp8/`).
-All runs of the design are in.
+References: do nothing 5101; static (dimmer 1.0, four servers, held; 0 late
+periods) 12891.6; SWIM Reactive −2619 ± 974 (seeds 1-10); random 55 ± 6278.
 
-Illegal letters on OpenRouter (decided from the written letter; with no
-token probabilities an illegal letter becomes no_op): gemma-27B 10/525 and
-4/525, Llama-70B 0/315 and 2/315, gpt-4o 2/315 and 3/315, DeepSeek-V3 7/315
-and **43/315** (direct), Llama-8B **76/315 and 148/315** -- so the Llama-8B
-OpenRouter rows, and DeepSeek-V3's no-reasoning row, partly measure forced
-no-ops; use the CSF row for Llama-8B.
+Readings:
+1. **Asking for an explanation changes behaviour more than performance.**
+   It makes models act more (10 of 11 models; gemma-4B is the exception,
+   flailing without it). The utility effect is significant for two models
+   only: it rescues Qwen-14B (without it Qwen never raises the dimmer to 1.0
+   and sits at ~5,500) and hurts Llama-8B. The capable models lean slightly
+   negative, not significantly. (At 5 runs per arm the gemma and Qwen-32B
+   differences looked significant; with 10 they are not.)
+2. **The best controllers approach, but do not beat, the static
+   configuration** (12891.6): this configuration rewards finding one good
+   setting (four servers cover ClarkNet's peak), so extra actions mostly
+   cost. A known limitation of the exemplar, to state.
+3. **Capability is not utility.** gpt-4o, DeepSeek-V3 and Qwen-32B chase the
+   formula's server-cost bonus -- drop to one server while on time ("reduce
+   costs"), breach before a replacement boots, re-add -- with or without the
+   explanation, and are the worst of the capable models.
+4. **Models under 10B cannot manage the system reliably** (gemma-4B, Qwen-7B,
+   Llama-8B), whichever family; on CSF the letter is restricted to legal
+   options, so it is the decisions, not the format.
+5. **The two decision methods agree** (gemma-27B CSF vs OpenRouter within
+   ~500-700), so OpenRouter rows sit beside CSF rows, marked.
+6. Run-to-run variation is the model's (temperature 0, inference
+   nondeterminism), not SWIM's: the seed-set barely changes the environment.
 
-Readings so far:
-1. **Reasoning does not consistently help utility.** It hurts four models
-   significantly, helps one (Qwen-14B, which without it never raises the
-   dimmer to 1.0 and sits at exactly 5502, the value of any on-time run
-   below dimmer 1), and makes no difference to the two smallest.
-2. **Reasoning makes models act more** -- in 12 of 13 rows (mean periods
-   acted in, reasoning / none: gemma-27B 10/2, gemma-12B 28/5, Llama-70B 9/6,
-   Qwen-14B 9/1, Qwen-32B 76/26, gpt-4o 75/58). The exception is gemma-4B,
-   which flails without reasoning (89 periods) and less with it (47).
-   Utility here is roughly: reach dimmer 1.0 (the server bonus, ~6,000),
-   avoid late periods (~480 each), run no spare servers (10 per
-   server-period) -- a static "dimmer 1, 4 servers" gets all three, so extra
-   actions mostly cost. Reasoning helps where the model's default misses the
-   first term (Qwen-14B) and hurts where it already found it.
-3. **This configuration rewards finding one static setting.** gemma-27B
-   without reasoning sets the dimmer to 1, adds one server and holds: 12892 on
-   all five seeds, 0 late periods, above every adaptive run. Four servers
-   cover ClarkNet's peak (~71 req/s against ~22 req/s per server). A static
-   baseline (dimmer 1 + N servers) belongs in the comparison.
-4. **Qwen-32B over-applies the formula's server bonus**: removes servers to
-   1-2 while on time, breaches, adds them back (11 removals in a run) -- the
-   rule-3 failure mode, here from the formula alone.
-5. **The two decision methods agree** for gemma-27B (CSF vs OpenRouter
-   within ~500-700), so OpenRouter rows can be shown beside CSF ones, with the
-   method marked. Illegal letters in the no-reasoning arm (decided from the
-   written letter on OpenRouter): 0-3 per 105 decisions.
-6. **The frontier models chase the server-cost bonus too** (gpt-4o,
-   DeepSeek-V3): they drop to one server while on time ("only 1% busy … reduce
-   the number of active servers … reducing costs"; "dimmer is already at
-   maximum, so remove a server to save costs"), breach when the load rises
-   before a replacement can boot (180 s), add servers back, and repeat --
-   9-15 removals per run, late in 9-23 periods, with or without reasoning.
-   With Qwen-32B, three of the more capable models fail by the same
-   short-sighted optimisation of the formula's bonus that rule 3 produced in
-   words; the gemma models and Llama-70B instead set and hold.
-7. The seed-set barely changes SWIM here: identical action sequences give
-   identical utility (gemma-27B direct, 5/5 seeds), so spread comes from the
-   model, not the environment.
-8. **Models under 10B cannot manage the system reliably** (gemma-4B,
-   Qwen-7B, Llama-8B: 1,800-9,000, acting in 33-89 periods), whichever
-   family -- on CSF with letters restricted to legal ones, so it is the
-   decisions, not the format; Llama-8B on OpenRouter also writes an
-   unavailable action in up to 47% of decisions. Above that, size is not
-   monotone: Qwen-32B < Qwen-14B, by chasing the bonus.
-
-Bookkeeping: jobs submitted in the same second shared a results directory and
-each rewrote runs.json with its own arms; gemma-4b, Qwen-7B/14B/32B and
-Llama-8B were re-collected over all arms (`collect_all.txt` in each), and
-submit_comparison.sh now makes the directory unique.
+Bookkeeping: CSF Llama-70B FP8 cannot run on A100 (needs compute capability
+≥ 8.9); bf16 on 4 A100s instead. Jobs submitted in the same second shared a
+directory (fixed: unique tag). SWIM image staged on node-local disk after the
+2026-10-06 stall; vLLM start-up wait raised to an hour after a 22-min weight
+load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
+`results-local/{superseded,aborted}/`.
 
 ---
 
