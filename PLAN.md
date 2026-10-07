@@ -4,141 +4,52 @@ Read with [RESULTS.md](RESULTS.md), which records every measurement and where it
 lives. This file says what the paper argues, what is established, and what is
 next. Updated 2026-09-27 (pivot agreed with Harry).
 
-## Running now (2026-10-06) — Part A to 10 runs per arm
+## Where we are (2026-10-07) — read with PAPER.md and RESULTS.md
 
-Seed-sets 0-4 of every model are in (RESULTS §A). Now:
+The paper's framing, decisions and open questions are in **PAPER.md**
+(especially "Decisions and proposals of 2026-10-06"); measurements in
+**RESULTS.md** (§A is Part A, current). Earlier plan text is in git history.
 
-**CSF, gpuA**: seed-sets 5-9 for all eight models, cot and direct, two jobs
-each (Llama-3.3-70B bf16 on 4 A100s): 22067525/30 gemma-27b, 22076271/22067534
-gemma-12b (22067532 failed on node865: all six SWIMs stopped at t ~ 900 s with
-no error, others fine; folder in `~/selas-results/invalid-node865/`, resubmitted
-excluding that node), 39/41 gemma-4b, 58/61 Qwen-14B, 65/69 Qwen-32B, 71/76 Qwen-7B,
-78/82 Llama-8B, 83/87 Llama-70B. Results `~/selas-results/final-<model>-*`
-(directories now unique per job).
+**Part A (RQ1) -- done, bar Llama-70B on CSF.** Eight CSF models + three
+OpenRouter models, with and without the explanation, 10 runs per arm;
+figure `figures/models/reasoning.{png,pdf}` (static line 12891.6, do nothing
+5101). Still running: Llama-3.3-70B bf16 seeds 8-9 (job 22100520, started
+~16:30 on 2026-10-07) and 5-7 (22250286, resubmitted after a slow weight
+load timed out). When both finish: rsync `~/selas-results/final-llama70b-*`
+to `results-local/csf/`, re-run
+`final_table.py $(ls -d results-local/csf/final-*) $(ls -d results-local/fo-*-2026100[56]-* | grep -v fo-static) --json results-local/csf/final_table.json`
+and `reasoning_plot.py ... --nothing 5101 --static 12891.6`, and update the
+Llama-70B row of RESULTS §A.
 
-**Stall on 2026-10-06 ~14:16:** single SWIM instances on three gpuA nodes
-stopped silently mid-run (image read from ~/scratch); integration checks
-caught every one. Fixed in 20b9bde (image staged on $TMPDIR). Lost arms
-re-run: 22100510 gemma-12b s8-9, 22100513/15 gemma-4b s5-7 + cot s8, 22100517
-Qwen-14B cot s5,6,8,9 + direct s8,9; Llama-70B 22067583/87 cancelled before
-starting and resubmitted as 22100518/20 (fixed script). Still on the old
-script, check their arms at the end: 22067569 (Qwen-32B), 22067571/76
-(Qwen-7B), 22067578/82 (Llama-8B), 22076271 (gemma-12B s5-7).
-`final_table.py` counts only arms that passed their integration check.
+**Open decision (Harry):** the prompt-decomposition factorial on gemma-3-27b
+(objective {none, words 1-2, formula, words+formula} x explanation {yes, no}
+x worked examples {2, 0}; 14 new cells) -- PAPER.md.
 
-**Laptop, OpenRouter**: three models at 10 runs per arm, as on CSF --
-gpt-4o-mini@OpenAI (0-9), gpt-4o@OpenAI (3-9; 0-2 exist), DeepSeek-V3@GMICloud
-(0-9 afresh: the earlier 0-2 used the old illegal-letter handling, moved to
-`results-local/superseded/`) -- plus the static reference (`static@0`: dimmer
-1.0, 4 servers, hold). Script `results-local/launch/chain-or-20261006.sh`,
-log `chain-or-20261006.log`; ~10 h in five batches. **Resumable**: finished
-batches leave `results-local/launch/markers/<batch>.done`; after an
-interruption move the cut batch's result directories aside and re-run the
-script.
+## Next: the second set of results (interpretability, RQ2-RQ3) on the new design
 
-Since 2026-10-06 the generate mode refuses an illegal letter once and asks
-again when the provider returns no probabilities (notes `reasked`).
+All on the gemma-3-27b `cot` runs of the final design (10 seed-sets,
+`~/selas-results/final-gemma27b-*`, prompt `combined`); the `direct` arm has
+no trace and is the behavioural reference. Replays need vLLM (any A100:
+`--partition gpuA`, `SELAS_HF_HOME=$HOME/scratch/hf`), not SWIM.
 
-**When they finish:** re-run `final_table.py` over `results-local/csf/final-*`
-and `results-local/fo-*` (not `superseded/`); the plot: rows = models x arm,
-dots = runs, dashed line = static.
-
-## The story
-
-**Superseded 2026-09-28 by [PAPER.md](PAPER.md)**: the paper's framing
-(faithfulness and completeness of the trace; RQ1–RQ3), draft abstract,
-contributions and open decisions. The 2026-09-27 version is kept below for the
-record.
-
-**SELAS: an LLM as a self-explaining managing system.** Three parts:
-
-1. **Proof of concept, and its robustness.** An LLM (gemma-3-27b) runs SWIM
-   as its managing system and is competitive under SWIM's reported utility.
-   How the objective is stated matters little: no objective, the priority
-   order without rule 3, and the utility formula are statistically
-   indistinguishable for gemma (RESULTS §2d statistics). The one exception is
-   a single over-applied clause, rule 3 ("only once the dimmer is at 1.0, run
-   as few servers as you can"), which collapses every model tested; it is a
-   case study, not the headline (a reviewer can fairly read it as "told to
-   minimise servers, it did"). The choice of model matters far more than the
-   prompt (gemma ~11–12k; Llama-4 and Qwen3 below doing nothing).
-2. **Self-explanation: can the reasoning be trusted as an explanation?**
-   Behavioural measures on gemma (RESULTS §3): over the decisions where the
-   controller acts, its action depends heavily on its reasoning (sensitivity
-   0.70–0.88), is robust to paraphrase, and tracks its telemetry
-   (counterfactual 0.81–0.88). Mediation (§3a): the objective's effect passes
-   through the written reasoning (direct path 2–20% of flips). The rule-3
-   failure is diagnosable from the trace: all 43 on-time removals cite
-   reducing servers.
-3. **Mechanistic interpretability (next).** What does the model represent at
-   the decision point that the trace does not say? Released NLA checkpoint
-   pair for gemma-3-27b-it at layer 41 (`kitft/nla-gemma3-27b-L41-{av,ar}`,
-   listed in `NLA/src/config.py`; also Llama-3.3-70B L53).
-
-Working abstract: to be rewritten around the three parts above; the draft
-further down (rule 3 as headline) is superseded by this pivot.
-
-## Status
-
-**Part 1 — established.** Six models, four families, 3–4 seeds on the
-published configuration (§2b–2c); rule 3 isolated on three setups (§2d);
-two more configurations for gemma, 3 seeds (§2e); baselines: do nothing,
-SWIM reactive (10 seeds), PLA and Thallium (shipped, one run each, objective
-unknown), random (10 seeds). Every run passes the integration check; the
-laptop and CSF are the same simulation (§2c). Caveats to state, not fix: PLA
-and Thallium are single shipped runs; gemma's lead over them is SWIM's
-cost bonus at dimmer 1 (§2).
-
-Running (CSF, submitted 2026-09-27 ~02:30, vLLM scoring like the main gemma
-results): gemma in the two extra configurations, four prompts (k2, k2-words,
-k2-words-no3, k2-formula) x seed-sets 0–3 — jobs 21419243–5 (ClarkNet boot
-60 s, tag `rb-cn60`) and 21419247–9 (WorldCup boot 180 s, tag `rb-wc180`),
-results `~/selas-results/rb-{cn60,wc180}-*`. They replace the 3-seed
-OpenRouter numbers in §2e as the primary figures for those configurations
-(and settle WorldCup, where 3 seeds spread widely). Each job runs the
-integration check itself; check it reads bootDelay 60 for cn60.
-
-**Robustness replication — done 2026-09-28** (RESULTS §2e, CSF
-replication): all 32 A100 runs pass; words worst on every seed in both
-configurations, rule 3 removed restores it, WorldCup now separates. H200
-twins: cn60 jobs 21419243/4 done and 21419245 running (a full H200 ClarkNet-60
-set for a hardware comparison); wc180 21419247 running, 21419248/9 pending
-(keep or cancel -- asked 2026-09-28). The H200 pilot twin was cancelled.
-
-**Part 2 — established; small gaps.** Battery re-measured on the fixed code
-(§3, 15 runs, both pools); mediation (§3a, 7 runs, figure
-`figures/interp/mediation.pdf`); the trace-names-the-cause count (§2d).
-Present the active-decision pool as primary and state the no_op base rate up
-front. Possible addition: per-seed spread on the spider axes.
-
-**Part 3 — first iteration done (2026-09-28), RESULTS §3b.** The released
-pair reproduces its published example on our pipeline; explanations are
-faithful at the reasoning fields (fve_nrm 0.67–0.75), less at the action cue
-(0.46), not at the end of the telemetry (0.15); the action kind is linearly
-readable before any reasoning (0.84 vs 0.77 from telemetry alone); the
-explanations name the chosen letter in 85–101/105 decisions; no SLA-risk
-content at the rule-3 removals. Code: `experiments/nla/` (pilot.py,
-analyse_pilot.py, run_pilot.sbatch; on gpuA set SELAS_HF_HOME=$HOME/scratch/hf).
-
-## Next
-
-1. **Collect the robustness jobs** (above): tables per configuration with
-   paired intervals (as in §2d), update §2e, replace the figures.
-2. **NLA as new axes of the interpretability score** (the "completeness"
-   aspect behavioural tests cannot reach; motivation and table in
-   `LaTeX_Poster/poster_claims.md`, "Outlook"): run the pilot over all 16 runs
-   (4 prompts x 4 seed-sets, one gpuA job); axes per decision, all/active,
-   each with a shuffled-pairing control and reported with fve_nrm --
-   Agreement (explanation at the action cue names the chosen action; pilot
-   283/315), Consistency (explanation vs trace at each field; LLM judge),
-   Completeness (decision-relevant content the trace lacks; LLM judge),
-   Pre-commitment (action readable at P0_turn beyond telemetry + prompt);
-   add them to the spider figure. Stretch: patch the P0_turn activation from a
-   removal into an on-time no-op state and see whether the action follows.
-3. **Write** the abstract and introduction around the three parts.
-4. **Poster** (due ~2026-09-29): `LaTeX_Poster/feedback.md` lists the changes
-   (three passages now wrong; new results and figure paths). Parts 1–2 go on
-   the poster; part 3 as work in progress.
+1. **RQ2, the intervention battery** (`experiments/replay/replay_all.sbatch`,
+   check it takes the new runs and gpuA): paraphrase, remove the
+   explanation, negate the SLA premise, counterfactual telemetry,
+   simulatability; report all / active decisions **and split by no-op vs
+   action** (new analysis: the "decorative for no-ops" claim needs its own
+   number).
+2. **RQ2, mediation** without rule 3: swap the objective `combined` <->
+   `none` (keep vs regenerate the explanation); `objective_swap` supports
+   `combined` (tests pass).
+3. **RQ3, NLA** (`experiments/nla/pilot.py`, `run_pilot.sbatch` on gpuA,
+   then `reconstruct.py` is no longer needed -- pilot saves reconstructions):
+   capture at P0_turn / the fields / P_action on the 10 runs, centred check,
+   the pre-explanation read-out per action kind (more removals than the
+   pilot's 14), letter agreement.
+4. **RQ3, edit-and-patch** at the action cue (to build): edit the NLA
+   explanation to name another action, reconstruct, add the difference to
+   the activation, see whether the choice follows; controls: paraphrase,
+   random edit, patch strength.
 
 ## Local and remote results
 
