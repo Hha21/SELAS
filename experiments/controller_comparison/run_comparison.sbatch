@@ -139,6 +139,10 @@ declare -A ARM_SPEC=(
     # two worked examples -- with and without reasoning. Nothing else differs.
     [cot]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective combined --utility-feedback"
     [direct]="--policy llm --reasoning none --exemplars 2 --objective combined --utility-feedback"
+    # The objective ablation (2026-10-08): no objective block and no utility
+    # lines (telemetry or worked examples); everything else as cot / direct.
+    [cot-noobj]="--policy llm --reasoning scaffold --max-reasoning-tokens 200 --exemplars 2 --objective none"
+    [direct-noobj]="--policy llm --reasoning none --exemplars 2 --objective none"
 )
 
 # Ports are handed out in order rather than fixed per arm, so adding an arm does
