@@ -23,29 +23,35 @@ x worked examples {2, 0}; 14 new cells) -- PAPER.md.
 
 ## Next: the second set of results (interpretability, RQ2-RQ3) on the new design
 
-All on the gemma-3-27b `cot` runs of the final design (10 seed-sets,
-`~/selas-results/final-gemma27b-*`, prompt `combined`); the `direct` arm has
-no trace and is the behavioural reference. Replays need vLLM (any A100:
-`--partition gpuA`, `SELAS_HF_HOME=$HOME/scratch/hf`), not SWIM.
+All on the gemma-3-27b `cot` runs of the final design, staged on CSF as
+`~/selas-results/interp-gemma27b-final/cot-s{0..9}` (copies of the decisions;
+`SOURCE` names the original run; local copy `results-local/csf/interp-gemma27b-final/`).
+Replays need vLLM or transformers on any A100 (`-p gpuA`, no `-A`,
+`SELAS_HF_HOME=$HOME/scratch/hf`), not SWIM. Pool every measure with
+`experiments/replay/pool_battery.py <dir> -o <json>` (split no-op / action,
+run-resampled intervals). Results go in RESULTS §B.
 
-1. **RQ2, the intervention battery** (`experiments/replay/replay_all.sbatch`,
-   check it takes the new runs and gpuA): paraphrase, remove the
-   explanation, negate the SLA premise, counterfactual telemetry,
-   simulatability; report all / active decisions **and split by no-op vs
-   action** (new analysis: the "decorative for no-ops" claim needs its own
-   number).
-2. **RQ2, mediation** without rule 3: swap the objective `combined` <->
-   `none` (keep vs regenerate the explanation); `objective_swap` supports
-   `combined` (tests pass).
-3. **RQ3, NLA** (`experiments/nla/pilot.py`, `run_pilot.sbatch` on gpuA,
-   then `reconstruct.py` is no longer needed -- pilot saves reconstructions):
-   capture at P0_turn / the fields / P_action on the 10 runs, centred check,
-   the pre-explanation read-out per action kind (more removals than the
-   pilot's 14), letter agreement.
-4. **RQ3, edit-and-patch** at the action cue (to build): edit the NLA
-   explanation to name another action, reconstruct, add the difference to
-   the activation, see whether the choice follows; controls: paraphrase,
-   random edit, patch strength.
+1. **Mediation** `combined` -> `none` -- **done** (job 22284716; RESULTS §B1).
+2. **Intervention battery** (`experiments/replay/replay_all.sbatch`, jobs
+   22284596 = cot-s0..4, 22284597 = cot-s5..9, submitted 2026-10-07 ~23:30,
+   `-t 0-12`): faithfulness, counterfactual score/generate, simulatability
+   (gemma-3 12B, Qwen2.5 14B, gemma-3 27B ceiling). When done: rsync
+   `*.jsonl` of `interp-gemma27b-final`, run pool_battery.py, write §B2.
+3. **NLA pilot** on the 10 runs (`experiments/nla/run_pilot.sbatch`, job
+   22285815 -> `~/selas-results/nla-gemma27b-final`, ~1.5 h). Then
+   `analyse_pilot.py` (centred check, pre-explanation read-out per action
+   kind, letter agreement) for §B3.
+4. **Edit and patch** (`experiments/nla/edit_patch.py`, `run_edit_patch.sbatch`,
+   `analyse_patch.py`; offline test `test_edit_patch.py`): at P_action, swap
+   the chosen letter in the AV explanation for another legal one, reconstruct
+   both with the AR, move layer 41 by |h| * (unit(AR(E')) - unit(AR(E))) * alpha
+   (alpha 1, 2, 4, 8), re-read the letter; controls at matched norm: the
+   leave-one-run-out class-mean difference and a random direction. Smoke job
+   22286274 (3 decisions -> `nla-gemma27b-final/patch-smoke`) then full job
+   22286275 (`-> nla-gemma27b-final/patch`, afterok on the smoke), both after
+   the pilot. When done: rsync `patch/`, `analyse_patch.py`, write §B4.
+
+Watchers (background, this session): replay jobs, NLA pilot, edit-patch.
 
 ## Local and remote results
 
