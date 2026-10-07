@@ -100,6 +100,49 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 ---
 
+## B. Interpretability on the final design — gemma-3 27B, 10 runs (in progress, 2026-10-07)
+
+The 10 `cot` (with explanation) runs of §A, 1050 decisions: 946 no-ops and
+104 actions (34 dimmer → 1.0, 54 dimmer lowered, 13 add, 3 remove). Staged on
+CSF as `~/selas-results/interp-gemma27b-final/cot-s{0..9}` (each `SOURCE` file
+names the original run); local copy `results-local/csf/interp-gemma27b-final/`.
+Every measure is pooled over the runs and split by what the controller did,
+with 95% intervals from resampling runs
+(`experiments/replay/pool_battery.py <dir> -o <json>`).
+
+### B1. Mediation: does the objective act through the explanation? — done
+
+`combined` → `none` (the objective block removed from the system prompt:
+words, formula and constants; the per-period utility in the telemetry and the
+worked examples stay). gpuA job 22284716, 18 min. Control: the unmodified
+replay reproduces 99-100% of decisions in every run.
+
+| decisions changed by removing the objective | no-op (n=946) | action (n=104) | all |
+|---|---|---|---|
+| explanation regenerated (total effect) | 3.4% [2.4, 4.4] | **59.6% [51.3, 67.0]** | 9.0% |
+| explanation kept, objective removed (direct) | 0.0% | 17.3% [11.4, 23.8] | 1.7% |
+| explanation regenerated without it, objective kept (through the explanation) | 3.4% | 55.8% [50.0, 62.1] | 8.6% |
+
+Of the 94 decisions the total effect changes, the explanation alone
+reproduces the new action in **91.5% [85.6, 96.2]**; the objective with the
+explanation held fixed in 9.6% [4.0, 17.1]. **The objective acts on the
+decision almost entirely through what the model writes**, and it acts on
+actions, not on no-ops (which stay no-ops without it 97% of the time). This
+repeats §3a (rule 3, 72-98% through the reasoning) on the canonical prompt
+without the planted rule, now with 10 runs.
+
+### B2. Intervention battery — running
+
+Faithfulness, counterfactual telemetry (score / generate) and simulatability
+(students gemma-3 12B, Qwen2.5 14B; gemma-3 27B ceiling), gpuA jobs 22284596
+(cot-s0..4) and 22284597 (cot-s5..9).
+
+### B3. NLA — running
+
+`pilot.py` on the 10 runs, gpuA job 22285815 → `~/selas-results/nla-gemma27b-final`.
+
+---
+
 ## 1. Setup (fixed)
 
 | | |

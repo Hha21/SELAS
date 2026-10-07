@@ -21,6 +21,13 @@ Measures, each a rate over decisions:
 ``echo/<edit>``           the regenerated explanation reports the substituted
                           value (where the value is distinctive enough to test).
 ``sim_<tag>/<condition>`` the simulator predicts the recorded action.
+``med_<from>><to>/<cond>`` objective-swap mediation (mediation/run_mediation.py):
+                          the action changes with the objective swapped and the
+                          explanation kept (``direct``), regenerated (``total``),
+                          or regenerated under the new objective but scored
+                          under the old (``reason``); ``carried_*``: of the
+                          decisions ``total`` changes, the share the condition
+                          changes to the same action.
 
     python pool_battery.py ~/selas-results/interp-gemma27b-final -o battery.json
 """
@@ -100,6 +107,17 @@ def run_measures(arm: Path) -> dict[str, dict[str, list[bool]]]:
             for a, b in E.PAIRS:
                 if a in acts and b in acts:
                     add(f"cf_{mode}/pair:{a}|{b}", o["action_recorded"], acts[a] != acts[b])
+
+    for f in sorted(arm.glob("mediation_*.jsonl")):
+        for r in read(f):
+            tag = f"med_{r['objective_from']}>{r['objective_to']}"
+            a = {c: top(r[f"dist_{c}"], r["legal_ids"], r["options"])
+                 for c in ("orig", "direct", "total", "reason")}
+            for c in ("direct", "total", "reason"):
+                add(f"{tag}/{c}", r["action_recorded"], a[c] != a["orig"])
+            if a["total"] != a["orig"]:
+                add(f"{tag}/carried_direct", r["action_recorded"], a["direct"] == a["total"])
+                add(f"{tag}/carried_reason", r["action_recorded"], a["reason"] == a["total"])
 
     for f in sorted(arm.glob("simulated_*.jsonl")):
         tag = f.stem.removeprefix("simulated_")
