@@ -21,6 +21,18 @@ then `reasoning_plot.py results-local/csf/final_table.json -o figures/models/rea
 (objective {none, words 1-2, formula, words+formula} x explanation {yes, no}
 x worked examples {2, 0}; 14 new cells) -- PAPER.md.
 
+## Running: the objective ablation (PAPER.md, decision of 2026-10-08)
+
+Arms `cot-noobj` / `direct-noobj` (run_comparison.sbatch), 10 runs each.
+- CSF, 8 models: gpuA jobs 22287898-22287929 (4 per model: seeds 0-2, 3-5,
+  6-7, 8-9; Llama-70B bf16 on 4 GPUs last), tags `final-<model>`.
+- OpenRouter, 3 models: local chain `results-local/launch/chain-or-20261008.sh`
+  (resumable, markers `n*-*.done`; log `chain-or-20261008.log`; ~7 h from
+  00:33 on 2026-10-08; the laptop must stay on). Result folders are named in
+  UTC (`fo-*-20261007-23*` onwards).
+- When done: extend `final_table.py` (its arm regex is `(cot|direct)-sN`) to
+  the noobj arms, and plot objective x explanation per model.
+
 ## Next: the second set of results (interpretability, RQ2-RQ3) on the new design
 
 All on the gemma-3-27b `cot` runs of the final design, staged on CSF as

@@ -193,6 +193,33 @@ the other models' weights are being copied/downloaded to `~/scratch/hf`.
   is behavioural (asking for an explanation makes models act more, all but
   gemma-4B).
 
+## Decision of 2026-10-08: the prompt ablation is objective x explanation
+
+Replaces the proposed decomposition above. Two factors, across all 11 models,
+10 runs per arm, worked examples held at 2 (the deployed prompt):
+
+| | with explanation | without explanation |
+|---|---|---|
+| objective stated (block + utility lines) | `cot` (Part A) | `direct` (Part A) |
+| no objective (neither) | `cot-noobj` | `direct-noobj` |
+
+- "No objective" removes the objective block *and* every utility line
+  (telemetry and worked examples): `--objective none`, no `--utility-feedback`.
+- The worked examples are not neutral: they show two sensible actions, and
+  example 2's explanation says "raise the dimmer before giving up a server",
+  so with examples "no objective" means "not stated", not "unknown". Without
+  examples and objective gemma-27B kept the dimmer near 0.14 (4,038; §2b
+  `k0`, older prompt). State this; examples are part of the fixed prompt.
+- The explanation can be asked for without examples (the system prompt names
+  the fields; the letter is read after our own "Action:"), but examples are
+  not varied: no claim about them is made.
+- Each row keeps its decision method (CSF rows on CSF, OpenRouter rows on
+  OpenRouter), so the objective comparison is not confounded with the method.
+  Not everything moves to OpenRouter: Qwen2.5 14B/32B are not served there,
+  provider precision is not ours, the interpretability work needs our own
+  weights and the scored letter, and local runs need the laptop (105 min real
+  time per run).
+
 ## Open decisions
 
 - Title: keep "SELAS: Self-Explaining LLM-based Adaptive Systems"?
