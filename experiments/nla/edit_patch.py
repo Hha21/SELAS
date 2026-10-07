@@ -147,7 +147,8 @@ class Patcher:
     def prefix(self, ids: list[int]):
         with self.torch.no_grad():
             self.delta = None
-            out = self.model(input_ids=self.torch.tensor([ids[:-1]], device=self.dev), use_cache=True)
+            out = self.model(input_ids=self.torch.tensor([ids[:-1]], device=self.dev), use_cache=True,
+                             logits_to_keep=1)
         return out.past_key_values
 
     def last(self, cache, last_id: int, letters: list[str], delta: np.ndarray | None = None
