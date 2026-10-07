@@ -293,7 +293,9 @@ python -m vllm.entrypoints.openai.api_server \
     > "$OUT/vllm.log" 2>&1 &
 VLLM_PID=$!
 
-for _ in $(seq 1 180); do
+# Up to an hour: loading 70B weights over a slow shared filesystem took 22 min
+# on 2026-10-07, and the old 30-min limit failed a job that was nearly up.
+for _ in $(seq 1 "${SELAS_VLLM_WAIT:-360}"); do
     curl -sf "http://127.0.0.1:$VLLM_PORT/health" >/dev/null 2>&1 && break
     kill -0 "$VLLM_PID" 2>/dev/null || { echo "vLLM died during startup:"; tail -30 "$OUT/vllm.log"; exit 1; }
     sleep 10
