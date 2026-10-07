@@ -71,8 +71,19 @@ Readings:
    options, so it is the decisions, not the format.
 5. **The two decision methods agree** (gemma-27B CSF vs OpenRouter within
    ~500-700), so OpenRouter rows sit beside CSF rows, marked.
-6. Run-to-run variation is the model's (temperature 0, inference
-   nondeterminism), not SWIM's: the seed-set barely changes the environment.
+6. **Where the spread at temperature 0 comes from.** The seed-set changes
+   SWIM's random service times, so the *telemetry the model reads* differs
+   (it barely changes the utility of a fixed action sequence, but it changes
+   the prompt); the model is near-indifferent in some states; one flipped
+   decision changes every later state. Example: gemma-27B without
+   explanation scores exactly 12892 in 9 of 10 runs; seed-set 8 (6862)
+   diverges at period 1 -- response time shown 3.19 s instead of 3.60 s,
+   P(add) 0.43 vs P(remove) 0.56 instead of 0.88 / 0.12 -- and removes a
+   server while badly overloaded. With an explanation there are many more
+   such points (200 generated tokens), hence more spread. A finding about
+   closed-loop LLM managing systems (not deterministic at temperature 0), and
+   a reason to lead with the behavioural measure (periods acted in), which is
+   clean, and show utility as dots/medians against the static line.
 
 Bookkeeping: CSF Llama-70B FP8 cannot run on A100 (needs compute capability
 ≥ 8.9); bf16 on 4 A100s instead. Jobs submitted in the same second shared a
