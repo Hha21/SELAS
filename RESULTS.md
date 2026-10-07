@@ -42,7 +42,7 @@ count (`final_table.py`); 17 arms lost to a ~14:16 scratch stall on
 | Qwen2.5 14B | 10/10 | 11509 ± 1243 | 5462 ± 127 | **+6047 [5119, 6976]** | 9 / 1 |
 | Qwen2.5 32B | 10/10 | −2805 ± 2081 | −602 ± 3233 | −2203 [−4407, 1] | 76 / 27 |
 | Llama-3.1 8B | 10/10 | 6826 ± 808 | 9848 ± 1734 | **−3022 [−4015, −2029]** | 60 / 51 |
-| Llama-3.3 70B (bf16) | 5/5 (5-9 pending) | 10534 ± 3770 | 12316 ± 348 | −1781 [−6259, 2696] | 9 / 6 |
+| Llama-3.3 70B (bf16) | 10/10 | 9971 ± 3533 | 12441 ± 375 | −2471 [−5066, 125] | 8 / 6 |
 | gpt-4o-mini (OpenRouter) | 10/10 | 10807 ± 1288 | 11954 ± 1793 | −1147 [−2782, 488] | 35 / 12 |
 | gpt-4o (OpenRouter) | 10/10 | −224 ± 1560 | 796 ± 2711 | −1020 [−3074, 1035] | 75 / 57 |
 | DeepSeek-V3 (OpenRouter) | 10/10 | 2991 ± 3515 | 3775 ± 1468 | −784 [−3151, 1584] | 48 / 38 |
@@ -57,7 +57,13 @@ Readings:
    only: it rescues Qwen-14B (without it Qwen never raises the dimmer to 1.0
    and sits at ~5,500) and hurts Llama-8B. The capable models lean slightly
    negative, not significantly. (At 5 runs per arm the gemma and Qwen-32B
-   differences looked significant; with 10 they are not.)
+   differences looked significant; with 10 they are not.) Llama-70B is
+   bimodal with the explanation: seven runs at 11025-12648, three (seed-sets
+   2, 6, 9) at 3895-5502, because they never raise the dimmer from 0.9 and so
+   forgo the server bonus. The explanation shows the omission: in seed-set 6
+   it weighs SLA and servers each period and closes "no need to add or remove
+   servers, or adjust the dimmer ... stable and satisfactory" (one action in
+   the run). Without the explanation all ten runs are at 12051-12872.
 2. **The best controllers approach, but do not beat, the static
    configuration** (12891.6): this configuration rewards finding one good
    setting (four servers cover ClarkNet's peak), so extra actions mostly

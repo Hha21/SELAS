@@ -10,16 +10,12 @@ The paper's framing, decisions and open questions are in **PAPER.md**
 (especially "Decisions and proposals of 2026-10-06"); measurements in
 **RESULTS.md** (§A is Part A, current). Earlier plan text is in git history.
 
-**Part A (RQ1) -- done, bar Llama-70B on CSF.** Eight CSF models + three
-OpenRouter models, with and without the explanation, 10 runs per arm;
-figure `figures/models/reasoning.{png,pdf}` (static line 12891.6, do nothing
-5101). Still running: Llama-3.3-70B bf16 seeds 8-9 (job 22100520, started
-~16:30 on 2026-10-07) and 5-7 (22250286, resubmitted after a slow weight
-load timed out). When both finish: rsync `~/selas-results/final-llama70b-*`
-to `results-local/csf/`, re-run
-`final_table.py $(ls -d results-local/csf/final-*) $(ls -d results-local/fo-*-2026100[56]-* | grep -v fo-static) --json results-local/csf/final_table.json`
-and `reasoning_plot.py ... --nothing 5101 --static 12891.6`, and update the
-Llama-70B row of RESULTS §A.
+**Part A (RQ1) -- done (2026-10-07).** Eight CSF models + three OpenRouter
+models, with and without the explanation, 10 runs per arm (Llama-70B CSF
+finished 23:23); table in RESULTS §A, figure `figures/models/reasoning.{png,pdf}`
+(static line 12891.6, do nothing 5101). To rebuild:
+`final_table.py $(ls -d results-local/csf/final-*) $(ls -d results-local/fo-*-2026100[56]-* | grep -v fo-static) --json results-local/csf/final_table.json`,
+then `reasoning_plot.py results-local/csf/final_table.json -o figures/models/reasoning --nothing 5101 --static 12891.6`.
 
 **Open decision (Harry):** the prompt-decomposition factorial on gemma-3-27b
 (objective {none, words 1-2, formula, words+formula} x explanation {yes, no}

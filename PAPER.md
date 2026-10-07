@@ -178,9 +178,8 @@ the other models' weights are being copied/downloaded to `~/scratch/hf`.
   on `results-local/csf/final_table.json` (from `final_table.py`) ->
   `figures/models/reasoning.{png,pdf}`; rows = models, dots = runs, bars =
   means, dotted = do nothing (5101), dashed = static (12891.6: dimmer 1.0, 4 servers,
-  0 late periods; `results-local/fo-static-20261006-200041`). OpenRouter models complete (10 runs per arm);
-  Llama-70B CSF seeds 5-9 (jobs 22100518/20) still queued -- re-run
-  final_table.py and the plot when they finish.
+  0 late periods; `results-local/fo-static-20261006-200041`). All 11 models
+  complete at 10 runs per arm (2026-10-07).
 - **Proposed prompt decomposition (to confirm with Harry):** fixed parts --
   role and constraints, action legend, telemetry (including each period's
   utility), live state; varied components -- objective {none, words (rules
