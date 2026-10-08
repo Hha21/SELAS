@@ -492,3 +492,37 @@ def test_generate_with_logprobs_reads_the_letter_after_action_not_an_earlier_one
             ("Action", {}), (":", {}), (" C", {" C": math.log(0.9), " B": math.log(0.1)})]
     r, _ = _decide_gen((text, toks), cls=_ScriptedLogprobs)
     assert r.action == NO_OP and r.raw_distribution == pytest.approx({"C": 0.9, "B": 0.1})
+
+
+def test_a_decision_slower_than_a_period_is_not_sent_and_missed_periods_are_skipped():
+    """The 2026-10-08 outage: a decision that outlives its period must not act
+    on the stale state, and the next one must wait for a tick boundary rather
+    than run at once on a state that does not yet show what was just sent."""
+    import json
+    import tempfile
+    import time as _time
+    from controller.policies import PolicyResult
+
+    fake = RecordingSwim({"get_servers": 2, "get_active_servers": 2, "get_max_servers": 12,
+                          "get_dimmer": 1.0, "get_basic_rt": 0.1, "get_opt_rt": 0.2,
+                          "get_basic_throughput": 1.0, "get_opt_throughput": 2.0,
+                          "get_arrival_rate": 3.0})
+
+    class SlowFirst:
+        name = "slow-first"
+
+        def __call__(self, period, o, traj):
+            if period == 0:
+                _time.sleep(0.25)            # five periods of 0.05 s
+            return PolicyResult(action=REMOVE_SERVER, policy="slow-first")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        client = SwimClient(port=fake.port)
+        loop = ControlLoop(client, SlowFirst(), Trajectory(), run_dir=Path(tmp), run_id="t",
+                           period_seconds=0.05, max_periods=8)
+        with client:
+            loop.run()
+        recs = [json.loads(l) for l in (Path(tmp) / "decisions.jsonl").read_text().splitlines()]
+    assert recs[0]["execution"]["reason"].startswith("stale")
+    assert recs[1]["period"] >= 5                       # periods 1-4 were missed, not run at once
+    assert [l for l in fake.received if not l.startswith("get_")] == ["remove_server"] * (len(recs) - 1)

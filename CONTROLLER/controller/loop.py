@@ -132,10 +132,10 @@ class ControlLoop:
                 obs = self.client.sense()
             except Exception as exc:
                 log.error("sense failed in period %d: %s", period, exc)
-                self._sleep_until(started, period + 1)
-                period += 1
+                period = self._sleep_until(started, period + 1)
                 continue
 
+            sensed_at = time.monotonic()
             self.trajectory.record_observation(period, obs)
             result = self.policy(period, obs, self.trajectory)
 
@@ -143,7 +143,20 @@ class ControlLoop:
             if self.shadow is not None:
                 shadow_action = self.shadow.decide(obs, self.trajectory)
 
-            outcome = self._execute(result, obs)
+            # A decision that took longer than a period was made on a state
+            # that has since moved on, and acting on it can stack with what was
+            # already sent: during a network outage (2026-10-08) a 185 s decision
+            # removed a server from a 3-minute-old observation, the next one
+            # removed another before SWIM applied the first, and the pool
+            # reached 0 and crashed SWIM. Such a decision is recorded, not sent.
+            waited = time.monotonic() - sensed_at
+            if waited > self.period_seconds and result.action.kind is not Kind.NO_OP:
+                log.warning("not sending %s: decided %.1fs after sensing, longer than a period",
+                            result.action, waited)
+                outcome = {"sent": False, "reply": None,
+                           "reason": f"stale: decided {waited:.1f}s after sensing"}
+            else:
+                outcome = self._execute(result, obs)
             self.trajectory.record_decision(period, result.action, obs)
 
             record = {
@@ -184,21 +197,29 @@ class ControlLoop:
                 result.latency_s,
             )
 
-            period += 1
-            self._sleep_until(started, period)
+            period = self._sleep_until(started, period + 1)
 
         log.info("stopped after %d periods, %d records -> %s",
                  period, self._records, self.log_path)
         return period
 
-    def _sleep_until(self, started: float, next_period: int) -> None:
-        """Sleep to the next absolute tick, skipping any period already missed."""
+    def _sleep_until(self, started: float, next_period: int) -> int:
+        """Sleep to the next absolute tick and return its period.
+
+        Periods already missed are skipped: the next decision waits for the
+        next tick boundary rather than running at once. Running at once (as
+        this did before 2026-10-08, while logging "skipping") sensed a state
+        that did not yet reflect the command just sent, and labelled the
+        decision with a period it was not taken in.
+        """
         target = started + next_period * self.period_seconds
         now = time.monotonic()
         if now > target:
-            missed = int((now - target) // self.period_seconds) + 1
+            caught_up = int((now - started) // self.period_seconds) + 1
             log.warning("decision overran its period by %.1fs; skipping %d tick(s)",
-                        now - target, missed)
-            return
+                        now - target, caught_up - next_period)
+            next_period = caught_up
+            target = started + next_period * self.period_seconds
         while not self._stop and time.monotonic() < target:
             time.sleep(min(0.5, target - time.monotonic()))
+        return next_period
