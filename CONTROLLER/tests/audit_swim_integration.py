@@ -285,14 +285,15 @@ def _estimate_offset(decisions, bchg, schg=()) -> float:
             diffs.append(min(cands))
     # Fewer than three dimmer pairs is too few to date the clock: one mis-paired
     # change put a run (Llama-8B, 2026-10-08) 5.7 s off and failed every server
-    # check of an otherwise sound run. Server changes (+1 on add_server, -1 on
-    # remove_server, recorded when the command lands) are paired the same way.
+    # check of an otherwise sound run. Additions are paired too: serverCost
+    # rises the moment add_server lands. Removals are not: serverCost falls only
+    # once the server has drained its requests (9.9 s in one gemma-12B run),
+    # which would bias the clock late.
     if len(diffs) < 3 and schg:
-        moved = [(d["sim_elapsed_s"] + _latency(d), +1 if d["decision"]["action_kind"] == "add_server" else -1)
-                 for d in decisions if d["execution"]["sent"]
-                 and d["decision"]["action_kind"] in ("add_server", "remove_server")]
+        adds = [d["sim_elapsed_s"] + _latency(d) for d in decisions
+                if d["execution"]["sent"] and d["decision"]["action_kind"] == "add_server"]
         for tg, old_v, new_v in schg:
-            cands = [tg - e for e, step in moved if step == round(new_v - old_v) and 0 <= tg - e <= 30]
+            cands = [tg - e for e in adds if round(new_v - old_v) == 1 and 0 <= tg - e <= 30]
             if cands:
                 diffs.append(min(cands))
     if not diffs:
