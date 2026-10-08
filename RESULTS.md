@@ -108,8 +108,7 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 Design in PAPER.md (decision of 2026-10-08): Part A's two arms with no
 objective stated (`cot-noobj` / `direct-noobj`: no objective block, no utility
-lines), worked examples kept. 10 runs per arm (Llama-8B 6 and Qwen-7B `cot`
-9 until the re-runs land). Figure `figures/models/ablation.{png,pdf}`
+lines), worked examples kept. 10 runs per arm. Figure `figures/models/ablation.{png,pdf}`
 (`ablation_plot.py`). Effect of stating the objective = objective − none,
 paired by seed-set, 95% t-interval; bold = interval excludes 0.
 
@@ -118,10 +117,10 @@ paired by seed-set, 95% t-interval; bold = interval excludes 0.
 | gemma-3 4B | 5180 ± 1064 | 11787 ± 1006 | +153 [−1316, 1621] | **−7283 [−7997, −6569]** |
 | gemma-3 12B | 4839 ± 1423 | 5774 ± 2201 | **+5310 [4308, 6312]** | **+5279 [2873, 7685]** |
 | gemma-3 27B | 11688 ± 383 | 5217 ± 0 | −219 [−659, 221] | **+7071 [5708, 8435]** |
-| Qwen2.5 7B | 3992 ± 711 (n=9) | 5008 ± 255 | −1794 [−3973, 386] | **−4271 [−7703, −838]** |
+| Qwen2.5 7B | 3772 ± 966 | 5008 ± 255 | −1528 [−3532, 476] | **−4271 [−7703, −838]** |
 | Qwen2.5 14B | 3391 ± 799 | 4032 ± 2 | **+8118 [7112, 9123]** | **+1430 [1339, 1520]** |
 | Qwen2.5 32B | 2388 ± 1251 | 2696 ± 1622 | **−5194 [−6621, −3767]** | **−3298 [−6162, −434]** |
-| Llama-3.1 8B (n=6) | 5499 ± 943 | 5064 ± 1668 | +1141 [−116, 2397] | **+4232 [977, 7486]** |
+| Llama-3.1 8B | 5423 ± 800 | 4648 ± 1910 | **+1403 [497, 2308]** | **+5199 [3096, 7303]** |
 | Llama-3.3 70B | pending | pending | | |
 | gpt-4o-mini | 6755 ± 916 | 3892 ± 207 | **+4052 [2752, 5352]** | **+8062 [6716, 9408]** |
 | gpt-4o | 1607 ± 1484 | 4301 ± 1560 | **−1831 [−3331, −331]** | **−3506 [−5191, −1821]** |
@@ -149,7 +148,13 @@ Readings:
 CSF jobs 22287898-929; Llama-70B (22287926-929) queued; re-runs 22341630/1
 (Llama-8B seed-sets 6-9; the first attempt ran on node856, where SWIM slowed to
 1/15 of real time and died, set aside in `~/selas-results/invalid-node856/`)
-and 22341632 (Qwen-7B `cot-noobj` seed-set 4, whose SWIM died at period 86).
+and 22341632 (Qwen-7B `cot-noobj` seed-set 4, whose SWIM died at period 86),
+both done. One re-run arm (Llama-8B `direct-noobj` seed-set 9) first failed its
+integration check with 136 problems: the checker dated SWIM's clock from its
+single dimmer change and got 5.7 s instead of 0.8 s. The checker now also uses
+server additions when a run has fewer than three dimmer changes (commits
+d50fe15, ab659df); re-checking all 318 final-design arms changed no other
+verdict. The old check is kept as `integration_check.v1-clock-misdated.json`.
 
 Bookkeeping: the laptop lost its network at ~04:20; round 3 (gpt-4o, seed-sets
 0-7) skipped periods and five SWIMs crashed at 0 servers; set aside in
