@@ -382,8 +382,11 @@ manager on both traces -- ClarkNet 4 servers / dimmer 1.0 = 12,892, WorldCup
 configuration every period would add at most ~1,400. Below dimmer 1.0 the
 server count does not change the score; at dimmer 1.0 the server-cost credit
 (~8,000 per run) dominates; both traces are scaled so 3-4 servers cover the
-peak. Decision (2026-10-08): report SWIM's published configuration as it is,
-with this stated as a limitation of the exemplar.
+peak. At 2x and 3x the load (SWIM's `*.source.scale`) the best fixed
+configuration still wins on both traces (ClarkNet x3: 19,421 vs PLA 14,643;
+WorldCup x3: 15,527 vs 12,646; README). Decision (2026-10-08): report SWIM's
+published configuration as it is, with this stated as a limitation of the
+exemplar.
 
 ---
 

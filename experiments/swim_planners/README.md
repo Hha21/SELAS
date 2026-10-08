@@ -499,6 +499,22 @@ that stay on time" wins, and both traces are scaled ("l70") so that 3-4
 servers cover their peak (ClarkNet 15-71 req/s, WorldCup 7-70 req/s; one
 server serves ~22.5 req/s at dimmer 1.0).
 
+**Higher load does not change this** (`runs_load.txt`, SWIM's own
+`*.source.scale` at 0.5 and 1/3, i.e. 2x and 3x the arrival rate; fixed grid on
+3 seed-sets, adaptive managers on 10; 1,640 runs, all passed;
+`results-local/swim_planners/load-20261008-110952/`). The best fixed
+configuration in hindsight still beats every adaptive manager:
+
+| | best fixed | best adaptive |
+|---|---|---|
+| ClarkNet x2 | 7 servers, dimmer 1.0: 16,845 | PLA S = 0.0445 s: 115 ± 592; Reactive −4,050 |
+| ClarkNet x3 | 7 servers, dimmer 0.78: 19,421 | PLA S = 0.0445 s: 14,643 ± 1,392 |
+| WorldCup x2 | 6 servers, dimmer 1.0: 12,205 | Reactive: 2,115 ± 562 |
+| WorldCup x3 | 9 servers, dimmer 1.0: 15,527 | PLA S = 0.0445 s: 12,646 ± 1,117 |
+
+At high load SEAMS 2017A's late-period penalty, 1.5·(a − 269.5), also shrinks
+as the arrival rate a grows, so late periods become cheaper.
+
 ### Thallium: not re-targeted
 
 Thallium does not plan; it trims the relation PLA-SDP plans over. It does so
