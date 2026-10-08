@@ -20,6 +20,19 @@ checks the rebuild against the shipped result, and runs it over seed-sets 1-10.
   "Thallium" for how much the match pins down. Over seed-sets 1-10 it scores
   **4658.65 ± 0.00**. Unlike the relation, this number does not depend on the
   reconstruction.
+- **PLA re-targeted to SEAMS 2017A** (patch `swim-02`, section "PLA
+  re-targeted to SEAMS 2017A"). This is the same planner with our utility as
+  its objective. The result depends almost entirely on one input that
+  Stevens's port does not give in SWIM's units: the M/M/c service time. On
+  ClarkNet, seed-sets 0-9:
+  - **−15,130 ± 1,016** with the configured mean, 0.030 s (the primary
+    variant, declared before any result);
+  - **11,263 ± 0** with SWIM's documented typical service time, 1/maxServiceRate;
+  - 5,283 ± 0 with Stevens's own inputs.
+  None reaches the best fixed configuration, 12,891.6.
+- **WorldCup vs ClarkNet** (patch `swim-03`, section "Does adaptation pay on
+  WorldCup?"): a fixed-configuration grid against the adaptive managers on
+  both traces.
 
 ## Where the shipped runs come from
 
@@ -74,6 +87,34 @@ its compiled queueinglib), and adds:
    byte-identical files.
 6. For Thallium: PRISM-games 2.0.beta3 and the jars from thallium's
    `build.gradle`, with its Java compiled in place.
+7. `patches/swim-02-seams2017a-planning-utility.patch` adds a NED parameter
+   `planningUtility` to `ProactiveAdaptationManager`. Its default, `"stevens"`,
+   leaves the shipped behaviour untouched; this was re-checked after the
+   patch, decision for decision against the shipped run, at 4089.0883. The
+   other values select the new class `Seams2017aPlanningUtility` (described in
+   "PLA re-targeted to SEAMS 2017A").
+8. `patches/swim-03-static-manager.patch` adds `StaticAdaptationManager`. At
+   t = 0 it sets `servers` and `dimmer` and then holds them. Servers are added
+   and removed one at a time (the next add waits until no server is booting,
+   tested as `getServers() > getActiveServers()` as SWIM's Reactive manager
+   does), because SWIM does not support concurrent boots or removals; from 3
+   servers a target of n > 4 is reached after n − 3 boots. With no targets it
+   does nothing. Checks: doing nothing scores 5101.2 on ClarkNet (the anchor is
+   5101), and 4 servers at dimmer 1.0 scores 12,891.6 (the anchor is 12,891.6);
+   12 servers on WorldCup adds at t = 0, 180, ..., 1440 s.
+
+   *Fixed 2026-10-08.* The first version added servers in a `while` loop at
+   t = 0. For targets of 5 or more SWIM refused the second concurrent add, the
+   loop spun forever, and each such run grew to ~5 GB until the laptop ran out
+   of memory. `run_sa.sh` now also caps every container (`PLA_MEM`, default
+   2 GB) and every run's wall time (`PLA_TIMEOUT`, default 900 s), and the grid
+   was re-run in full on the fixed image.
+
+For these patches the runs use `swim_sa_planners.ini` rather than Clay's ini,
+via `run_sa.sh`. It is Clay's ini with both traces and all boot delays in
+SWIM's own run numbering (3 = WorldCup at 180 s, 8 = ClarkNet at 180 s), a
+configuration for every manager, and no per-server vectors, which the scorer
+does not read.
 
 The manager reads `/headless/yaml/rubis{,-step}.yaml`, a hard-coded path. Each
 run mounts its relation there read-only and keeps a copy in its output
@@ -104,6 +145,15 @@ experiments/swim_planners/run_planners.sh experiments/swim_planners/runs_thalliu
 cd experiments/swim_planners && ../../POLARIS/.venv/bin/python thallium_search.py sweep \
     ../../results-local/swim_planners/thallium-reconstructed/reach \
     ../../results-local/swim_planners/thallium-search/sweep.txt
+# PLA re-targeted, reactive managers, doing nothing -- both traces, seed-sets 0-9 (~3 min):
+experiments/swim_planners/run_sa.sh experiments/swim_planners/runs_adaptive.txt \
+    results-local/swim_planners/adaptive-$(date -u +%Y%m%d-%H%M%S)
+# the fixed grid, 2 traces x 12 servers x 10 dimmer levels x 10 seed-sets (~25 min;
+# .vec deleted after each run is summarised):
+KEEP_VEC=0 experiments/swim_planners/run_sa.sh experiments/swim_planners/runs_grid.txt \
+    results-local/swim_planners/grid-$(date -u +%Y%m%d-%H%M%S)
+POLARIS/.venv/bin/python experiments/swim_planners/table_sa.py \
+    results-local/swim_planners/adaptive-<ts> results-local/swim_planners/grid-<ts>
 ```
 
 `--network host` is needed only for the build (DNS inside the default build
@@ -121,6 +171,9 @@ each, are capped at 2 in parallel, and name their containers `pla-*`.
 | `reach_stats.py` | relation sizes, and the `transitionsEvaluated` a relation implies |
 | `thallium_pipeline.sh`, `thallium_trim.py` | Thallium's pipeline; `thallium_trim.py` ports `python/trim-rubis.py` from ruamel.yaml to PyYAML |
 | `thallium_search.py` | fast re-implementation of that pipeline (`verify` against a real run), the search, and `dump` |
+| `swim_sa_planners.ini` | SWIM_SA ini for both traces and all managers (`run_sa.sh`) |
+| `run_sa.sh`, `make_runs_sa.py`, `runs_adaptive.txt`, `runs_grid.txt` | runner for the re-targeted planner, the reactive managers and fixed configurations; the generator and the two run lists |
+| `summarise_sa.py`, `table_sa.py` | per-run summary (SEAMS 2017A via `swim_utility.py`, plus actions from SWIM's log); per-cell table and the fixed grid's best |
 
 ## Validation: PLA, seed-set 0
 
@@ -324,3 +377,145 @@ for all 90 scored periods. The seed moves only response times, which peak at
 0.133 s, so every seed-set scores 4658.651979641203 to the last digit printed.
 **On this trace Thallium does not adapt after the warm-up: it is a static
 configuration**, and it scores below doing nothing (3 servers, dimmer 0.9: 5101).
+
+## PLA re-targeted to SEAMS 2017A
+
+The shipped planners plan for Stevens's utility, not ours, so they are an unfair
+baseline. Patch `swim-02` gives the same planner our objective.
+
+### What changes, and what doesn't
+
+Only the per-period utility that PLA-SDP maximises over its 10-period
+look-ahead changes. Everything else stays as in Stevens's port:
+
+- the reachability relation (the full PLA one, 340 configurations);
+- the LES predictor and its scenario tree;
+- the tactics and the 60 s period;
+- the manager code that maps SWIM's state to a configuration.
+
+The new `Seams2017aPlanningUtility` is `periodUtilitySEAMS2017A` from SWIM's
+`plotResults.R`, written as `swim_utility.py` computes it. For a planner
+configuration (s, d, p) and the predicted arrival rate λ (req/s, the value the
+manager already predicts):
+
+    dimmer       df = d/9
+    servers      active = s + 1 (the manager encodes active − 1);
+                 provisioned = active + 1 while a server boots (p not idle)
+    revenue      ur = λ·((1 − df)·1 + df·1.5)
+    not late, ur ≥ 1.5λ − 1e-5 (dimmer 1):  ur + 10·(12 − provisioned)
+    not late, otherwise:                     ur
+    late (predicted rt > 0.75 s):            min(0, λ − 12·maxServiceRate)·1.5
+
+"Provisioned" is what the scorer averages (`serverCost`). Stevens's own
+expression, `s + (p > 0 ? 1 : 0)`, mixes up the 0-based server count with the
+progress encoding (p = 2 means idle); it belongs to the utility being replaced.
+
+### The predicted response time
+
+Stevens's M/M/c call is
+
+    MMcQueue::totalTime(s, 0.001·1.2^(9−d), 60000/λ, …)
+
+compared with 3000 ms. That is c = active − 1 servers, arrival rate λ/60 per
+second, and service rate 1.2^(9−d) per second. These are not SWIM's units: at
+full dimmer the service alone takes 1 s, so against a 0.75 s threshold, dimmer
+1.0 would always be "late". The routine (`MMcQueue::totalTime`) is kept, and
+its inputs are given in SWIM's units: c = active servers, arrival rate λ, mean
+service time df·S + (1 − df)·S_low. The value of S is the one input that the
+port does not define. Three variants, each fixed before its result was seen:
+
+| config | S (full content), S_low | |
+|---|---|---|
+| `pladapt_seams2017a` (**primary**) | 0.030 s, 0.001 s: the means of the servers' configured `serviceTime` / `lowFidelityServiceTime` | what SWIM's Model is meant to hold |
+| `pladapt_seams2017a_maxrate` | 1/maxServiceRate = 0.0445 s, 0.001 s | SWIM's own "typical normal service time", the constant in the utility |
+| `pladapt_seams2017a_stevensrt` | Stevens's inputs verbatim, result read as ms | for comparison only |
+
+A bug to record: the first build took S from `Model::getServiceTime()`, which
+is **0 in SWIM_SA** under OMNeT++ 5.4.1. SWIM's parameter parser returns 0
+for `truncnormal(0.03s, 0.03s)` there, though the same logic standalone
+returns 0.03; the root cause was not chased. The planner then believed
+requests take no time, held 1 server and scored −24,520. The patch now reads
+the mean from the server's parameter itself (the first argument of the
+distribution) and logs the values each decision (`planningUtility=... serviceTime=0.03 ...`
+in `swim.log`). No parameter was changed after seeing an outcome.
+
+### Results: ClarkNet (run 8), seed-sets 0-9
+
+| planner | utility (mean ± SD) | min | max | late periods | mean servers | mean dimmer | decisions acted on (of 91) |
+|---|---|---|---|---|---|---|---|
+| PLA, Stevens's utility (as shipped) | 4089.1 ± 0.0 | 4089.1 | 4089.1 | 0 | 2.80 | 0.175 | 41 |
+| **PLA, SEAMS 2017A, S = 0.030 s (primary)** | **−15,130.1 ± 1,015.7** | −17,166.1 | −14,120.6 | 59.0 | 2.09 | 0.994 | 17 |
+| PLA, SEAMS 2017A, S = 0.0445 s | 11,262.7 ± 0.0 | 11,262.7 | 11,262.7 | 4 | 2.98 | 0.995 | 15 |
+| PLA, SEAMS 2017A, Stevens's M/M/c inputs | 5,282.6 ± 0.0 | 5,282.6 | 5,282.6 | 0 | 3.67 | 0.785 | 3 |
+| doing nothing | 5,101.2 ± 0.0 | | | 1 | 3.00 | 0.900 | 0 |
+| best fixed in hindsight, 4 servers at dimmer 1.0 | 12,891.6 ± 0.0 | | | 0 | 4.00 | 1.000 | 0 |
+
+Output: `results-local/swim_planners/adaptive-20261008-093723/` (`table.txt`;
+each run's `summary.json`, `swim.log`, `.sca`, `.vec`).
+
+- **The objective is not the bottleneck; the performance model is.** With
+  SEAMS 2017A the planner does what the function rewards: dimmer 1 and few
+  servers. Whether that works depends on how well its M/M/c predicts SWIM.
+- **Primary (0.030 s): too optimistic.** SWIM's real full-content service
+  time is longer than 0.030 s. `truncnormal(0.03, 0.03)` has mean ≈ 0.039 s,
+  and a server whose name has not served before starts with a cold cache that
+  adds up to 50 ms per request (`MTBrownoutServer` caching effect). So the
+  planner runs about 2 servers at dimmer 1 and is late in 59 of 90 periods.
+- **0.0445 s variant: 4 late periods.** They fall just after it reshapes the
+  pool under rising load: a server added at 2,580 s is active only at 2,760 s
+  (SWIM boots in 3 periods, Stevens's relation models 2), and a removal at
+  3,540 s precedes a late stretch. It acts in 15 of 91 decisions and is still
+  1,629 below the best fixed configuration.
+- **Why some SDs are 0.** The planner reads only arrivals, which come from the
+  trace, so its decisions do not depend on the seed. A seed changes only
+  response times. Where no period is near the threshold, or the same periods
+  are far over it in every seed, the score is identical across seed-sets. The
+  primary's SD (1,016) comes from periods near the threshold.
+
+## Does adaptation pay on WorldCup? (2026-10-08)
+
+Fixed grid: 12 servers × 10 dimmer levels × seed-sets 0-9, both traces at boot
+delay 180 s (`runs_grid.txt`, 2,400 runs, all passed;
+`results-local/swim_planners/grid-20261008-102427/`). Adaptive managers as in
+`adaptive-20261008-093723/`. `table_sa.py` reads both.
+
+| | ClarkNet (run 8) | WorldCup (run 3) |
+|---|---|---|
+| best fixed configuration in hindsight | 4 servers, dimmer 1.0: 12,891.6 ± 0 | 3 servers, dimmer 1.0: 11,285.0 ± 238.7 |
+| next best fixed | 3 servers, dimmer 1.0: 12,605.4 | 4 servers, dimmer 1.0: 10,533.3 |
+| best configuration re-chosen every period (an upper bound; ignores boot delays) | 14,288.6 | 12,683.3 |
+| doing nothing (3 servers, dimmer 0.9) | 5,101.2 | 3,222.2 |
+| PLA re-targeted, S = 0.0445 s | 11,262.7 | 9,698.8 |
+| PLA re-targeted, S = 0.030 s (primary) | −15,130.1 | −519.3 |
+| SWIM Reactive / Reactive2 | −2,421 / −7,282 | 6,741 / 1,197 |
+
+**No.** On both traces the best fixed configuration beats every adaptive
+manager, and even re-choosing the best configuration every period adds at
+most ~1,400. The reason is the utility, not the trace: below dimmer 1.0 every
+configuration that is on time scores the same revenue whatever its server
+count, and at dimmer 1.0 the server-cost credit (10 × (12 − servers) per
+period, ~8,000 over a run) dominates. So "dimmer 1.0 with the fewest servers
+that stay on time" wins, and both traces are scaled ("l70") so that 3-4
+servers cover their peak (ClarkNet 15-71 req/s, WorldCup 7-70 req/s; one
+server serves ~22.5 req/s at dimmer 1.0).
+
+### Thallium: not re-targeted
+
+Thallium does not plan; it trims the relation PLA-SDP plans over. It does so
+by Pareto dominance across three separate objectives (cost, fidelity, response
+time), bounded by PRISM-games for best, expected and worst arrivals.
+Re-targeting it to SEAMS 2017A is not a reward swap, for three reasons:
+
+- SEAMS 2017A is one scalar whose terms interact: the cost credit is paid only
+  at dimmer 1.0 and only when the period is not late. It does not split into
+  three independent objectives. Pareto trimming on a single objective keeps
+  only the best successor, which collapses the method.
+- The SMG's response-time model is in its own units (SERVICE_RATE,
+  DIMMER_ADJ, SECS_PER_STEP), so it would have to be re-expressed in SWIM's.
+- The relation behind the shipped run is itself reconstructed by search.
+
+Compute is not the obstacle: `thallium_search.py` re-implements the bounds in
+under a second per setting. The obstacle is a design decision about what
+Thallium should mean for a scalar objective, plus rewriting the SMG's reward
+structures. That is more than an hour, and the result would be a new method
+rather than Thallium. Skipped.

@@ -1,0 +1,146 @@
+diff --git a/src/managers/adaptation/StaticAdaptationManager.cc b/src/managers/adaptation/StaticAdaptationManager.cc
+new file mode 100644
+index 0000000..73f82c9
+--- /dev/null
++++ b/src/managers/adaptation/StaticAdaptationManager.cc
+@@ -0,0 +1,81 @@
++/*******************************************************************************
++ * SELAS addition: static manager for SWIM_SA. See the header.
++ ******************************************************************************/
++#include "StaticAdaptationManager.h"
++#include "managers/execution/AllTactics.h"
++#include "managers/execution/ExecutionManager.h"
++#include <cmath>
++#include <iostream>
++
++using namespace omnetpp;
++
++Define_Module(StaticAdaptationManager);
++
++StaticAdaptationManager::StaticAdaptationManager() : applyEvent(nullptr), removingFrom(-1) {}
++
++void StaticAdaptationManager::initialize(int stage) {
++    BaseAdaptationManager::initialize(stage);
++    if (stage == 1) {
++        applyEvent = new cMessage("staticApply");
++        scheduleAt(simTime(), applyEvent);                 // t = 0, after initialisation
++    }
++}
++
++void StaticAdaptationManager::handleMessage(cMessage *msg) {
++    if (msg == applyEvent) {
++        apply();
++    } else {
++        BaseAdaptationManager::handleMessage(msg);
++    }
++}
++
++void StaticAdaptationManager::apply() {
++    Model* pModel = getModel();
++    ExecutionManager* pExecMgr = check_and_cast<ExecutionManager*>(getParentModule()->getSubmodule("executionManager"));
++    int targetServers = par("servers");
++    double targetDimmer = par("dimmer");
++
++    if (targetDimmer >= 0 && fabs(pModel->getDimmerFactor() - targetDimmer) > 1e-12) {
++        std::cout << "StaticAdaptationManager t=" << simTime() << " dimmer -> " << targetDimmer << std::endl;
++        pExecMgr->setBrownout(1.0 - targetDimmer);
++    }
++    if (targetServers > 0) {
++        if (targetServers > pModel->getMaxServers()) {
++            throw cRuntimeError("servers=%d exceeds maxServers=%d", targetServers, pModel->getMaxServers());
++        }
++        if (pModel->getServers() < targetServers) {
++            // one boot at a time, as SWIM allows: the next add waits until no
++            // server is booting. (Adding in a loop at t = 0 spun forever once
++            // SWIM refused a second concurrent add, 2026-10-08.)
++            bool booting = pModel->getServers() > pModel->getActiveServers();   // as ReactiveAdaptationManager
++            if (!booting) {
++                std::cout << "StaticAdaptationManager t=" << simTime() << " addServer" << std::endl;
++                pExecMgr->addServer();
++            }
++            if (pModel->getServers() < targetServers) {
++                scheduleAt(simTime() + 1.0, applyEvent);
++            }
++            return;
++        }
++        if (pModel->getServers() > targetServers) {
++            // one removal at a time: issue the next once the previous has completed
++            if (removingFrom < 0 || pModel->getServers() < removingFrom) {
++                removingFrom = pModel->getServers();
++                std::cout << "StaticAdaptationManager t=" << simTime() << " removeServer" << std::endl;
++                pExecMgr->removeServer();
++            }
++            if (pModel->getServers() > targetServers) {
++                scheduleAt(simTime() + 0.1, applyEvent);
++            }
++        }
++    }
++}
++
++Tactic* StaticAdaptationManager::evaluate() {
++    emit(transitionsEvaluatedSignal, 0);
++    return new MacroTactic;                                 // hold
++}
++
++StaticAdaptationManager::~StaticAdaptationManager() {
++    cancelAndDelete(applyEvent);
++}
+diff --git a/src/managers/adaptation/StaticAdaptationManager.h b/src/managers/adaptation/StaticAdaptationManager.h
+new file mode 100644
+index 0000000..c495436
+--- /dev/null
++++ b/src/managers/adaptation/StaticAdaptationManager.h
+@@ -0,0 +1,31 @@
++/*******************************************************************************
++ * SELAS addition: a static "adaptation" manager for SWIM_SA.
++ *
++ * At t = 0 it moves the system to a fixed configuration -- `servers` servers
++ * and dimmer `dimmer` -- and then holds it: every periodic decision is empty.
++ * Negative values mean "leave as configured" (servers: initialServers; dimmer:
++ * 1 - the servers' brownoutFactor), so servers=-1 dimmer=-1 is doing nothing.
++ * Servers are added and removed one at a time, because SWIM's execution
++ * manager does not support concurrent boots or removals: from 3 servers, a
++ * target of n > 4 is reached after (n - 3) boots of bootDelay each.
++ ******************************************************************************/
++#ifndef __PLASA_STATICADAPTATIONMANAGER_H_
++#define __PLASA_STATICADAPTATIONMANAGER_H_
++
++#include "BaseAdaptationManager.h"
++
++class StaticAdaptationManager : public BaseAdaptationManager
++{
++  public:
++    StaticAdaptationManager();
++    virtual ~StaticAdaptationManager();
++  protected:
++    omnetpp::cMessage* applyEvent;
++    int removingFrom;   // server count when the pending removal was issued, -1 if none
++    virtual void initialize(int stage);
++    virtual void handleMessage(omnetpp::cMessage *msg);
++    virtual Tactic* evaluate();
++    void apply();
++};
++
++#endif
+diff --git a/src/managers/adaptation/StaticAdaptationManager.ned b/src/managers/adaptation/StaticAdaptationManager.ned
+new file mode 100644
+index 0000000..d71c7d3
+--- /dev/null
++++ b/src/managers/adaptation/StaticAdaptationManager.ned
+@@ -0,0 +1,16 @@
++// SELAS addition: static manager for SWIM_SA (see StaticAdaptationManager.h).
++package plasa.managers.adaptation;
++
++simple StaticAdaptationManager like IAdaptationManager
++{
++    parameters:
++        bool simulateDecisionDelay = default(false);
++        int servers = default(-1);       // target server count; -1 keeps initialServers
++        double dimmer = default(-1);     // target dimmer factor in [0, 1]; -1 keeps the initial one
++        @signal[decisionTime](type="double");
++        @statistic[decisionTime](unit=msec; record=mean,max,vector);
++        @signal[transitionsEvaluated](type="int");
++        @statistic[transitionsEvaluated](record=mean,max,vector);
++
++    @class(StaticAdaptationManager);
++}

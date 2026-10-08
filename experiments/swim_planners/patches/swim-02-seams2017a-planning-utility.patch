@@ -1,0 +1,243 @@
+--- a/src/managers/adaptation/ProactiveAdaptationManager.cc	2019-01-22 04:12:01.000000000 +0000
++++ b/src/managers/adaptation/ProactiveAdaptationManager.cc	2026-10-08 10:35:53.601070341 +0100
+@@ -24,6 +24,8 @@
+ #include <managers/adaptation/dartam/include/dartam/DartDTMCEnvironment.h>
+ #include <managers/adaptation/dartam/include/dartam/DartSimpleEnvironment.h>
+ #include <managers/adaptation/proactive/include/UtilityFunction.h>
++#include "Seams2017aPlanningUtility.h"
++#include <cstdlib>
+ 
+ #include <iterator>
+ #include <algorithm>
+@@ -33,6 +35,31 @@
+ 
+ using namespace std;
+ 
++// SELAS: mean of a server's service-time parameter, as SWIM's Model is meant to
++// hold it (Utils::getMeanAndVarianceFromParameter semantics: the first argument
++// of truncnormal/normal/exponential, or the constant). In SWIM_SA under
++// OMNeT++ 5.4.1 Model::getServiceTime() and getLowFidelityServiceTime() are 0,
++// so the planner reads the parameter itself.
++static double serviceTimeMean(const omnetpp::cPar& par) {
++    if (!par.isExpression()) {
++        return par.doubleValue();
++    }
++    std::string e = par.getExpression()->str();
++    std::string::size_type open = e.find('(');
++    if (open == std::string::npos) {
++        throw omnetpp::cRuntimeError("cannot read a mean from '%s'", e.c_str());
++    }
++    const char* start = e.c_str() + open + 1;
++    char* end = nullptr;
++    double v = strtod(start, &end);
++    if (end == start) {
++        throw omnetpp::cRuntimeError("cannot read a mean from '%s'", e.c_str());
++    }
++    while (*end == ' ') end++;
++    if (end[0] == 'm' && end[1] == 's') v /= 1000.0;     // otherwise seconds
++    return v;
++}
++
+ Define_Module(ProactiveAdaptationManager);
+ 
+ boost::random::mt19937 gen;
+@@ -80,9 +107,38 @@
+     auto dtmc       = predictor->createScenarioTree(1,10)->getEnvironmentDTMC([=](double x){
+         return this->getEnv(x);
+     });
+-    dart::am2::DartUtilityFunction utilFunction(0.001);
++    // SELAS: the planning utility is selectable (NED parameter planningUtility).
++    // "stevens" is the port's own DartUtilityFunction, unchanged and the default;
++    // "seams2017a" / "seams2017a-stevens-rt" plan for SWIM's reported utility
++    // (Seams2017aPlanningUtility.h). Nothing else in the decision changes.
++    std::string planningUtility = par("planningUtility").stdstringValue();
++    std::unique_ptr<pladapt::UtilityFunction> utilFunction;
++    if (planningUtility == "stevens") {
++        utilFunction.reset(new dart::am2::DartUtilityFunction(0.001));
++    } else if (planningUtility == "seams2017a" || planningUtility == "seams2017a-maxrate"
++               || planningUtility == "seams2017a-stevens-rt") {
++        omnetpp::cModule* sys = getSimulation()->getSystemModule();
++        omnetpp::cModule* server = getParentModule()->getSubmodule("server1")->getSubmodule("server");
++        double maxServiceRate = sys->par("maxServiceRate").doubleValue();
++        double serviceTime = serviceTimeMean(server->par("serviceTime"));
++        double lowServiceTime = serviceTimeMean(server->par("lowFidelityServiceTime"));
++        if (planningUtility == "seams2017a-maxrate") {
++            serviceTime = 1.0 / maxServiceRate;   // SWIM's "typical" full-content service time
++        }
++        cout << "planningUtility=" << planningUtility << " serviceTime=" << serviceTime
++             << " lowFidelityServiceTime=" << lowServiceTime << " maxServiceRate=" << maxServiceRate << endl;
++        utilFunction.reset(new Seams2017aPlanningUtility(
++                planningUtility == "seams2017a-stevens-rt" ? Seams2017aPlanningUtility::STEVENS_INPUTS
++                                                           : Seams2017aPlanningUtility::SWIM_UNITS,
++                pModel->getMaxServers(), maxServiceRate,
++                sys->par("responseTimeThreshold").doubleValue(),
++                pModel->getNumberOfDimmerLevels(), configMgr->getAddServerLatencyPeriods(),
++                serviceTime, lowServiceTime));
++    } else {
++        throw omnetpp::cRuntimeError("unknown planningUtility '%s'", planningUtility.c_str());
++    }
+     unsigned transitionsEvaluated = 0;
+-    auto tactics = adaptnMgr->evaluate(currConfig, dtmc, utilFunction, horizon, transitionsEvaluated);
++    auto tactics = adaptnMgr->evaluate(currConfig, dtmc, *utilFunction, horizon, transitionsEvaluated);
+     for (auto& tactic : tactics) {
+         if (tactic == "DecDimmer" && dimmer > 0.0) {
+             pMacroTactic->addTactic(new SetDimmerTactic(max(0.0, dimmer-dimmerStep)));
+--- a/src/managers/adaptation/ProactiveAdaptationManager.ned	2019-01-22 04:12:01.000000000 +0000
++++ b/src/managers/adaptation/ProactiveAdaptationManager.ned	2026-10-08 10:35:36.788083009 +0100
+@@ -21,6 +21,12 @@
+ {
+     parameters:
+         bool simulateDecisionDelay = default(true);
++        // SELAS: planning utility -- "stevens" (the port's own, default);
++        // "seams2017a" (SWIM's reported utility; M/M/c in SWIM's units, service
++        // times = means of the servers' serviceTime/lowFidelityServiceTime);
++        // "seams2017a-maxrate" (same, full-content service time 1/maxServiceRate);
++        // "seams2017a-stevens-rt" (same utility, Stevens's M/M/c inputs)
++        string planningUtility = default("stevens");
+         @signal[decisionTime](type="double");
+         @statistic[decisionTime](unit=msec; record=mean,max,vector);
+         @signal[transitionsEvaluated](type="int");
+--- a/src/managers/adaptation/Seams2017aPlanningUtility.h	1970-01-01 01:00:00.000000000 +0100
++++ b/src/managers/adaptation/Seams2017aPlanningUtility.h	1970-01-01 01:00:00.000000000 +0100
+@@ -0,0 +1,71 @@
++/*******************************************************************************
++ * SELAS addition to clayness/swim's ProactiveAdaptationManager (PLA-SDP port).
++ *
++ * The planning utility of SWIM's reported metric, SEAMS 2017A (Moreno et al.,
++ * "Comparing model-based predictive approaches to self-adaptation: CobRA and
++ * PLA", SEAMS 2017; periodUtilitySEAMS2017A in SWIM's tools/plotResults.R),
++ * as a pladapt::UtilityFunction, replacing Stevens's DartUtilityFunction
++ * (0.4 cost + 0.1 dimmer + 0.5 response time) when the manager's
++ * planningUtility parameter asks for it. Everything else in the planner is
++ * unchanged: reachability relation, look-ahead, environment model, tactics.
++ *
++ * Per period, for a planner configuration (s, d, p) and predicted arrival rate
++ * lambda (requests/s, the environment value the manager already predicts):
++ *
++ *   dimmer      df = d / (levels - 1)
++ *   active      c  = s + 1             (the manager encodes servers as active-1)
++ *   provisioned c + 1 if a server is booting (p != levels-of-progress - 1), else c
++ *   revenue     ur = lambda * ((1 - df) * 1.0 + df * 1.5)
++ *   late        predicted response time > responseTimeThreshold
++ *   utility     not late, ur >= lambda * 1.5 - 1e-5 : ur + 10 * (maxServers - provisioned)
++ *               not late                            : ur
++ *               late                                : min(0, lambda - maxServers * maxServiceRate) * 1.5
++ *
++ * Response time comes from the M/M/c model the port already uses
++ * (MMcQueue::totalTime). Two ways of feeding it, chosen by the caller:
++ *
++ *   SWIM_UNITS     c active servers, arrival rate lambda, mean service time
++ *                  df * S + (1 - df) * S_low, S and S_low given by the caller:
++ *                  the means of the servers' serviceTime and
++ *                  lowFidelityServiceTime parameters (0.030 s, 0.001 s), or
++ *                  S = 1/maxServiceRate for the "seams2017a-maxrate" variant.
++ *                  (SWIM's Model::getServiceTime() would be the natural source,
++ *                  but it is 0 in SWIM_SA under OMNeT++ 5.4.1.)
++ *   STEVENS_INPUTS Stevens's call verbatim -- totalTime(s, 0.001 * 1.2^(9-d),
++ *                  60000/lambda, ...) -- read as milliseconds. Those inputs are
++ *                  not in SWIM's units (service alone takes 1 s at full dimmer),
++ *                  so this is a sensitivity variant, not the main one.
++ ******************************************************************************/
++#ifndef SEAMS2017APLANNINGUTILITY_H_
++#define SEAMS2017APLANNINGUTILITY_H_
++
++#include <managers/adaptation/proactive/include/UtilityFunction.h>
++
++class Seams2017aPlanningUtility : public pladapt::UtilityFunction {
++public:
++    enum RtModel { SWIM_UNITS, STEVENS_INPUTS };
++
++    Seams2017aPlanningUtility(RtModel rtModel, unsigned maxServers, double maxServiceRate,
++            double rtThreshold, unsigned dimmerLevels, unsigned progressStates,
++            double serviceTime, double lowFidelityServiceTime);
++
++    virtual double getAdditiveUtility(const pladapt::Configuration& config,
++            const pladapt::Environment& env, int time) const;
++
++    /** predicted mean response time in seconds (exposed for logging/tests) */
++    double predictedResponseTime(unsigned servers0, unsigned dimmerLevel, double arrivalRate) const;
++
++    virtual ~Seams2017aPlanningUtility();
++
++protected:
++    RtModel rtModel;
++    unsigned maxServers;
++    double maxServiceRate;
++    double rtThreshold;
++    unsigned dimmerLevels;
++    unsigned progressStates;
++    double serviceTime;
++    double lowFidelityServiceTime;
++};
++
++#endif /* SEAMS2017APLANNINGUTILITY_H_ */
+--- a/src/managers/adaptation/Seams2017aPlanningUtility.cc	1970-01-01 01:00:00.000000000 +0100
++++ b/src/managers/adaptation/Seams2017aPlanningUtility.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -0,0 +1,67 @@
++/*******************************************************************************
++ * SELAS addition: SEAMS 2017A as PLA-SDP's planning utility. See the header.
++ ******************************************************************************/
++#include "Seams2017aPlanningUtility.h"
++#include <managers/adaptation/dartam/include/dartam/DartConfiguration.h>
++#include <managers/adaptation/dartam/include/dartam/DartSimpleEnvironment.h>
++#include <util/MMcQueue.h>
++#include <algorithm>
++#include <cfloat>
++#include <cmath>
++
++Seams2017aPlanningUtility::Seams2017aPlanningUtility(RtModel rtModel, unsigned maxServers,
++        double maxServiceRate, double rtThreshold, unsigned dimmerLevels, unsigned progressStates,
++        double serviceTime, double lowFidelityServiceTime)
++    : rtModel(rtModel), maxServers(maxServers), maxServiceRate(maxServiceRate),
++      rtThreshold(rtThreshold), dimmerLevels(dimmerLevels), progressStates(progressStates),
++      serviceTime(serviceTime), lowFidelityServiceTime(lowFidelityServiceTime) {
++}
++
++double Seams2017aPlanningUtility::predictedResponseTime(unsigned servers0, unsigned dimmerLevel,
++        double arrivalRate) const {
++    if (rtModel == STEVENS_INPUTS) {
++        // DartUtilityFunction's call, unchanged; its result is in milliseconds.
++        double mu = 0.001 * pow(1.2, 9.0 - dimmerLevel);
++        double ms = MMcQueue::totalTime(servers0, mu, 60000 / arrivalRate, 60000 / arrivalRate);
++        return ms / 1000.0;
++    }
++    double df = double(dimmerLevel) / (dimmerLevels - 1);
++    double meanService = df * serviceTime + (1.0 - df) * lowFidelityServiceTime;
++    double mu = 1.0 / meanService;
++    unsigned c = servers0 + 1;
++    if (!(arrivalRate > 0)) {
++        return 1.0 / mu;                    // no arrivals: no queueing
++    }
++    return MMcQueue::totalTime(c, mu, 1.0 / arrivalRate, 1.0 / arrivalRate);   // DBL_MAX if rho > 1
++}
++
++double Seams2017aPlanningUtility::getAdditiveUtility(const pladapt::Configuration& config,
++        const pladapt::Environment& env, int time) const {
++    const dart::am2::DartConfiguration& c = dynamic_cast<const dart::am2::DartConfiguration&>(config);
++    const dart::am2::DartSimpleEnvironment& e = dynamic_cast<const dart::am2::DartSimpleEnvironment&>(env);
++
++    double lambda = std::max(0.0, e.getProbOfObject());     // predicted arrival rate, requests/s
++    double df = double(c.getDimmer()) / (dimmerLevels - 1);
++    unsigned active = c.getServers() + 1;
++    bool booting = c.getTtcAddServer() != progressStates - 1;  // last progress state = not running
++    double provisioned = active + (booting ? 1 : 0);
++
++    double rt = predictedResponseTime(c.getServers(), c.getDimmer(), lambda);
++    bool late = !(rt <= rtThreshold) || rt < 0;
++
++    // periodUtilitySEAMS2017A (plotResults.R), as swim_utility.py computes it
++    const double precision = 1e-5;
++    double ur = lambda * ((1 - df) * 1.0 + df * 1.5);
++    double uc = 10 * (maxServers - provisioned);
++    double urOpt = lambda * 1.5;
++    if (!late && ur >= urOpt - precision) {
++        return ur + uc;
++    }
++    if (!late) {
++        return ur;
++    }
++    return std::min(0.0, lambda - maxServers * maxServiceRate) * 1.5;
++}
++
++Seams2017aPlanningUtility::~Seams2017aPlanningUtility() {
++}

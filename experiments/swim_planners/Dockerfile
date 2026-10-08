@@ -52,9 +52,12 @@ WORKDIR /headless/pla
 # not found for a NED folder given by its linked name ("Class Sink not found").
 RUN cp -a /headless/seams-swim/queueinglib /headless/pla/queueinglib
 
-# Clay's fork predates SWIM's OMNeT++ 5.4.1 update (cps-sei/swim 44289ef); the
-# one source change that update needed is applied as a patch. It does not change
-# any computed value (see patches/README in the experiment's README.md).
+# Patches, applied in order (see the experiment's README.md):
+#   swim-01  the one source change SWIM's OMNeT++ 5.4.1 update needed
+#            (cps-sei/swim 44289ef); changes no computed value
+#   swim-02  selectable planning utility for ProactiveAdaptationManager:
+#            "stevens" (default, as shipped) or SEAMS 2017A variants
+#   swim-03  StaticAdaptationManager: a fixed configuration, set at t = 0
 COPY patches /headless/pla/patches
 RUN cd swim && for p in /headless/pla/patches/swim-*.patch; do \
         echo "applying $p"; patch -p1 --forward < "$p" || exit 1; done

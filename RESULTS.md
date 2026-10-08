@@ -349,6 +349,34 @@ outputs `results-local/swim_planners/`. Scored with `collect.py` (SEAMS 2017A).
   SWIM's randomness. Thallium never adapts after warm-up (2 servers, dimmer
   0.456) and scores below doing nothing.
 
+**PLA re-targeted to SEAMS 2017A** (patch `swim-02`; same planner, look-ahead
+and relation, with our utility as its objective; Thallium not re-targeted,
+since its Pareto trimming over three objectives has no counterpart for one
+scalar). Its result hinges on one input the port does not define in SWIM's
+units, the full-content service time S in its M/M/c model; three values, each
+fixed before its result was seen (seed-sets 0-9):
+
+| S | ClarkNet | WorldCup |
+|---|---|---|
+| 0.030 s, the servers' configured mean (declared primary) | −15,130 ± 1,016 (late 59/90) | −519 ± 433 |
+| 0.0445 s, SWIM's typical service time (1/maxServiceRate) | 11,263 ± 0 (late 4) | 9,699 ± 205 |
+| Stevens's own inputs | 5,283 ± 0 | 3,082 ± 0 |
+
+The objective is not the bottleneck; the planner's performance model is
+(with 0.030 s it underestimates load, runs ~2 servers at dimmer 1 and is
+late most of the run).
+
+**What this configuration rewards** (fixed grid, 12 servers × 10 dimmer
+levels × 10 seed-sets, both traces; README "Does adaptation pay on
+WorldCup?"): the best fixed configuration in hindsight beats every adaptive
+manager on both traces -- ClarkNet 4 servers / dimmer 1.0 = 12,892, WorldCup
+3 servers / dimmer 1.0 = 11,285 ± 239 -- and re-choosing the best
+configuration every period would add at most ~1,400. Below dimmer 1.0 the
+server count does not change the score; at dimmer 1.0 the server-cost credit
+(~8,000 per run) dominates; both traces are scaled so 3-4 servers cover the
+peak. Decision (2026-10-08): report SWIM's published configuration as it is,
+with this stated as a limitation of the exemplar.
+
 ---
 
 ## 1. Setup (fixed)
