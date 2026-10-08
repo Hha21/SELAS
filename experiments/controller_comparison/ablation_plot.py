@@ -5,10 +5,12 @@ and without the written explanation.
 Two panels sharing the model rows: left the objective is stated (Part A's
 ``cot`` / ``direct``), right it is not (``cot-noobj`` / ``direct-noobj``: no
 objective block and no utility lines). In each, one dot per run for each arm
-and a bar at its mean, as in reasoning_plot.py; the dotted line is doing
-nothing. An arm with no runs yet is marked "pending".
+and a bar at its mean, as in reasoning_plot.py; reference lines from
+--reference (SWIM's PLA and Thallium) and --nothing. An arm with no runs
+yet is marked "pending".
 
-    python ablation_plot.py final_table.json -o figures/models/ablation --nothing 5101
+    python ablation_plot.py final_table.json -o figures/models/ablation \\
+        --reference PLA=4089.09 --reference Thallium=4658.65
 
 Reads the JSON final_table.py writes.
 """
@@ -24,7 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from plot import GRID, INK_PRIMARY, INK_SECONDARY, SERIES, _style
+from plot import GRID, INK_PRIMARY, INK_SECONDARY, SERIES, _style, draw_references, parse_reference
 from reasoning_plot import ROWS
 
 PANELS = [("objective stated", ("cot", "direct")),
@@ -36,6 +38,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("table", type=Path)
     ap.add_argument("-o", "--out", type=Path, required=True)
+    ap.add_argument("--reference", action="append", default=[], metavar="NAME=VALUE",
+                    help="a reference line, e.g. PLA=4089.09 (repeatable)")
     ap.add_argument("--nothing", type=float, default=None, help="utility of doing nothing")
     ap.add_argument("--title", default=None, help="optional figure title (e.g. for a preview)")
     args = ap.parse_args()
@@ -59,9 +63,10 @@ def main() -> int:
                            label=label if (i == 0 and ax is axes[0]) else None)
                 m = st.mean(u)
                 ax.plot([m, m], [y0 + off - 0.11, y0 + off + 0.11], color=style["color"], lw=2.2, zorder=4)
+        refs = [parse_reference(r) for r in args.reference]
         if args.nothing is not None:
-            ax.axvline(args.nothing, color=INK_SECONDARY, lw=1, ls=":", zorder=1)
-            ax.text(args.nothing, len(rows) - 0.45, " do nothing", color=INK_SECONDARY, fontsize=8, va="bottom")
+            refs.append(("do nothing", args.nothing))
+        draw_references(ax, refs, len(rows) - 0.45)
         ax.set_title(title, color=INK_PRIMARY, pad=14)
         ax.grid(axis="x", color=GRID)
         ax.grid(axis="y", visible=False)

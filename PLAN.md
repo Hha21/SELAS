@@ -15,7 +15,7 @@ models, with and without the explanation, 10 runs per arm (Llama-70B CSF
 finished 23:23); table in RESULTS §A, figure `figures/models/reasoning.{png,pdf}`
 (static line 12891.6, do nothing 5101). To rebuild:
 `final_table.py $(ls -d results-local/csf/final-*) $(ls -d results-local/fo-*-2026100[56]-* | grep -v fo-static) --json results-local/csf/final_table.json`,
-then `reasoning_plot.py results-local/csf/final_table.json -o figures/models/reasoning --nothing 5101 --static 12891.6`.
+then `reasoning_plot.py results-local/csf/final_table.json -o figures/models/reasoning --reference PLA=4089.09 --reference Thallium=4658.65`.
 
 **Open decision (Harry):** the prompt-decomposition factorial on gemma-3-27b
 (objective {none, words 1-2, formula, words+formula} x explanation {yes, no}

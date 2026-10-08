@@ -67,6 +67,30 @@ def _style() -> None:
     })
 
 
+REF_STYLES = [":", "-.", "--", (0, (1, 3))]
+
+
+def parse_reference(text: str) -> tuple[str, float]:
+    """``NAME=VALUE`` from the command line, e.g. ``"PLA=4089.09"``."""
+    name, _, value = text.rpartition("=")
+    if not name:
+        raise ValueError(f"reference {text!r} is not NAME=VALUE")
+    return name.strip(), float(value)
+
+
+def draw_references(ax, refs: list[tuple[str, float]], y_label: float) -> None:
+    """Vertical reference lines in grey, one dash style each, labelled at
+    ``y_label``. Of two neighbouring lines the lower is labelled to its left and
+    the higher to its right, so close values (PLA 4089, Thallium 4659) stay
+    readable."""
+    refs = sorted(refs, key=lambda r: r[1])
+    for k, (name, v) in enumerate(refs):
+        ax.axvline(v, color=INK_SECONDARY, lw=1, ls=REF_STYLES[k % len(REF_STYLES)], zorder=1)
+        left = k % 2 == 0 and k + 1 < len(refs)
+        ax.text(v, y_label, f"{name} " if left else f" {name}", color=INK_SECONDARY,
+                fontsize=8, va="bottom", ha="right" if left else "left")
+
+
 def _series_from(result: dict, key: str) -> tuple[list[float], list[float]]:
     pts = result.get("series", {}).get(key, [])
     return [t for t, _ in pts], [v for _, v in pts]

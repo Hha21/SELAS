@@ -2,11 +2,12 @@
 """Utility per model, with and without the written explanation.
 
 One row per model (by family and size; OpenRouter models last), one dot per
-run for each arm, a bar at each arm's mean. Reference lines: doing nothing,
-and the static configuration (dimmer 1.0, four servers, held) when given.
+run for each arm, a bar at each arm's mean. Reference lines: any given with
+--reference (SWIM's PLA and Thallium), doing nothing, and the static
+configuration (dimmer 1.0, four servers, held) when given.
 
     python reasoning_plot.py final_table.json -o figures/models/reasoning \\
-        --nothing 5101 [--static 12892]
+        --reference PLA=4089.09 --reference Thallium=4658.65 [--nothing 5101] [--static 12892]
 
 Reads the JSON final_table.py writes.
 """
@@ -22,7 +23,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from plot import GRID, INK_PRIMARY, INK_SECONDARY, SERIES, _style
+from plot import GRID, INK_PRIMARY, INK_SECONDARY, SERIES, _style, draw_references, parse_reference
 
 ROWS = [  # (table key, label)
     ("gemma4b (CSF)", "gemma-3 4B"), ("gemma12b (CSF)", "gemma-3 12B"), ("gemma27b (CSF)", "gemma-3 27B"),
@@ -38,6 +39,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("table", type=Path)
     ap.add_argument("-o", "--out", type=Path, required=True)
+    ap.add_argument("--reference", action="append", default=[], metavar="NAME=VALUE",
+                    help="a reference line, e.g. PLA=4089.09 (repeatable)")
     ap.add_argument("--nothing", type=float, default=None, help="utility of doing nothing")
     ap.add_argument("--static", type=float, default=None, help="utility of the static configuration")
     args = ap.parse_args()
@@ -54,10 +57,9 @@ def main() -> int:
                        edgecolor="none", zorder=3, label=label if i == 0 else None)
             m = st.mean(u)
             ax.plot([m, m], [y0 + off - 0.11, y0 + off + 0.11], color=style["color"], lw=2.2, zorder=4)
-    for x, name, ls in ((args.nothing, "do nothing", ":"), (args.static, "static", "--")):
-        if x is not None:
-            ax.axvline(x, color=INK_SECONDARY, lw=1, ls=ls, zorder=1)
-            ax.text(x, len(rows) - 0.45, f" {name}", color=INK_SECONDARY, fontsize=8, va="bottom")
+    refs = [parse_reference(r) for r in args.reference]
+    refs += [(name, x) for name, x in (("do nothing", args.nothing), ("static", args.static)) if x is not None]
+    draw_references(ax, refs, len(rows) - 0.45)
     ax.set_yticks(range(len(rows)))
     ax.set_yticklabels([lab for _, lab in reversed(rows)])
     ax.set_ylim(-0.6, len(rows) - 0.1)

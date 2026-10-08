@@ -189,8 +189,8 @@ the other models' weights are being copied/downloaded to `~/scratch/hf`.
 - **Part A figure:** `experiments/controller_comparison/reasoning_plot.py`
   on `results-local/csf/final_table.json` (from `final_table.py`) ->
   `figures/models/reasoning.{png,pdf}`; rows = models, dots = runs, bars =
-  means, dotted = do nothing (5101), dashed = static (12891.6: dimmer 1.0, 4 servers,
-  0 late periods; `results-local/fo-static-20261006-200041`). All 11 models
+  means; reference lines = SWIM's PLA (4089.09) and Thallium (4658.65), re-run
+  and validated (RESULTS §C), replacing do nothing / static (2026-10-08). All 11 models
   complete at 10 runs per arm (2026-10-07).
 - **Proposed prompt decomposition (to confirm with Harry):** fixed parts --
   role and constraints, action legend, telemetry (including each period's
