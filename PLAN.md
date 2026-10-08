@@ -13,7 +13,7 @@ The paper's framing, decisions and open questions are in **PAPER.md**
 **Part A (RQ1) -- done (2026-10-07).** Eight CSF models + three OpenRouter
 models, with and without the explanation, 10 runs per arm (Llama-70B CSF
 finished 23:23); table in RESULTS §A, figure `figures/models/reasoning.{png,pdf}`
-(static line 12891.6, do nothing 5101). To rebuild:
+(reference lines: PLA 4089.09, Thallium 4658.65; RESULTS §C). To rebuild:
 `final_table.py $(ls -d results-local/csf/final-*) $(ls -d results-local/fo-*-2026100[56]-* | grep -v fo-static) --json results-local/csf/final_table.json`,
 then `reasoning_plot.py results-local/csf/final_table.json -o figures/models/reasoning --reference PLA=4089.09 --reference Thallium=4658.65`.
 
