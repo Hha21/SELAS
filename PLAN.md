@@ -44,15 +44,9 @@ Replays need vLLM or transformers on any A100 (`-p gpuA`, no `-A`,
 run-resampled intervals). Results go in RESULTS §B.
 
 1. **Mediation** `combined` -> `none` -- **done** (job 22284716; RESULTS §B1).
-2. **Intervention battery** (`experiments/replay/replay_all.sbatch`, jobs
-   22284596 = cot-s0..4, 22284597 = cot-s5..9, submitted 2026-10-07 ~23:30,
-   `-t 0-12`): faithfulness, counterfactual score/generate, simulatability
-   (gemma-3 12B, Qwen2.5 14B, gemma-3 27B ceiling). When done: rsync
-   `*.jsonl` of `interp-gemma27b-final`, run pool_battery.py, write §B2.
-3. **NLA pilot** on the 10 runs (`experiments/nla/run_pilot.sbatch`, job
-   22285815 -> `~/selas-results/nla-gemma27b-final`, ~1.5 h). Then
-   `analyse_pilot.py` (centred check, pre-explanation read-out per action
-   kind, letter agreement) for §B3.
+2. **Intervention battery** -- **done** (jobs 22284596/7; RESULTS §B2).
+3. **NLA pilot** on the 10 runs -- **done** (job 22285815; RESULTS §B3;
+   local copy `results-local/nla/nla-gemma27b-final/`).
 4. **Edit and patch** (`experiments/nla/edit_patch.py`, `run_edit_patch.sbatch`,
    `analyse_patch.py`; offline test `test_edit_patch.py`): at P_action, swap
    the chosen letter in the AV explanation for another legal one, reconstruct
