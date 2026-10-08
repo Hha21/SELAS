@@ -1,0 +1,26 @@
+diff --git a/src/modules/MTBrownoutServer.cc b/src/modules/MTBrownoutServer.cc
+index 19522f9..61f7a5b 100644
+--- a/src/modules/MTBrownoutServer.cc
++++ b/src/modules/MTBrownoutServer.cc
+@@ -78,7 +78,7 @@ simtime_t MTBrownoutServer::generateJobServiceTime(queueing::Job* pJob)  {
+ 
+     if (cacheLow || pJob->getKind() != 1) {
+         double delta = (pJob->getKind() == 1) ? cacheDeltaLow : cacheDelta;
+-        double lambda = (-1 / cacheRequestCount) * (log(cachePrecision * delta) - log(delta));
++        double lambda = (-1.0 / cacheRequestCount) * (log(cachePrecision * delta) - log(delta));
+ 
+         /* note that this assumes that this module is inside an AppServer module with a unique name */
+         long myRequestCount = requestCount[this->getParentModule()->getName()];
+diff --git a/src/modules/MTBrownoutServer.h b/src/modules/MTBrownoutServer.h
+index a2e5280..612fc4f 100644
+--- a/src/modules/MTBrownoutServer.h
++++ b/src/modules/MTBrownoutServer.h
+@@ -50,7 +50,7 @@ class MTBrownoutServer : public MTServer
+      * 2500 is the time at which we can visually observe in a real run that the service
+      * time converges to the stable value.
+      */
+-    double cacheRequestCount;
++    int cacheRequestCount;
+ 
+     /**
+      * The difference in service time between the start of the run and

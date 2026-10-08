@@ -231,6 +231,33 @@ objective-ablation jobs on gpuA.
 
 ---
 
+## C. PLA and Thallium re-run locally (2026-10-08)
+
+`experiments/swim_planners/` (README: provenance, licences, build, validation).
+Image `selas-swim-pla:dev` from `gabrielmoreno/swim:latest`, sources pinned;
+outputs `results-local/swim_planners/`. Scored with `collect.py` (SEAMS 2017A).
+
+| planner | seed-sets | utility | late | mean servers | mean dimmer | validation against SWIM's shipped run |
+|---|---|---|---|---|---|---|
+| PLA (Stevens's PLA-SDP port) | 0 | 4089.09 (shipped 4089.09) | 0 | 2.80 | 0.175 | same 91 decisions; tactic timing differs by ≤ 0.07 s |
+| PLA | 1-10 | 4089.09 ± 0.00 | 0 | 2.80 | 0.175 | |
+| Thallium (reconstructed relation) | 0 | 4658.65 (shipped 4658.65) | 0 | 2.00 | 0.456 | same decisions, same 48,108 transitions per decision |
+| Thallium | 1-10 | 4658.65 ± 0.00 | 0 | 2.00 | 0.456 | |
+
+- Source: Stevens & Bagheri, ICSE 2020 (doi:10.1145/3377811.3380365),
+  Experiment 2; `clayness/swim` @ `cfad67a`. The planners optimise their own
+  utility (0.4 cost + 0.1 dimmer + 0.5 response time), not SEAMS 2017A.
+- Thallium's trimmed relation was never published; the one used was found by
+  searching 89,600 pipeline settings for one that reproduces the shipped run
+  (3 of its 5 constants appear nowhere in the paper or repos). State it as
+  "relation reconstructed to reproduce SWIM's shipped run".
+- Zero spread: both read only the arrival rate (from the trace), so every
+  seed-set gives the same decisions; this says nothing about robustness to
+  SWIM's randomness. Thallium never adapts after warm-up (2 servers, dimmer
+  0.456) and scores below doing nothing.
+
+---
+
 ## 1. Setup (fixed)
 
 | | |

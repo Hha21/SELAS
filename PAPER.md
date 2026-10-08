@@ -154,8 +154,16 @@ One environment, one prompt, fresh runs, five seed-sets per cell.
   result files confirm they ran in exactly this environment (maxServers 12,
   initialServers 3, bootDelay 180, 10 brownout levels, ClarkNet, seed-set 0,
   `ProactiveAdaptationManager`); they choose 2–3 servers with a low dimmer.
-  They cannot be re-run here (SWIM ships only a mock of the PLA library), so
-  report them as reference points with their objective unknown.
+  Since 2026-10-08 they **can** be re-run (`experiments/swim_planners/`): the
+  shipped runs are Experiment 2 of Stevens & Bagheri, ICSE 2020; their PLA is
+  Stevens's port of PLA-SDP into SWIM (not Moreno et al.'s), planning for its
+  own utility (0.4 cost + 0.1 dimmer + 0.5 response time), not SEAMS 2017A.
+  PLA reproduces the shipped run decision for decision (4089.09); Thallium
+  does too, but only with a trimmed relation reconstructed by search (the
+  original was never published). Both are deterministic on this trace (they
+  read only the arrival rate), so seed-sets 1-10 give 4089.09 ± 0 and
+  4658.65 ± 0: report them as reference lines, with their planning utility
+  stated, not as distributions.
 - **Rule 3** leaves RQ1. It stays only as a planted, known cause in RQ2 (the
   trace names it; mediation shows its effect passes through the trace).
 

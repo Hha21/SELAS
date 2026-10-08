@@ -1,0 +1,16 @@
+# label config seed-set relation
+# relation: Thallium-trimmed rubis.yaml RECONSTRUCTED BY SEARCH (see README, Thallium), made by
+#   THRESHOLD=1250 DIMMER_ADJ=1.25 EXP_ARRIVAL_RATE=30 MAX_ARRIVAL_RATE=130 SECS_PER_STEP=60 \
+#   WEIGHTS_FILE=<file containing 0.00,0.50,0.50> ./thallium_pipeline.sh results-local/swim_planners/thallium-reconstructed
+# seed-set 0 reproduces SWIM's shipped thallium-0 run (validation); 1-10 are the baseline
+thallium_s00 thallium 0 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s01 thallium 1 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s02 thallium 2 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s03 thallium 3 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s04 thallium 4 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s05 thallium 5 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s06 thallium 6 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s07 thallium 7 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s08 thallium 8 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s09 thallium 9 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50
+thallium_s10 thallium 10 results-local/swim_planners/thallium-reconstructed/trim0.00-0.50-0.50

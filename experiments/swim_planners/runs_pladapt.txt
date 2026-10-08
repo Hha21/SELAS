@@ -1,0 +1,13 @@
+# label config seed-set relation
+# seed-set 0 reproduces SWIM's shipped pladapt-0 run (validation); 1-10 are the baseline
+pladapt_s00 pladapt 0 image:pladapt
+pladapt_s01 pladapt 1 image:pladapt
+pladapt_s02 pladapt 2 image:pladapt
+pladapt_s03 pladapt 3 image:pladapt
+pladapt_s04 pladapt 4 image:pladapt
+pladapt_s05 pladapt 5 image:pladapt
+pladapt_s06 pladapt 6 image:pladapt
+pladapt_s07 pladapt 7 image:pladapt
+pladapt_s08 pladapt 8 image:pladapt
+pladapt_s09 pladapt 9 image:pladapt
+pladapt_s10 pladapt 10 image:pladapt
