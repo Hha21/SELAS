@@ -100,6 +100,32 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 ---
 
+## A2. Objective ablation — OpenRouter rows done, CSF rows running (2026-10-08)
+
+Design in PAPER.md (decision of 2026-10-08): Part A's two arms with no
+objective stated (`cot-noobj` / `direct-noobj`: no objective block, no utility
+lines), worked examples kept. 10 runs per arm. Figure
+`figures/models/ablation.{png,pdf}` (`ablation_plot.py`). Effect of stating
+the objective = objective − none, paired by seed-set, 95% t-interval.
+
+| model | no objective, with explanation | no objective, without | effect, with explanation | effect, without |
+|---|---|---|---|---|
+| gpt-4o-mini | 6755 ± 916 | 3892 ± 207 | **+4052 [2752, 5352]** | **+8062 [6716, 9408]** |
+| gpt-4o | 1607 ± 1484 | 4301 ± 1560 | **−1831 [−3331, −331]** | **−3506 [−5191, −1821]** |
+| DeepSeek-V3 | 3005 ± 3748 | 5581 ± 2322 | −14 [−2830, 2802] | **−1807 [−3501, −112]** |
+
+The effect of stating the objective changes sign across models: gpt-4o-mini
+needs it (without it, and without an explanation, it is below doing nothing),
+while the two models that chase the formula's server-cost term (§A reading 3)
+do better without it. CSF rows (8 models): gpuA jobs 22287898-929.
+
+Bookkeeping: the laptop lost its network at ~04:20; round 3 (gpt-4o, seed-sets
+0-7) skipped periods and five SWIMs crashed at 0 servers; set aside in
+`results-local/aborted/fo-gpt4o-20261008-03052*` and re-run (all 16 clean).
+The crash led to a loop fix (commit 641adab).
+
+---
+
 ## B. Interpretability on the final design — gemma-3 27B, 10 runs (2026-10-07/08)
 
 The 10 `cot` (with explanation) runs of §A, 1050 decisions: 946 no-ops and

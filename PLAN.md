@@ -26,7 +26,8 @@ x worked examples {2, 0}; 14 new cells) -- PAPER.md.
 Arms `cot-noobj` / `direct-noobj` (run_comparison.sbatch), 10 runs each.
 - CSF, 8 models: gpuA jobs 22287898-22287929 (4 per model: seeds 0-2, 3-5,
   6-7, 8-9; Llama-70B bf16 on 4 GPUs last), tags `final-<model>`.
-- OpenRouter, 3 models: local chain `results-local/launch/chain-or-20261008.sh`
+- OpenRouter, 3 models: **done** (RESULTS §A2); local chain `results-local/launch/chain-or-20261008.sh`
+  plus the round-3 re-run `chain-or-20261008b.sh`
   (resumable, markers `n*-*.done`; log `chain-or-20261008.log`; ~7 h from
   00:33 on 2026-10-08; the laptop must stay on). Result folders are named in
   UTC (`fo-*-20261007-23*` onwards).
