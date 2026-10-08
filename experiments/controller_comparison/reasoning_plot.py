@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Utility per model, with and without the written explanation.
+"""Utility per model, with and without the elicited reasoning.
 
 One row per model (by family and size; OpenRouter models last), one dot per
 run for each arm, a bar at each arm's mean. Reference lines: any given with
@@ -32,7 +32,7 @@ ROWS = [  # (table key, label)
     ("gpt4omini (OpenRouter)", "gpt-4o-mini*"), ("gpt4o (OpenRouter)", "gpt-4o*"),
     ("deepseekv3 (OpenRouter)", "DeepSeek-V3*"),
 ]
-ARMS = [("cot", "with explanation"), ("direct", "without explanation")]
+ARMS = [("cot", "with reasoning"), ("direct", "without reasoning")]
 
 
 def main() -> int:

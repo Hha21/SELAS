@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The objective ablation: utility per model, objective stated or not, with
-and without the written explanation.
+and without the elicited reasoning.
 
 Two panels sharing the model rows: left the objective is stated (Part A's
 ``cot`` / ``direct``), right it is not (``cot-noobj`` / ``direct-noobj``: no
@@ -31,7 +31,7 @@ from reasoning_plot import ROWS
 
 PANELS = [("objective stated", ("cot", "direct")),
           ("no objective", ("cot-noobj", "direct-noobj"))]
-LABELS = ("with explanation", "without explanation")
+LABELS = ("with reasoning", "without reasoning")
 
 
 def main() -> int:

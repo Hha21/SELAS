@@ -95,29 +95,58 @@ gap?** In progress.
 - Either outcome is reportable: a working read-and-write interface to the
   pre-bottleneck state, or an honest limit of current NLA on a narrow domain.
 
-## Draft abstract (RQ3 results pending)
+## Draft abstract (2026-10-08)
 
-> Self-adaptive systems are becoming more autonomous, and their stakeholders
-> need them to explain their behaviour. When a large language model (LLM) is
-> the managing system, it writes a natural-language reasoning trace before
-> each decision: a built-in self-explanation. We study how far that trace
-> explains the system's behaviour. On the SWIM exemplar, an LLM managing
-> system (gemma-3-27b, in a MAPE-K loop) far outperforms doing nothing and
-> SWIM's reactive managers, robustly across configurations, seeds and capable
-> models; how the objective is phrased barely matters, except that an
-> incomplete plain-language rule is followed literally by every model tested.
-> We then ask whether the trace is faithful and complete. By intervening on
-> the reasoning and swapping the objective, we find that it is faithful where
-> the system acts, since the decision follows what is written, while decisions
-> to do nothing are determined by the observed state alone, so the trace
-> describes rather than causes them; it also exposes the misspecified
-> objective. The trace is, however, incomplete: tokens compress the model's
-> internal state, and the decision to act is already represented in the
-> model's activations before any reasoning is written. We use natural-language
-> autoencoders to read that state as text, and test whether their explanations
-> are themselves faithful [result pending]. We argue that self-explaining
-> adaptive systems should target explanation at actions, and treat the trace
-> as a faithful but lossy channel.
+Built on Harry's Overleaf draft (its first five sentences kept, "agential" →
+"agentic"), with the final-design results (RESULTS §A-§B). The one sentence in
+[brackets] is what Part 2 is expected to show and is not yet measured. About
+370 words; trim to the venue's limit.
+
+> Modern software systems are expected to operate and maintain goals
+> continuously under ever-increasing uncertainty. The rise of LLM-enabled
+> agentic reasoning is triggering fresh interest in how machine-learning can
+> be used to support the adaptive capabilities of such systems. As systems
+> become increasingly autonomous in their decision-making, interpretability
+> becomes a first-order concern: stakeholders must be able to understand and
+> govern how a system adapts. Yet the chain-of-thought traces produced by LLM
+> reasoners, whilst plausible, carry no guarantee of faithfully reflecting the
+> model's decision-making process. We instantiate an LLM-based managing system
+> on the SWIM exemplar environment with reasoning elicited from the model
+> before acting, and compare eleven models from four families with and
+> without it: eliciting reasoning changes how often the system acts more than
+> how well it performs, and stating the objective widens rather than narrows
+> the differences between models. Following this, we present a multi-faceted
+> investigation of the interpretability of the elicited reasoning traces. The
+> reasoning is causally faithful where the system acts: removing it changes
+> 60\% of active decisions and substituting another period's reasoning
+> changes all of them, and both the objective and the observed telemetry
+> influence the decision almost entirely through what the model writes.
+> Decisions to do nothing, however, are fixed by the observed state: they
+> survive the removal of the reasoning (1--9\% change) and are predictable
+> from the state alone, so for inaction the reasoning is a post-hoc
+> rationalisation. Since every generated token compresses the model's
+> internal state, we then read that state directly with natural-language
+> autoencoders (NLA), which translate activations into text and back. The
+> decision is partly represented before any reasoning is written, and NLA
+> explanations at the point of decision are causally faithful: editing the
+> action they name and writing the change back moves the model's choice to
+> the edited action in 89\% of no-op and 54\% of active decisions, as
+> reliably as a supervised steering direction, while a random direction of
+> the same size moves fewer than 1\%. [The same holds for a managing system
+> that writes no reasoning at all, giving it a self-explanation it otherwise
+> lacks.] We argue that self-explaining adaptive systems should direct
+> written reasoning at actions, and complement it with activation-level
+> explanations for what the text leaves out.
+
+Where each claim comes from: models and the objective's spread, §A and §A2
+(Llama-70B no-objective rows pending); 60% / all / 1-9%, §B2
+faithfulness; objective through the reasoning, §B1 (92% of changes); telemetry
+through the reasoning, §B2 counterfactual (0-13% with the reasoning held vs
+73-100% regenerated); predictable from the state, §B2 simulatability
+(96-99%); represented before the reasoning, §B3 (dimmer changes 82% vs
+57-59% from telemetry); edit and patch, §B4 (patch 0.19·|h|; random 0.0% /
+0.8%). The bracketed sentence needs Part 2 (NLA and edit-and-patch on the
+gemma-27B runs without reasoning).
 
 ## Contributions (draft)
 
@@ -178,14 +207,17 @@ the other models' weights are being copied/downloaded to `~/scratch/hf`.
 
 - **Rule 3 is dropped from the paper** (an artefact of one plain-language
   rule; not pursued further).
-- **Terminology: "explanation", not "reasoning".** What the arms compare is
-  whether the managing system is asked to write a structured self-explanation
-  (SLA / Capacity / Trend / Therefore) before acting. Instruction-tuned models
-  with a prompted explanation are the object of study: it is the deployable
-  self-explaining design, and the one NLA pairs exist for. Reasoning-trained
-  ("thinking") models are out of scope -- a different object (RL-trained,
-  unstructured, often hidden traces) with no NLA pair; limitation / future
-  work, at most a behavioural-only data point.
+- ~~Terminology: "explanation", not "reasoning".~~ Superseded 2026-10-08:
+  **"reasoning" for the trace, "self-explanation" for its role.** What the
+  arms compare is prompted chain-of-thought (the "think step by step" kind;
+  the term of the method's source paper and the CoT-faithfulness literature):
+  arms "with reasoning" / "without reasoning". Whether that reasoning works as
+  the system's self-explanation is the paper's question, hence the title; for
+  no-ops it is a post-hoc rationalisation. State once, early, that this is
+  prompted reasoning from instruction-tuned models (the deployable design, and
+  the one NLA pairs exist for); reasoning-trained ("thinking") models stay out
+  of scope -- RL-trained, unstructured, often hidden traces, no NLA pair;
+  limitation / future work.
 - **Part A figure:** `experiments/controller_comparison/reasoning_plot.py`
   on `results-local/csf/final_table.json` (from `final_table.py`) ->
   `figures/models/reasoning.{png,pdf}`; rows = models, dots = runs, bars =

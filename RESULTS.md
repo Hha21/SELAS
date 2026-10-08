@@ -20,12 +20,16 @@ reduced configuration and is kept for the record, not for the poster.
 
 ## A. Part A final design — 10 runs per arm (2026-10-07)
 
+Terminology (2026-10-08, PAPER.md): the arms are "with reasoning" (`cot`,
+prompted chain-of-thought) and "without reasoning" (`direct`); entries written
+before that say "explanation" for the same thing.
+
 Design in PAPER.md ("Part A, final design"; decisions of 2026-10-06):
 published SWIM configuration (ClarkNet, 12 servers from 3, boot 180 s, 10
 dimmer levels), prompt `combined` (rules 1-2 + utility function + each
-period's utility, two worked examples), arms `cot` = **with explanation**
+period's utility, two worked examples), arms `cot` = **with reasoning**
 (SLA / Capacity / Trend / Therefore, then the action) and `direct` = **without
-explanation** (the action only), temperature 0. CSF: vLLM, the scored letter
+reasoning** (the action only), temperature 0. CSF: vLLM, the scored letter
 (gpuA A100s). OpenRouter: the letter the model writes, probabilities masked to
 legal options as on CSF, an illegal letter refused once and re-asked when the
 provider returns no probabilities. Only arms that pass their integration check
@@ -33,7 +37,7 @@ count (`final_table.py`); 17 arms lost to a ~14:16 scratch stall on
 2026-10-06 were re-run. Figure: `figures/models/reasoning.{png,pdf}`
 (`reasoning_plot.py`), dotted = do nothing 5101, dashed = static 12891.6.
 
-| model | runs | with explanation | without | with − without [95% CI] | periods acted in (with / without) |
+| model | runs | with reasoning | without | with − without [95% CI] | periods acted in (with / without) |
 |---|---|---|---|---|---|
 | gemma-3 4B | 10/10 | 5333 ± 1551 | 4504 ± 13 | +828 [−287, 1944] | 51 / 85 |
 | gemma-3 12B | 10/10 | 10149 ± 1321 | 11053 ± 1687 | −905 [−2718, 909] | 25 / 6 |
@@ -109,7 +113,7 @@ lines), worked examples kept. 10 runs per arm (Llama-8B 6 and Qwen-7B `cot`
 (`ablation_plot.py`). Effect of stating the objective = objective − none,
 paired by seed-set, 95% t-interval; bold = interval excludes 0.
 
-| model | no objective, with explanation | no objective, without | effect, with explanation | effect, without |
+| model | no objective, with reasoning | no objective, without | effect, with reasoning | effect, without |
 |---|---|---|---|---|
 | gemma-3 4B | 5180 ± 1064 | 11787 ± 1006 | +153 [−1316, 1621] | **−7283 [−7997, −6569]** |
 | gemma-3 12B | 4839 ± 1423 | 5774 ± 2201 | **+5310 [4308, 6312]** | **+5279 [2873, 7685]** |
@@ -139,7 +143,7 @@ Readings:
    configuration, not evidence of understanding; with the objective it flails
    (85 actions).
 4. Behaviour again moves more than utility is explained: Qwen-14B without the
-   objective acts in 103 of 105 periods without explanation and keeps the
+   objective acts in 103 of 105 periods without reasoning and keeps the
    dimmer near 0.1.
 
 CSF jobs 22287898-929; Llama-70B (22287926-929) queued; re-runs 22341630/1
@@ -156,7 +160,11 @@ The crash led to a loop fix (commit 641adab).
 
 ## B. Interpretability on the final design — gemma-3 27B, 10 runs (2026-10-07/08)
 
-The 10 `cot` (with explanation) runs of §A, 1050 decisions: 946 no-ops and
+Terminology: in B1-B2 "explanation" means the model's written reasoning
+(SLA / Capacity / Trend / Therefore); in B3-B4 it means the NLA's text (the
+AV's explanation of an activation).
+
+The 10 `cot` (with reasoning) runs of §A, 1050 decisions: 946 no-ops and
 104 actions (34 dimmer → 1.0, 54 dimmer lowered, 13 add, 3 remove). Staged on
 CSF as `~/selas-results/interp-gemma27b-final/cot-s{0..9}` (each `SOURCE` file
 names the original run); local copy `results-local/csf/interp-gemma27b-final/`.
