@@ -100,7 +100,7 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 ---
 
-## B. Interpretability on the final design — gemma-3 27B, 10 runs (in progress, 2026-10-07)
+## B. Interpretability on the final design — gemma-3 27B, 10 runs (2026-10-07/08)
 
 The 10 `cot` (with explanation) runs of §A, 1050 decisions: 946 no-ops and
 104 actions (34 dimmer → 1.0, 54 dimmer lowered, 13 add, 3 remove). Staged on
@@ -131,7 +131,7 @@ actions, not on no-ops (which stay no-ops without it 97% of the time). This
 repeats §3a (rule 3, 72-98% through the reasoning) on the canonical prompt
 without the planted rule, now with 10 runs.
 
-### B2. Intervention battery — faithfulness done; counterfactual and simulatability running
+### B2. Intervention battery — done (2026-10-08)
 
 gpuA jobs 22284596 (cot-s0..4) and 22284597 (cot-s5..9). Decisions whose
 action changes when the explanation is perturbed and the letter re-scored
@@ -158,9 +158,76 @@ actions, but with the conclusion removed the negated premise adds about 8
 points to the 39% the removal alone causes. This repeats §3 on the canonical
 prompt with 10 runs.
 
-### B3. NLA — running
+**Counterfactual telemetry.** One telemetry value edited per decision
+(response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare
+capacity none / ample; the shown utility recomputed to match). Decisions that
+differ between the two opposing edits:
 
-`pilot.py` on the 10 runs, gpuA job 22285815 → `~/selas-results/nla-gemma27b-final`.
+| | no-op | action |
+|---|---|---|
+| explanation **regenerated** from the edited telemetry: response time | 99.8% | 98.1% |
+| — load | 95.1% | 76.9% |
+| — spare capacity | 73.3% | 69.2% |
+| explanation **kept** as recorded: response time | 0.0% | 12.5% [7.7, 17.9] |
+| — load | 0.0% | 9.6% |
+| — spare capacity | 0.0% | 3.8% |
+
+The regenerated explanations report the substituted value in 99-100% of
+cases (exact match). **The telemetry reaches the decision through the
+explanation:** with the explanation held fixed, editing what the model sees
+almost never changes what it does (0% of no-ops, 4-13% of actions), whereas
+letting it re-explain changes 73-100%. This is the telemetry counterpart of
+B1's objective result, and it covers no-ops too: a no-op is fixed by the
+state, but the state acts through what the model writes about it.
+
+**Simulatability.** A simulator model predicts the controller's action from
+the state (x), the explanation (e), both (xe), or the explanation without its
+conclusion (e_premises). Accuracy:
+
+| simulator | no-op: x | action: x | action: e | action: xe | action: e_premises |
+|---|---|---|---|---|---|
+| gemma-3 12B | 98.8% | 15.4% | 66.3% | 68.3% | 22.1% |
+| Qwen2.5 14B | 96.1% | 43.3% | 52.9% | 69.2% | 25.0% |
+| gemma-3 27B (the controller itself) | 98.8% | 40.4% | 62.5% | 98.1% | 47.1% |
+
+No-ops are predictable from the state alone (96-99%). Actions are not
+(15-43%); the explanation is what makes them predictable (53-66% from it
+alone, 68-69% with the state for the other models), and most of that is the
+conclusion (premises alone 22-47%). Same reading as the interventions: the
+explanation explains actions; for inaction the state already suffices.
+
+### B3. NLA on the 10 runs — done (2026-10-08)
+
+`pilot.py`, gpuA job 22285815 (96 min) → `~/selas-results/nla-gemma27b-final`
+(local copy `results-local/nla/nla-gemma27b-final/`, `analyse_pilot.py` →
+`summary.json`). 1050 decisions × 7 positions + the reference example.
+
+- **Reference reproduces** (fve_nrm 0.752 vs published 0.757; norms within
+  0.75%).
+- **Fidelity** (fve_nrm median): end of state 0.08, model turn opened
+  (before any explanation) 0.54, SLA 0.64, Capacity 0.76, Trend 0.71,
+  Therefore 0.74, action cue 0.47. As in the pilot, the reasoning positions
+  are carried best, the end of the state and the action cue worst.
+- **Decision-specific content** (centred check, §3b): matched centred cosine
+  above shuffled at every position (e.g. Capacity +0.68 vs +0.07, Trend +0.59
+  vs +0.08); an explanation picks out its own decision first of 1050 in 31% of
+  cases at Trend, 21% at Therefore, 22% at the end of the state (chance 0.1%).
+- **The action cue explanation names the chosen letter in 1004 of 1050
+  decisions (95.6%)**; it names some letter in all 1050.
+- **Before any explanation is written.** This design has few server actions
+  (13 adds, 3 removes, 88 dimmer changes, 946 no-ops), so the pilot's
+  removal result (14 removals) cannot be re-tested here. For dimmer changes,
+  the linear read-out from the activation where the model's turn opens
+  recovers 82% (from its NLA reconstruction, i.e. the words: 72%) against
+  57-59% from the telemetry numbers and prompt; adds 15% (0% from
+  telemetry). The decision is partly represented before it is verbalised;
+  caveat as before: a linear read-out from five numbers is a weak baseline
+  for what the full telemetry text encodes.
+
+### B4. Edit and patch — queued
+
+`edit_patch.py` (smoke job 22286274, then full job 22286275), behind the
+objective-ablation jobs on gpuA.
 
 ---
 
