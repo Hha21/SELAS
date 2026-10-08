@@ -83,11 +83,15 @@ gap?** In progress.
      65–70% of cases at the Trend/Therefore lines (chance 0.3%); and the
      action read from the reconstructions — from the words — recovers 57% of
      removals before any reasoning is written (telemetry + prompt: 0%) (§3b).
-  2. *Edit and patch* (to build): at the action cue, edit the explanation to
-     name a different action, reconstruct, add the difference to the true
-     activation, and see whether the model's choice moves as the words say
-     (controls: paraphrase, random edit, patch strength). The ablation logic of
-     RQ2 applied to NLA: is its explanation causally faithful?
+  2. *Edit and patch* (done 2026-10-08, §B4): at the action cue, swap the
+     letter the NLA explanation names, reconstruct, move the activation by the
+     difference. The choice moves to the edited option in 89% / 54% of no-op /
+     action decisions at 0.19·|h| and 99.9% / 80% at 0.37·|h| -- matching or
+     beating the supervised class-mean direction, against ≤ 2% for a random
+     direction of the same norm. At the natural strength (keep what the words
+     do not carry, swap what they do) the edited option gains ~5.5 nats but
+     rarely wins (fve ≈ 0.47 there). The NLA explanation is causally faithful
+     at the point of decision; earlier positions are the next test.
 - Either outcome is reportable: a working read-and-write interface to the
   pre-bottleneck state, or an honest limit of current NLA on a narrow domain.
 

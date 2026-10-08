@@ -48,15 +48,9 @@ run-resampled intervals). Results go in RESULTS §B.
 2. **Intervention battery** -- **done** (jobs 22284596/7; RESULTS §B2).
 3. **NLA pilot** on the 10 runs -- **done** (job 22285815; RESULTS §B3;
    local copy `results-local/nla/nla-gemma27b-final/`).
-4. **Edit and patch** (`experiments/nla/edit_patch.py`, `run_edit_patch.sbatch`,
-   `analyse_patch.py`; offline test `test_edit_patch.py`): at P_action, swap
-   the chosen letter in the AV explanation for another legal one, reconstruct
-   both with the AR, move layer 41 by |h| * (unit(AR(E')) - unit(AR(E))) * alpha
-   (alpha 1, 2, 4, 8), re-read the letter; controls at matched norm: the
-   leave-one-run-out class-mean difference and a random direction. Smoke job
-   22286274 (3 decisions -> `nla-gemma27b-final/patch-smoke`) then full job
-   22286275 (`-> nla-gemma27b-final/patch`, afterok on the smoke), both after
-   the pilot. When done: rsync `patch/`, `analyse_patch.py`, write §B4.
+4. **Edit and patch** -- **done** (job 22286275; RESULTS §B4, figure
+   `figures/nla/patch.{png,pdf}`). Next candidate: the same at P0_turn (before
+   any explanation), editing content rather than the letter.
 
 Watchers (background, this session): replay jobs, NLA pilot, edit-patch.
 

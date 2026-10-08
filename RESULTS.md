@@ -250,10 +250,49 @@ explanation explains actions; for inaction the state already suffices.
   caveat as before: a linear read-out from five numbers is a weak baseline
   for what the full telemetry text encodes.
 
-### B4. Edit and patch — queued
+### B4. Edit and patch — done (2026-10-08)
 
-`edit_patch.py` (smoke job 22286274, then full job 22286275), behind the
-objective-ablation jobs on gpuA.
+Is the NLA explanation at the action cue *causally* faithful? For each
+decision, the chosen letter in the AV's explanation is swapped for each other
+legal option where the explanation names it as the choice (median 8
+replacements per explanation; 1045 of 1050 decisions, 6204 edits). The AR
+reconstructs both texts, and the layer-41 activation at the action cue is
+moved by alpha·|h|·(unit(AR(edited)) − unit(AR(original))); layers 42-61 are
+re-run and the letter read as the controller reads it. Controls at the same
+norm: the leave-one-run-out class-mean difference (supervised reference) and
+a random direction. gpuA job 22286275 (2 h 13 min); `edit_patch.py`,
+`analyse_patch.py`, figure `figures/nla/patch.{png,pdf}` (`plot_patch.py`);
+local copy `results-local/nla/nla-gemma27b-final/patch/`.
+
+Control: the unpatched replay (transformers) chooses the recorded action in
+99.8% of decisions; the activation it patches matches the captured one
+(cosine 1.0000).
+
+Choice moves to the option the edited explanation names (no-op / action):
+
+| patch size / \|h\| | NLA edit | class-mean difference | random |
+|---|---|---|---|
+| 0.09 (alpha 1) | 0.2% / 14.9% | 0.1% / 7.2% | 0.0% / 0.5% |
+| 0.19 (alpha 2) | **89.2% / 53.8%** | 49.4% / 43.1% | 0.0% / 0.8% |
+| 0.37 (alpha 4) | **99.9% / 80.4%** | 98.0% / 77.7% | 0.0% / 2.3% |
+| 0.74 (alpha 8) | 100% / 90.8% | 46.9% / 78.6% | 0.6% / 5.1% |
+
+Log-probability of the edited option, alpha 1: +5.6 nats (no-op) / +5.4
+(action) for the NLA edit, −0.4 / −0.3 for random.
+
+Readings:
+1. **The explanation's words are causally linked to the decision**: editing
+   the letter the explanation names and writing the difference back moves the
+   choice to that letter, as reliably as the supervised class-mean direction
+   (better at small sizes) and far beyond a random direction of the same norm.
+2. **At the natural strength (alpha 1, swap what the words carry and keep the
+   rest) the shift is real but sub-threshold**: the edited option gains
+   ~5.5 nats yet rarely wins. Consistent with fve_nrm ≈ 0.47 at this position:
+   the reconstruction carries about half of what distinguishes the vector.
+3. Scope: at the action cue the decision is the next token, so this shows NLA
+   as a working read-*and-write* interface at the point of decision; whether
+   its content edits work earlier (before any explanation is written, P0_turn)
+   is the natural next test.
 
 ---
 
