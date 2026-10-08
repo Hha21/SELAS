@@ -100,24 +100,52 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 ---
 
-## A2. Objective ablation — OpenRouter rows done, CSF rows running (2026-10-08)
+## A2. Objective ablation — all but Llama-70B (CSF) done (2026-10-08)
 
 Design in PAPER.md (decision of 2026-10-08): Part A's two arms with no
 objective stated (`cot-noobj` / `direct-noobj`: no objective block, no utility
-lines), worked examples kept. 10 runs per arm. Figure
-`figures/models/ablation.{png,pdf}` (`ablation_plot.py`). Effect of stating
-the objective = objective − none, paired by seed-set, 95% t-interval.
+lines), worked examples kept. 10 runs per arm (Llama-8B 6 and Qwen-7B `cot`
+9 until the re-runs land). Figure `figures/models/ablation.{png,pdf}`
+(`ablation_plot.py`). Effect of stating the objective = objective − none,
+paired by seed-set, 95% t-interval; bold = interval excludes 0.
 
 | model | no objective, with explanation | no objective, without | effect, with explanation | effect, without |
 |---|---|---|---|---|
+| gemma-3 4B | 5180 ± 1064 | 11787 ± 1006 | +153 [−1316, 1621] | **−7283 [−7997, −6569]** |
+| gemma-3 12B | 4839 ± 1423 | 5774 ± 2201 | **+5310 [4308, 6312]** | **+5279 [2873, 7685]** |
+| gemma-3 27B | 11688 ± 383 | 5217 ± 0 | −219 [−659, 221] | **+7071 [5708, 8435]** |
+| Qwen2.5 7B | 3992 ± 711 (n=9) | 5008 ± 255 | −1794 [−3973, 386] | **−4271 [−7703, −838]** |
+| Qwen2.5 14B | 3391 ± 799 | 4032 ± 2 | **+8118 [7112, 9123]** | **+1430 [1339, 1520]** |
+| Qwen2.5 32B | 2388 ± 1251 | 2696 ± 1622 | **−5194 [−6621, −3767]** | **−3298 [−6162, −434]** |
+| Llama-3.1 8B (n=6) | 5499 ± 943 | 5064 ± 1668 | +1141 [−116, 2397] | **+4232 [977, 7486]** |
+| Llama-3.3 70B | pending | pending | | |
 | gpt-4o-mini | 6755 ± 916 | 3892 ± 207 | **+4052 [2752, 5352]** | **+8062 [6716, 9408]** |
 | gpt-4o | 1607 ± 1484 | 4301 ± 1560 | **−1831 [−3331, −331]** | **−3506 [−5191, −1821]** |
 | DeepSeek-V3 | 3005 ± 3748 | 5581 ± 2322 | −14 [−2830, 2802] | **−1807 [−3501, −112]** |
 
-The effect of stating the objective changes sign across models: gpt-4o-mini
-needs it (without it, and without an explanation, it is below doing nothing),
-while the two models that chase the formula's server-cost term (§A reading 3)
-do better without it. CSF rows (8 models): gpuA jobs 22287898-929.
+Readings:
+1. **The effect of stating the objective changes sign across models.** It
+   helps gemma-12B, Qwen-14B, gpt-4o-mini (and gemma-27B without an
+   explanation); it hurts the models that chase the formula's server-cost
+   term (Qwen-32B, gpt-4o, DeepSeek-V3, §A reading 3) and Qwen-7B.
+2. **For gemma-27B the explanation stands in for the objective**: with an
+   explanation, removing the objective changes nothing (11688 vs 11469);
+   without one, the model sets the dimmer to 0.75 once and holds (5217 in
+   every run). The worked examples' explanations state priorities ("raise the
+   dimmer before giving up a server"), so in the explanation arm the goal still
+   reaches the model -- the caveat noted in PAPER.md, here visible.
+3. gemma-4B without objective or explanation scores 11787 by acting rarely
+   (7 actions, dimmer 0.93): a simple policy that happens to suit this
+   configuration, not evidence of understanding; with the objective it flails
+   (85 actions).
+4. Behaviour again moves more than utility is explained: Qwen-14B without the
+   objective acts in 103 of 105 periods without explanation and keeps the
+   dimmer near 0.1.
+
+CSF jobs 22287898-929; Llama-70B (22287926-929) queued; re-runs 22341630/1
+(Llama-8B seed-sets 6-9; the first attempt ran on node856, where SWIM slowed to
+1/15 of real time and died, set aside in `~/selas-results/invalid-node856/`)
+and 22341632 (Qwen-7B `cot-noobj` seed-set 4, whose SWIM died at period 86).
 
 Bookkeeping: the laptop lost its network at ~04:20; round 3 (gpt-4o, seed-sets
 0-7) skipped periods and five SWIMs crashed at 0 servers; set aside in
