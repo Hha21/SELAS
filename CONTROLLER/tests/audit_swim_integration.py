@@ -266,7 +266,7 @@ def _latency(d) -> float:
     return float(d["decision"].get("latency_s") or 0.0)
 
 
-def _estimate_offset(decisions, bchg) -> float:
+def _estimate_offset(decisions, bchg, schg=()) -> float:
     """sim time of controller-elapsed 0: median lag between each recorded dimmer
     change and the latest earlier sent set_dimmer decision with that value,
     less that decision's own latency.
@@ -283,6 +283,18 @@ def _estimate_offset(decisions, bchg) -> float:
         cands = [tg - e for e, b in sent if abs(b - new) < 1e-9 and 0 <= tg - e <= 30]
         if cands:
             diffs.append(min(cands))
+    # Fewer than three dimmer pairs is too few to date the clock: one mis-paired
+    # change put a run (Llama-8B, 2026-10-08) 5.7 s off and failed every server
+    # check of an otherwise sound run. Server changes (+1 on add_server, -1 on
+    # remove_server, recorded when the command lands) are paired the same way.
+    if len(diffs) < 3 and schg:
+        moved = [(d["sim_elapsed_s"] + _latency(d), +1 if d["decision"]["action_kind"] == "add_server" else -1)
+                 for d in decisions if d["execution"]["sent"]
+                 and d["decision"]["action_kind"] in ("add_server", "remove_server")]
+        for tg, old_v, new_v in schg:
+            cands = [tg - e for e, step in moved if step == round(new_v - old_v) and 0 <= tg - e <= 30]
+            if cands:
+                diffs.append(min(cands))
     if not diffs:
         raise ValueError("no dimmer change could be paired with a decision")
     diffs.sort()
@@ -315,12 +327,13 @@ def check(results: Path, scripted: bool = True, max_servers: int = 12) -> dict:
 
     bchg = changes(brown)
     try:
-        offset = _estimate_offset(decisions, [c for c in bchg if c[0] >= t_min])
+        offset = _estimate_offset(decisions, [c for c in bchg if c[0] >= t_min],
+                                  [c for c in changes(servers) if c[0] >= t_min])
     except ValueError:
         # Nothing was commanded (a do-nothing run), so there is no action to
         # date the clock from; every run that did act measured 0.92-0.96 s.
         offset = 0.93
-        report["notes"].append("no dimmer change to estimate the clock offset from; assumed 0.93 s")
+        report["notes"].append("no dimmer or server change to estimate the clock offset from; assumed 0.93 s")
     report["offset_s"] = offset
     report["boot_delay_s"] = boot
     if not (-1.0 <= offset <= 15.0):
