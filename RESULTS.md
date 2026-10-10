@@ -335,6 +335,12 @@ Choice moves to the option the edited explanation names (no-op / action):
 Log-probability of the edited option, alpha 1: +5.6 nats (no-op) / +5.4
 (action) for the NLA edit, −0.4 / −0.3 for random.
 
+The class-mean direction exists only for targets another run chose (5886 of
+the 6204 edits here), so the figure scores all three directions on those
+edits (`analyse_patch.py` keys ending `|matched`, `plot_patch.py --matched`).
+Here that barely matters (NLA 88.7% / 53.2% at alpha 2, 99.9% / 80.7% at
+alpha 4); it matters in §B5.
+
 Readings:
 1. **The explanation's words are causally linked to the decision**: editing
    the letter the explanation names and writing the difference back moves the
@@ -349,7 +355,7 @@ Readings:
    its content edits work earlier (before any explanation is written, P0_turn)
    is the natural next test.
 
-### B5. NLA without reasoning (Part 2) — pilot done (2026-10-10), patch running
+### B5. NLA without reasoning (Part 2) — done (2026-10-10)
 
 The same NLA analysis on gemma-3 27B's 10 `direct` (without reasoning) runs
 of §A: the model writes no reasoning, only "Action: X", so NLA is the only
@@ -391,6 +397,49 @@ Readings:
 4. The topic counts (`analyse_pilot.py` §4b) are crude: the "remove"
    pattern matches phrases like "reducing server load", so they are not
    reported.
+
+**Edit and patch without reasoning.** As §B4, gpuA jobs 22523716 (smoke,
+3 decisions) and 22523717 (1 h 40 min) → `.../nla-gemma27b-final-direct/patch`
+(local copy alongside). 1048 of 1050 decisions (2 explanations never name the
+chosen letter), 6224 edits, of which 6052 on no-ops and 172 on actions.
+Control: the unpatched replay chooses the recorded action in 99.9%; cosine to
+the captured vector 1.0000.
+
+Choice moves to the option the edited explanation names (no-op / action), on
+the 1935 edits the class-mean direction covers (targets another run chose:
+add, remove, dimmer 1.0, no-op), as in the figure:
+
+| patch size / \|h\| | NLA edit | class-mean difference | random |
+|---|---|---|---|
+| 0.07 (alpha 1) | 0.0% / 25.5% | 0.0% / 17.6% | 0.0% / 0.0% |
+| 0.15 (alpha 2) | 2.0% / 43.1% | 0.0% / 19.6% | 0.0% / 0.0% |
+| 0.29 (alpha 4) | **88.3% / 80.4%** | 9.4% / 76.5% | 0.0% / 0.0% |
+| 0.58 (alpha 8) | **99.0% / 100%** | 58.3% / 90.2% | 1.8% / 3.9% |
+
+On all 6224 edits, NLA (no-op / action): 0.0% / 12.8%, 0.6% / 29.1%,
+46.7% / 69.8%, 88.0% / 96.5%; random at most 0.9% / 2.9%. Log-probability of
+the edited option at alpha 1: +2.2 / +3.4 nats (NLA), +0.2 / −0.0 (random).
+
+Readings:
+5. **NLA is a causally faithful self-explanation for a system that writes
+   none.** Editing the action the NLA explanation names moves the choice to
+   it, far beyond a random direction of the same size, as with reasoning.
+6. **For no-ops it beats the supervised direction by far**: 88% vs 9% at
+   0.29·|h|. The class-mean direction (mean action-cue activation of
+   decisions that chose the target, minus that of decisions that chose the
+   current option, other runs only) has only the 27 actions to learn from;
+   the NLA edit needs no labelled examples.
+7. **Doing nothing is more entrenched without reasoning.** With reasoning,
+   0.19·|h| moved 89% of no-ops; without, 0.15·|h| moves 2% and 0.29·|h| is
+   needed for 88%. Edits toward options this model never chose (lower dimmer
+   settings) are harder still: 47% at 0.29·|h| over all edits.
+8. The actions are few (27 decisions, 51 matched edits), so their intervals
+   are wide.
+
+Figure: `figures/nla/patch.{png,pdf}`, rows with / without reasoning
+(`plot_patch.py results-local/nla/nla-gemma27b-final/patch
+results-local/nla/nla-gemma27b-final-direct/patch --label "with reasoning"
+--label "without reasoning" --matched -o figures/nla/patch`).
 
 ---
 

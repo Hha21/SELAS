@@ -98,9 +98,9 @@ gap?** In progress.
 ## Draft abstract (2026-10-08)
 
 Built on Harry's Overleaf draft (its first five sentences kept, "agential" →
-"agentic"), with the final-design results (RESULTS §A-§B). The one sentence in
-[brackets] is what Part 2 is expected to show and is not yet measured. About
-370 words; trim to the venue's limit.
+"agentic"), with the final-design results (RESULTS §A-§B). The Part 2 sentence, once in
+[brackets] as a prediction, is now measured (§B5, 2026-10-10). About
+400 words; trim to the venue's limit.
 
 > Modern software systems are expected to operate and maintain goals
 > continuously under ever-increasing uncertainty. The rise of LLM-enabled
@@ -130,23 +130,25 @@ Built on Harry's Overleaf draft (its first five sentences kept, "agential" →
 > decision is partly represented before any reasoning is written, and NLA
 > explanations at the point of decision are causally faithful: editing the
 > action they name and writing the change back moves the model's choice to
-> the edited action in 89\% of no-op and 54\% of active decisions, as
-> reliably as a supervised steering direction, while a random direction of
-> the same size moves fewer than 1\%. [The same holds for a managing system
+> the edited action in 89\% of no-op and 53\% of active decisions, at least
+> as reliably as a supervised steering direction, while a random direction of
+> the same size moves fewer than 1\%. The same holds for a managing system
 > that writes no reasoning at all, giving it a self-explanation it otherwise
-> lacks.] We argue that self-explaining adaptive systems should direct
+> lacks: the NLA explanation names the action taken in 94\% of decisions, and
+> editing it moves 88\% of no-op and 80\% of active decisions, where the
+> supervised direction moves only 9\% of no-ops. We argue that self-explaining adaptive systems should direct
 > written reasoning at actions, and complement it with activation-level
 > explanations for what the text leaves out.
 
-Where each claim comes from: models and the objective's spread, §A and §A2
-(Llama-70B no-objective rows pending); 60% / all / 1-9%, §B2
+Where each claim comes from: models and the objective's spread, §A and §A2; 60% / all / 1-9%, §B2
 faithfulness; objective through the reasoning, §B1 (92% of changes); telemetry
 through the reasoning, §B2 counterfactual (0-13% with the reasoning held vs
 73-100% regenerated); predictable from the state, §B2 simulatability
 (96-99%); represented before the reasoning, §B3 (dimmer changes 82% vs
-57-59% from telemetry); edit and patch, §B4 (patch 0.19·|h|; random 0.0% /
-0.8%). The bracketed sentence needs Part 2 (NLA and edit-and-patch on the
-gemma-27B runs without reasoning).
+57-59% from telemetry); edit and patch, §B4 (patch 0.19·|h|, the edits the
+class-mean direction also covers; random 0.0% / 0.9%); without reasoning,
+§B5 (names the chosen letter in 987/1050, all 27 actions; patch 0.29·|h|,
+same matched edits; class-mean 9.4% of no-ops; random 0.0%).
 
 ## Contributions (draft)
 

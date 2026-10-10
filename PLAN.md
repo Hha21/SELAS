@@ -24,7 +24,7 @@ x worked examples {2, 0}; 14 new cells) -- PAPER.md.
 ## Where we are (2026-10-10) -- results for the write-up
 
 Abstract: PAPER.md "Draft abstract (2026-10-08)". Every claim in it is measured
-(RESULTS §A, §A2, §B1-§B4) except the bracketed Part 2 sentence.
+(RESULTS §A, §A2, §B1-§B5). No experiments are outstanding.
 
 - **Part A (RQ1)** done: 11 models x with/without reasoning x 10 runs (§A);
   objective ablation, 11 models x 4 cells x 10 runs (§A2, done 2026-10-10).
@@ -35,13 +35,11 @@ Abstract: PAPER.md "Draft abstract (2026-10-08)". Every claim in it is measured
   re-targeted to SEAMS 2017A; fixed grid shows SWIM's configuration rewards a
   fixed configuration (also at 2x/3x load); reported as a limitation.
 - **Interpretability on gemma-27B with reasoning (RQ2-RQ3)** done: mediation
-  (§B1), battery (§B2), NLA (§B3), edit-and-patch (§B4, `figures/nla/patch`).
-- **Part 2, running**: NLA and edit-and-patch on the 10 gemma-27B runs
-  *without* reasoning (staged as `~/selas-results/interp-gemma27b-final-direct`):
-  pilot job 22523715 -> `~/selas-results/nla-gemma27b-final-direct`, then
-  edit-patch smoke 22523716 and full 22523717 (afterok). When done: rsync,
-  `analyse_pilot.py`, `analyse_patch.py`, `plot_patch.py`, write §B5, and
-  settle the bracketed abstract sentence.
+  (§B1), battery (§B2, `figures/interp/battery`), NLA (§B3), edit-and-patch
+  (§B4).
+- **Part 2** done (§B5): NLA and edit-and-patch on the 10 gemma-27B runs
+  *without* reasoning (jobs 22523715-17). `figures/nla/patch` now has both
+  rows (with / without reasoning), all directions on the same edits.
 
 ## Running: the objective ablation (PAPER.md, decision of 2026-10-08)
 

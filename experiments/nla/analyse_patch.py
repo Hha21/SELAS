@@ -12,6 +12,11 @@ Read the control first: the unpatched replay should choose the recorded action
 (it is the same model in transformers rather than vLLM, so a few near-ties may
 differ) and see the captured vector (cosine ~1). Intervals resample runs.
 
+The class-mean direction exists only for targets some other run chose, so it
+covers fewer edits than the others; every measure is also given on just the
+edits it covers (keys ending "|matched"), where the directions compare like
+for like.
+
     python analyse_patch.py PATCH_DIR [-o patch.json]
 """
 
@@ -58,6 +63,7 @@ def main() -> int:
 
     # (cond, alpha, measure, split) -> run -> values
     acc: dict = defaultdict(lambda: defaultdict(list))
+    covered = {(r["run"], r["period"], r["target"]) for r in rows if r["cond"] == "meandiff"}
     for r in rows:
         if r["cond"] == "unpatched":
             continue
@@ -68,21 +74,24 @@ def main() -> int:
         vals = {"to target": top(r["dist"]) == r["target"],
                 "changed": top(r["dist"]) != top(b["dist"]),
                 "dlogp": math.log(max(p1, 1e-12)) - math.log(max(p0, 1e-12))}
+        matched = (r["run"], r["period"], r["target"]) in covered
         for m, v in vals.items():
             for s in (split, "all"):
                 acc[(r["cond"], r["alpha"], m, s)][r["run"]].append(v)
+                if matched:
+                    acc[(r["cond"], r["alpha"], m, s, "matched")][r["run"]].append(v)
 
     summary = {}
     for key, per_run in acc.items():
         summary["|".join(map(str, key))] = pooled(list(per_run.values()))
     conds = [c for c in ("nla", "meandiff", "random") if any(k[0] == c for k in acc)]
     alphas = sorted({k[1] for k in acc})
-    for m in ("to target", "changed", "dlogp"):
-        print(f"\n{m}")
+    for m, sfx in (("to target", ""), ("changed", ""), ("dlogp", ""), ("to target", "|matched")):
+        print(f"\n{m}{' (edits the class-mean direction covers)' if sfx else ''}")
         print(f"{'direction':<10} {'alpha':>5}  {'no-op':>22}  {'action':>22}  {'n':>6}")
         for c in conds:
             for a in alphas:
-                s = [summary.get(f"{c}|{a}|{m}|{sp}") for sp in ("no_op", "action", "all")]
+                s = [summary.get(f"{c}|{a}|{m}|{sp}{sfx}") for sp in ("no_op", "action", "all")]
                 n = s[2]["n"] if s[2] else 0
                 print(f"{c:<10} {a:>5g}  {fmt(s[0], m != 'dlogp')}  {fmt(s[1], m != 'dlogp')}  {n:>6}")
     if args.out:

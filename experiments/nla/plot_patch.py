@@ -7,7 +7,9 @@ direction (NLA edit, class-mean difference, random), with the run-resampled
 95% interval as a band. The x axis is the patch size as a fraction of the
 activation's norm (alpha 1 = keep what the explanation does not capture, swap
 what it does). Several patch directories (e.g. with and without reasoning)
-become rows, named by --label.
+become rows, named by --label. With --matched, every direction is scored on
+the same edits: those the class-mean direction covers (targets some other run
+chose).
 
     python plot_patch.py PATCH_DIR [PATCH_DIR ...] [--label NAME ...] -o figures/nla/patch
 
@@ -35,16 +37,18 @@ DIRECTIONS = [("nla", "NLA edit", "#2a78d6"), ("meandiff", "class-mean differenc
               ("random", "random", "#8a8a85")]
 
 
-def load(d: Path):
-    """The measures and, per alpha, the median patch size relative to |h|."""
+def load(d: Path, matched: bool = False):
+    """The measures and, per alpha, the median patch size relative to |h|
+    (over the edits the class-mean direction covers, if matched)."""
     M = json.loads((d / "patch.json").read_text())["measures"]
     base, rel = {}, defaultdict(list)
     rows = [json.loads(l) for l in (d / "patched.jsonl").read_text().splitlines() if l.strip()]
     for r in rows:
         if r["cond"] == "unpatched":
             base[(r["run"], r["period"])] = r["h_norm"]
+    covered = {(r["run"], r["period"], r["target"]) for r in rows if r["cond"] == "meandiff"}
     for r in rows:
-        if r["cond"] == "nla":
+        if r["cond"] == "nla" and (not matched or (r["run"], r["period"], r["target"]) in covered):
             rel[r["alpha"]].append(r["delta_norm"] / base[(r["run"], r["period"])])
     alphas = sorted(rel)
     return M, alphas, [st.median(rel[a]) for a in alphas]
@@ -54,8 +58,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dirs", type=Path, nargs="+", help="patch directories, one row each")
     ap.add_argument("--label", action="append", default=[], help="row name, one per directory")
+    ap.add_argument("--matched", action="store_true",
+                    help="score every direction on the edits the class-mean direction covers")
     ap.add_argument("-o", "--out", type=Path, required=True)
     args = ap.parse_args()
+    sfx = "|matched" if args.matched else ""
     if args.label and len(args.label) != len(args.dirs):
         ap.error("give one --label per directory")
 
@@ -63,11 +70,11 @@ def main() -> int:
     nrow = len(args.dirs)
     fig, axes = plt.subplots(nrow, 2, sharey=True, squeeze=False, figsize=(7.2, 2.6 * nrow + 0.2))
     for r, d in enumerate(args.dirs):
-        M, alphas, x = load(d)
+        M, alphas, x = load(d, args.matched)
         for ax, (split, title) in zip(axes[r], (("no_op", "decisions to do nothing"),
                                                  ("action", "decisions to act"))):
             for cond, label, color in DIRECTIONS:
-                s = [M.get(f"{cond}|{a}|to target|{split}") for a in alphas]
+                s = [M.get(f"{cond}|{a}|to target|{split}{sfx}") for a in alphas]
                 pts = [(xi, v) for xi, v in zip(x, s) if v]
                 if not pts:
                     continue
