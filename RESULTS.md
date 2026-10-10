@@ -271,6 +271,12 @@ alone, 68-69% with the state for the other models), and most of that is the
 conclusion (premises alone 22-47%). Same reading as the interventions: the
 explanation explains actions; for inaction the state already suffices.
 
+**Figure for B1-B2:** `figures/interp/battery.{png,pdf}`
+(`experiments/replay/plot_battery.py results-local/csf/interp-gemma27b-final/battery.json -o figures/interp/battery`):
+(a) reasoning perturbed, (b) telemetry pushed each way with the reasoning kept
+or regenerated, (c) objective removed; decisions to act vs to do nothing,
+95% run-resampled intervals.
+
 ### B3. NLA on the 10 runs — done (2026-10-08)
 
 `pilot.py`, gpuA job 22285815 (96 min) → `~/selas-results/nla-gemma27b-final`
