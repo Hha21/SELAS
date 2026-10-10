@@ -104,7 +104,7 @@ load (2026-10-07). Superseded/failed runs: `~/selas-results/invalid-*`,
 
 ---
 
-## A2. Objective ablation — all but Llama-70B (CSF) done (2026-10-08)
+## A2. Objective ablation — done (2026-10-10)
 
 Design in PAPER.md (decision of 2026-10-08): Part A's two arms with no
 objective stated (`cot-noobj` / `direct-noobj`: no objective block, no utility
@@ -121,15 +121,15 @@ paired by seed-set, 95% t-interval; bold = interval excludes 0.
 | Qwen2.5 14B | 3391 ± 799 | 4032 ± 2 | **+8118 [7112, 9123]** | **+1430 [1339, 1520]** |
 | Qwen2.5 32B | 2388 ± 1251 | 2696 ± 1622 | **−5194 [−6621, −3767]** | **−3298 [−6162, −434]** |
 | Llama-3.1 8B | 5423 ± 800 | 4648 ± 1910 | **+1403 [497, 2308]** | **+5199 [3096, 7303]** |
-| Llama-3.3 70B | pending | pending | | |
+| Llama-3.3 70B | 6328 ± 2461 | 1488 ± 2530 | **+3643 [756, 6530]** | **+10953 [9136, 12771]** |
 | gpt-4o-mini | 6755 ± 916 | 3892 ± 207 | **+4052 [2752, 5352]** | **+8062 [6716, 9408]** |
 | gpt-4o | 1607 ± 1484 | 4301 ± 1560 | **−1831 [−3331, −331]** | **−3506 [−5191, −1821]** |
 | DeepSeek-V3 | 3005 ± 3748 | 5581 ± 2322 | −14 [−2830, 2802] | **−1807 [−3501, −112]** |
 
 Readings:
 1. **The effect of stating the objective changes sign across models.** It
-   helps gemma-12B, Qwen-14B, gpt-4o-mini (and gemma-27B without an
-   explanation); it hurts the models that chase the formula's server-cost
+   helps gemma-12B, Qwen-14B, Llama-8B, Llama-70B, gpt-4o-mini (and gemma-27B
+   without reasoning); it hurts the models that chase the formula's server-cost
    term (Qwen-32B, gpt-4o, DeepSeek-V3, §A reading 3) and Qwen-7B.
 2. **For gemma-27B the explanation stands in for the objective**: with an
    explanation, removing the objective changes nothing (11688 vs 11469);
@@ -145,7 +145,15 @@ Readings:
    objective acts in 103 of 105 periods without reasoning and keeps the
    dimmer near 0.1.
 
-CSF jobs 22287898-929; Llama-70B (22287926-929) queued; re-runs 22341630/1
+5. **Stating the objective leaves the average across models about the same but
+   doubles the spread between them** (11 models, mean of model means / SD
+   across models): with reasoning 6206 / 5064 stated vs 4943 / 2760 not;
+   without reasoning 6569 / 5090 vs 4948 / 2597. It helps 6 of 11 models in
+   each arm. Without the objective most models sit near the do-nothing level;
+   with it, those that read it well approach the best fixed configuration and
+   the server-cost chasers fall below zero.
+
+CSF jobs 22287898-929; Llama-70B (22287926-929) done 2026-10-08; re-runs 22341630/1
 (Llama-8B seed-sets 6-9; the first attempt ran on node856, where SWIM slowed to
 1/15 of real time and died, set aside in `~/selas-results/invalid-node856/`)
 and 22341632 (Qwen-7B `cot-noobj` seed-set 4, whose SWIM died at period 86),
