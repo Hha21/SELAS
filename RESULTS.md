@@ -349,6 +349,49 @@ Readings:
    its content edits work earlier (before any explanation is written, P0_turn)
    is the natural next test.
 
+### B5. NLA without reasoning (Part 2) — pilot done (2026-10-10), patch running
+
+The same NLA analysis on gemma-3 27B's 10 `direct` (without reasoning) runs
+of §A: the model writes no reasoning, only "Action: X", so NLA is the only
+explanation it has. 1050 decisions: 1023 no-ops and 27 actions (13 add,
+4 remove, 10 dimmer). Every run sets the dimmer to 1.0 in period 0 and adds a
+server in period 1, then holds that configuration (s8 adds and removes a few
+more), which is the fixed configuration SWIM rewards (§C). Staged as
+`~/selas-results/interp-gemma27b-final-direct/direct-s{0..9}`; `pilot.py`,
+gpuA job 22523715 (75 min) → `~/selas-results/nla-gemma27b-final-direct`
+(local copy `results-local/nla/nla-gemma27b-final-direct/`,
+`analyse_pilot.py` → `summary.json`). Three positions: end of state, model
+turn opened, action cue.
+
+| | without reasoning | with reasoning (§B3) |
+|---|---|---|
+| reference reproduces (fve_nrm) | 0.752 | 0.752 |
+| fidelity, turn opened (fve_nrm median) | 0.44 | 0.54 |
+| fidelity, action cue | 0.41 | 0.47 |
+| action-cue explanation names the chosen letter | **987/1050 (94.0%)** | 1004/1050 (95.6%) |
+| … for no-ops | 960/1023 (93.8%) | 930/946 (98.3%) |
+| … for actions | **27/27 (100%)** | 74/104 (71.2%) |
+| own decision picked out first of 1050, end of state | 13.3% | 22.4% |
+| … action cue | 1.5% | 2.5% |
+
+(Chance for picking out the own decision: 0.1%.)
+
+Readings:
+1. **NLA reads the decision just as well when the model writes no
+   reasoning.** The explanation at the action cue names the letter the model
+   then outputs in 94% of decisions and in every one of the 27 actions.
+   Caveat: the option layout is fixed, so the no-op letter is always the
+   same and naming it is partly a base rate (97% of decisions are no-ops); the
+   actions are the informative cases, and there the agreement is complete.
+2. Fidelity is a little lower without reasoning (0.41 vs 0.47 at the action
+   cue): the residual stream carries less that the AV puts into words, which
+   is expected when there is no written reasoning for it to echo.
+3. The read-out of the action kind is uninformative here: with 97% no-ops
+   and the actions tied to periods 0-1, telemetry alone already gets 98%.
+4. The topic counts (`analyse_pilot.py` §4b) are crude: the "remove"
+   pattern matches phrases like "reducing server load", so they are not
+   reported.
+
 ---
 
 ## C. PLA and Thallium re-run locally (2026-10-08)

@@ -195,6 +195,8 @@ def main() -> int:
         by_key = {(i["run"], i["period"], i["probe"]): r for i, r in zip(index, R) if i["source"] == "run"}
         print("   action read-out from the reconstructions (compare section 3):")
         for p in ("P0_turn", "P_therefore", "P_action"):
+            if not any(k[2] == p for k in by_key):  # no reasoning, no P_therefore
+                continue
             Xr = np.stack([by_key[(d["P_action"][0]["run"], d["P_action"][0]["period"], p)] for d in decs])
             pred = ridge_cv_predict(Xr, y)
             S["decodability"][f"reconstruction {p}"] = {"accuracy": float(np.mean(pred == y)), "recall": recall(pred, y)}
