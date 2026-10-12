@@ -18,6 +18,8 @@ colour, and a reference (another controller, or a null) is grey.
   reasoning  (column) Panel (a) of ``models`` alone.
   battery    (column) Share of decisions whose action changes under each
              intervention, for decisions to act and to do nothing.
+  aspects    (column) The five interpretability aspects of Yeo et al. as a
+             spider, for all decisions, decisions to act and to do nothing.
   patch      (column) Edit and patch: share of decisions moved to the option
              the edited NLA explanation names, by strength, with and without
              reasoning.
@@ -225,6 +227,47 @@ def battery(battery_json: Path, shuffled_json: Path, out: Path) -> None:
     save(fig, out)
 
 
+# -- aspects ---------------------------------------------------------------------
+ASPECTS = ["Robustness", "Sensitivity", "Mistakes", "Counterfactual", "Simulatability"]
+ASPECT_SERIES = [  # split, label, colour, line style, marker, fill
+    ("action", "Decisions to act", BLUE, "-", "D", True),
+    ("no_op", "Decisions to do nothing", ORANGE, (0, (4, 1.5)), "o", True),
+    ("all", "All decisions", INK2, (0, (1, 1.2)), "s", False),
+]
+
+
+def aspects(aspects_json: Path, out: Path) -> None:
+    import numpy as np
+    A = json.loads(aspects_json.read_text())
+    n = len(ASPECTS)
+    theta = [2 * np.pi * k / n for k in range(n)]
+    fig = plt.figure(figsize=(COL, 3.0))
+    ax = fig.add_subplot(projection="polar")
+    ax.set_theta_offset(np.pi / 2)          # first aspect at the top, then clockwise
+    ax.set_theta_direction(-1)
+    for split, label, color, ls, marker, fill in ASPECT_SERIES:
+        v = [A[split][k]["value"] for k in ASPECTS]
+        t, r = theta + theta[:1], v + v[:1]
+        if fill:
+            ax.fill(t, r, color=color, alpha=0.10, lw=0, zorder=2)
+        ax.plot(t, r, color=color, ls=ls, lw=1.1, marker=marker, markersize=3.6,
+                markeredgecolor="white", markeredgewidth=0.35, label=f"{label} (n={A[split]['n']:,})",
+                zorder=3)
+    ax.set_ylim(0, 1)
+    ax.set_yticks([0.25, 0.5, 0.75, 1.0])
+    ax.set_yticklabels(["0.25", "0.5", "0.75", "1"], fontsize=6, color=INK2)
+    ax.set_rlabel_position(360 / n / 2)    # radial labels between the first two spokes
+    ax.set_xticks(theta)
+    ax.set_xticklabels(ASPECTS, fontsize=7.5, color=INK)
+    ax.tick_params(axis="x", pad=1)
+    ax.grid(color=GRID, lw=0.5)
+    ax.spines["polar"].set_color(AXIS)
+    ax.spines["polar"].set_linewidth(0.5)
+    fig.legend(loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=1, borderaxespad=0.0)
+    fig.subplots_adjust(top=0.93, bottom=0.27)
+    save(fig, out)
+
+
 # -- patch ---------------------------------------------------------------------
 DIRECTIONS = {   # cond -> (label, colour, line style, marker, measure)
     "nla": ("NLA edit", BLUE, "-", "o", "to target"),
@@ -283,8 +326,10 @@ def patch(dirs: list[tuple[str, Path]], conds: list[str], out: Path) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-o", "--out", type=Path, default=Path("figures/paper"))
-    ap.add_argument("--only", nargs="+", default=["models", "reasoning", "battery", "patch"],
-                    choices=["models", "reasoning", "battery", "patch"])
+    ap.add_argument("--only", nargs="+", default=["models", "reasoning", "battery", "aspects", "patch"],
+                    choices=["models", "reasoning", "battery", "aspects", "patch"])
+    ap.add_argument("--aspects", type=Path,
+                    default=Path("results-local/csf/interp-gemma27b-final/aspects.json"))
     ap.add_argument("--table", type=Path, default=Path("results-local/csf/final_table.json"))
     ap.add_argument("--reference", action="append", default=None, metavar="NAME=VALUE",
                     help="reference line (repeatable); default PLA and Thallium as shipped")
@@ -311,6 +356,8 @@ def main() -> int:
         models(args.table, refs, args.out / "reasoning", panels=[("", PANELS[0][1])], width=COL)
     if "battery" in args.only:
         battery(args.battery, args.shuffled, args.out / "battery")
+    if "aspects" in args.only:
+        aspects(args.aspects, args.out / "aspects")
     if "patch" in args.only:
         patch([("With reasoning", args.patch_with), ("Without reasoning", args.patch_without)],
               args.patch_conds, args.out / "patch")
