@@ -467,7 +467,7 @@ Figure: `figures/nla/patch.{png,pdf}`, rows with / without reasoning
 results-local/nla/nla-gemma27b-final-direct/patch --label "with reasoning"
 --label "without reasoning" --matched -o figures/nla/patch`).
 
-### B6. Holistic NLA tests: LLM judge and rewrites (2026-10-12)
+### B6. Holistic NLA tests: LLM judge and rewrites — done (2026-10-12)
 
 Replaces the regex checks of B3-B5 for the paper (decision of 2026-10-12: an
 explanation is judged as a whole, not by the letters it names).
@@ -505,7 +505,42 @@ original): with reasoning 1019 / 999 of 1050; without 990 / 905 (no legal
 target for 59 no-ops while a server boots). Smoke test (job 22822885, trial
 edits, 2 decisions): rewrite moves both at alpha >= 2; paraphrase none.
 Full patch jobs: 22826328 (with reasoning), 22826329 (without) ->
-`~/selas-results/<pilot>/rewrite-patch`. **Pending.**
+`~/selas-results/<pilot>/rewrite-patch` (local copies alongside;
+`analyse_patch.py`). Control: unpatched replay 99.8% / 99.9%, cosine 1.0000.
+Patch size at alpha 1 (median |delta|/|h|): rewrite 0.124 / 0.126; paraphrase
+at its own size 0.027 / 0.033 (a rewording moves the reconstruction a quarter
+as far as a change of meaning); letter swap 0.093 / 0.074.
+
+Choice moves to the option the rewrite indicates (no-op / action); the
+paraphrase (patched at the rewrite's size) as "any change":
+
+| | alpha 1 | alpha 2 | alpha 4 | alpha 8 |
+|---|---|---|---|---|
+| **with reasoning**: rewrite | 64.2% / 25.7% | **100% / 89.1%** | 100% / 97.0% | 100% / 97.0% |
+| paraphrase, any change | 0.0% / 11.1% | 0.0% / 23.5% | 4.0% / 39.5% | 24.5% / 64.2% |
+| class-mean | 1.1% / 57.1% | 100% / 98.0% | 100% / 100% | 100% / 100% |
+| random | 0.0% / 0.0% | 0.0% / 0.0% | 0.1% / 2.0% | 9.8% / 5.9% |
+| **without reasoning**: rewrite | 2.1% / 42.3% | **76.5% / 88.5%** | 81.8% / 96.2% | 85.2% / 96.2% |
+| paraphrase, any change | 0.0% / 9.1% | 0.9% / 13.6% | 19.5% / 45.5% | 53.9% / 59.1% |
+| class-mean | 0.0% / 27.3% | 0.1% / 72.7% | 0.1% / 100% | 83.8% / 100% |
+| random | 0.0% / 0.0% | 0.0% / 3.8% | 0.5% / 0.0% | 15.6% / 0.0% |
+
+Readings:
+1. **Editing what the NLA explanation says steers the decision**, and
+   rewording it does not: with reasoning every no-op moves at alpha 2, the
+   paraphrase changes none. Unlike the letter swap (0.2% of no-ops at alpha 1),
+   the rewrite works at its own size (64% of no-ops).
+2. **With reasoning the supervised direction catches up from alpha 2** (it is
+   weaker at alpha 1 for no-ops, stronger for actions). "Beyond supervised
+   steering" holds at the edit's own size and **without reasoning**, where the
+   class-mean direction (27 actions to learn from) moves 0.1% of no-ops up to
+   alpha 4 and the rewrite 76.5-81.8%.
+3. Actions are more fragile than no-ops: any sizeable push changes 10-60% of
+   them (paraphrase, random), so the "to target" column is the one to read.
+4. Large pushes disturb everything (alpha 8: random moves 10-16% of no-ops).
+
+Figure: `figures/paper/patch.{png,pdf}` (`experiments/paper_figures.py`, now
+the rewrite runs by default); in the paper as `LaTeX/Images/eval_patch.pdf`.
 
 ---
 

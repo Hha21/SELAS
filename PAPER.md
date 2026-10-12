@@ -152,6 +152,10 @@ same matched edits; class-mean 9.4% of no-ops; random 0.0%).
 
 ## Paper plan (2026-10-12): the story and the seven experiments
 
+The paper itself now lives in `LaTeX/` (Overleaf): abstract in `main.tex`, Evaluation and
+Discussion in `Sections/`, figures from `experiments/paper_figures.py` and
+`Sections/PromptFigure.tex`.
+
 The abstract in five lines:
 1. An LLM managing system can explain itself in its reasoning; is that
    explanation faithful?
@@ -174,7 +178,7 @@ The abstract in five lines:
 | E4 | 2 | Do the inputs act through the reasoning? | edit one telemetry value, or remove the objective; reasoning held vs regenerated | telemetry: 0-13% change held vs 73-100% regenerated; objective: 92% of its effect goes through the reasoning | Fig. `interp/battery` (b, c) | done (§B1, §B2) |
 | E5 | 3 | Can NLA read the decision? | NLA at the action cue and before any reasoning, gemma-27B with and without reasoning | names the chosen action in 96% / 94% (all 27 actions without reasoning); decision partly present before the reasoning (dimmer changes 82% vs 57-59% from telemetry) | small table | done (§B3, §B5) |
 | E6 | 3 | Is the NLA explanation causal (the action it names)? | swap the letter it names, reconstruct, write the difference back at layer 41; vs class-mean and random directions | with reasoning 89% no-ops / 53% actions move (2× strength); without 88% / 80% (4×), class-mean 9% of no-ops; random <1% | Fig. `nla/patch` | done (§B4, §B5) |
-| E7 | 3 | Is it causal in its content, not just its letter? | Haiku finds the phrases saying what the model will do; our code rewrites them to the other action, letters untouched; letter-only / meaning-only / both | — | rows added to Fig. `nla/patch` | proposed (~4 GPU-h) |
+| E7 | 3 | Is it causal in its content, not just its letter? | Haiku finds the phrases saying what the model will do; our code rewrites them to the other action, letters untouched; letter-only / meaning-only / both | — | Fig. `paper/patch` | done (§B6): LLM judge and rewrites replace the regex checks |
 
 Supporting material, not experiments in the paper: the integration check
 and the replay control (methods); the baseline re-runs, the re-targeted PLA,

@@ -228,8 +228,8 @@ def battery(battery_json: Path, shuffled_json: Path, out: Path) -> None:
 # -- patch ---------------------------------------------------------------------
 DIRECTIONS = {   # cond -> (label, colour, line style, marker, measure)
     "nla": ("NLA edit", BLUE, "-", "o", "to target"),
-    "rewrite": ("NLA rewrite", BLUE, "-", "o", "to target"),
-    "paraphrase_matched": ("NLA paraphrase (any change)", AQUA, (0, (5, 1.5, 1, 1.5)), "^", "changed"),
+    "rewrite": ("NLA explanation rewritten", BLUE, "-", "o", "to target"),
+    "paraphrase_matched": ("Paraphrase (any change)", AQUA, (0, (5, 1.5, 1, 1.5)), "^", "changed"),
     "meandiff": ("Class-mean direction", ORANGE, (0, (3.5, 1.5)), "D", "to target"),
     "random": ("Random direction", MUTED, (0, (1, 1.2)), "s", "to target"),
 }
@@ -292,10 +292,14 @@ def main() -> int:
                     default=Path("results-local/csf/interp-gemma27b-final/battery.json"))
     ap.add_argument("--shuffled", type=Path,
                     default=Path("results-local/csf/interp-gemma27b-final/shuffled_by_conclusion.json"))
-    ap.add_argument("--patch-with", type=Path, default=Path("results-local/nla/nla-gemma27b-final/patch"))
+    # The paper's edit is the LLM rewrite (judge_rewrite.py); the letter-swap
+    # run is ".../patch" with --patch-conds nla meandiff random.
+    ap.add_argument("--patch-with", type=Path,
+                    default=Path("results-local/nla/nla-gemma27b-final/rewrite-patch"))
     ap.add_argument("--patch-without", type=Path,
-                    default=Path("results-local/nla/nla-gemma27b-final-direct/patch"))
-    ap.add_argument("--patch-conds", nargs="+", default=["nla", "meandiff", "random"],
+                    default=Path("results-local/nla/nla-gemma27b-final-direct/rewrite-patch"))
+    ap.add_argument("--patch-conds", nargs="+",
+                    default=["rewrite", "paraphrase_matched", "meandiff", "random"],
                     choices=list(DIRECTIONS))
     args = ap.parse_args()
     style()
