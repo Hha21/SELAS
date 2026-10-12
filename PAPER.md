@@ -122,7 +122,7 @@ Built on Harry's Overleaf draft (its first five sentences kept, "agential" →
 > changes all of them, and both the objective and the observed telemetry
 > influence the decision almost entirely through what the model writes.
 > Decisions to do nothing, however, are fixed by the observed state: they
-> survive the removal of the reasoning (1--9\% change) and are predictable
+> survive the removal of the reasoning (1--2\% change) and are predictable
 > from the state alone, so for inaction the reasoning is a post-hoc
 > rationalisation. Since every generated token compresses the model's
 > internal state, we then read that state directly with natural-language
@@ -140,7 +140,7 @@ Built on Harry's Overleaf draft (its first five sentences kept, "agential" →
 > written reasoning at actions, and complement it with activation-level
 > explanations for what the text leaves out.
 
-Where each claim comes from: models and the objective's spread, §A and §A2; 60% / all / 1-9%, §B2
+Where each claim comes from: models and the objective's spread, §A and §A2; 60% / all / 1-2%, §B2 (1-2% = removed or filler; see the 2026-10-12 correction there)
 faithfulness; objective through the reasoning, §B1 (92% of changes); telemetry
 through the reasoning, §B2 counterfactual (0-13% with the reasoning held vs
 73-100% regenerated); predictable from the state, §B2 simulatability
@@ -170,7 +170,7 @@ The abstract in five lines:
 |---|---|---|---|---|---|---|
 | E1 | 1 | Does reasoning help? | 11 models × with/without reasoning × 10 runs; PLA, Thallium, best fixed configuration as references | 10 of 11 act more with it; utility differs significantly for 2 of 11; best models approach the fixed configuration | Fig. `models/reasoning` | done (§A) |
 | E2 | 1 | Does stating the objective help? | objective stated/not × reasoning/not, 11 models | average unchanged, spread across models doubles (SD ~5,100 vs ~2,700); helps 6 of 11 | Fig. `models/ablation` or a small table | done (§A2) |
-| E3 | 2 | Does the decision depend on the reasoning? | perturb the reasoning (remove, replace with another period's, negate, truncate), re-decide | actions: 60% change when removed, 100% with another period's; no-ops: 1-9%; no-ops 96-99% predictable from the state alone | Fig. `interp/battery` (a) | done (§B2) |
+| E3 | 2 | Does the decision depend on the reasoning? | perturb the reasoning (remove, replace with another period's, negate, truncate), re-decide | the model follows whatever the reasoning concludes (93-100% when swapped for one concluding otherwise), but removing it changes 60% of actions and 1% of no-ops; no-ops 96-99% predictable from the state alone | Fig. `interp/battery` (a) | done (§B2) |
 | E4 | 2 | Do the inputs act through the reasoning? | edit one telemetry value, or remove the objective; reasoning held vs regenerated | telemetry: 0-13% change held vs 73-100% regenerated; objective: 92% of its effect goes through the reasoning | Fig. `interp/battery` (b, c) | done (§B1, §B2) |
 | E5 | 3 | Can NLA read the decision? | NLA at the action cue and before any reasoning, gemma-27B with and without reasoning | names the chosen action in 96% / 94% (all 27 actions without reasoning); decision partly present before the reasoning (dimmer changes 82% vs 57-59% from telemetry) | small table | done (§B3, §B5) |
 | E6 | 3 | Is the NLA explanation causal (the action it names)? | swap the letter it names, reconstruct, write the difference back at layer 41; vs class-mean and random directions | with reasoning 89% no-ops / 53% actions move (2× strength); without 88% / 80% (4×), class-mean 9% of no-ops; random <1% | Fig. `nla/patch` | done (§B4, §B5) |

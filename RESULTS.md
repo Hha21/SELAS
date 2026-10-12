@@ -233,6 +233,28 @@ actions, but with the conclusion removed the negated premise adds about 8
 points to the 39% the removal alone causes. This repeats §3 on the canonical
 prompt with 10 runs.
 
+**Correction (2026-10-12): the no-op "another period's" rate is a base rate.**
+The substitute is drawn at random from the same run, so ~90% of substitutes
+are themselves no-op reasoning. Replaying the draw (`rescore.py` seeds one
+`random.Random(0)` per run and only `shuffled` draws from it) and splitting
+by what the substitute concluded:
+
+| decision | substitute concluded | changed |
+|---|---|---|
+| no-op | no-op | 0 of 845 |
+| no-op | an action | **94 of 101 (93%)** |
+| action | no-op | 97 of 97 |
+| action | another action | 7 of 7 |
+
+So the model follows whatever conclusion the reasoning states, for no-ops as
+for actions. The asymmetry is in *necessity*, not in following: remove the
+reasoning and 60% of actions change but only 1.2% of no-ops (the state alone
+already gives the no-op). Corrected reading: **the reasoning is followed
+whatever it says, but only actions need it; a no-op is settled by the state
+before the reasoning is written, and the reasoning restates it** (post-hoc in
+Lanham et al.'s sense: the answer does not depend on it). The no-op range to
+quote for removal is 1-2% (removed 1.2%, filler 1.8%), not 1-9%.
+
 **Counterfactual telemetry.** One telemetry value edited per decision
 (response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare
 capacity none / ample; the shown utility recomputed to match). Decisions that
