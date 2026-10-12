@@ -467,6 +467,46 @@ Figure: `figures/nla/patch.{png,pdf}`, rows with / without reasoning
 results-local/nla/nla-gemma27b-final-direct/patch --label "with reasoning"
 --label "without reasoning" --matched -o figures/nla/patch`).
 
+### B6. Holistic NLA tests: LLM judge and rewrites (2026-10-12)
+
+Replaces the regex checks of B3-B5 for the paper (decision of 2026-10-12: an
+explanation is judged as a whole, not by the letters it names).
+`experiments/nla/judge_rewrite.py`; Claude Haiku 5.5 through the Claude Code
+CLI on Harry's plan (672 calls, 4.3M tokens in, 2.5M out; $1.78 at API list
+price); outputs `results-local/nla/judge-rewrite/`.
+
+**Judge.** Reads each text with the option list only (blind to state and
+decision) and names the option it most strongly indicates, or "raise / lower
+the dimmer (level not stated)", or "unclear". Scored by kind of action (add,
+remove, do nothing, raise or lower the dimmer, direction from the dimmer before
+the decision). Two design changes from the first trial: the written reasoning
+names a dimmer direction, never a level ("increase the dimmer"), so scoring by
+exact option made every dimmer action "unclear"; and NLA explanations list
+several candidates, so asking for a single unambiguous option made the judge
+inconsistent. Consistency, second pass on 750 texts (250 decisions per arm):
+95.2% (written reasoning 99.6%, NLA 93.0%).
+
+| text indicates the kind of action taken | no-ops | actions | all |
+|---|---|---|---|
+| NLA at the action cue, with reasoning | 941/946 | **100/104 (96.2%)** | 99.1% |
+| NLA at the action cue, without reasoning | 928/1023 | 17/27 (63.0%) | 90.0% |
+| written reasoning (same judge) | 940/946 | 102/104 (98.1%) | 99.2% |
+
+(Exact letter, actions: NLA 63/104 with reasoning; written reasoning 17/104,
+since it states dimmer directions, not levels.) Fixed option layout: the no-op
+rows are partly a base rate; the action column is the informative one.
+
+**Rewrites.** Per decision, Haiku writes a counterfactual of the action-cue
+explanation (no-op -> add a server, or remove one while a server boots and
+adding is illegal; action -> do nothing), changing only what indicates the
+choice, and a paraphrase keeping the choice; both re-judged. Usable
+(counterfactual judged to indicate the target / paraphrase judged as the
+original): with reasoning 1019 / 999 of 1050; without 990 / 905 (no legal
+target for 59 no-ops while a server boots). Smoke test (job 22822885, trial
+edits, 2 decisions): rewrite moves both at alpha >= 2; paraphrase none.
+Full patch jobs: 22826328 (with reasoning), 22826329 (without) ->
+`~/selas-results/<pilot>/rewrite-patch`. **Pending.**
+
 ---
 
 ## C. PLA and Thallium re-run locally (2026-10-08)
