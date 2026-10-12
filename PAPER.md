@@ -150,6 +150,40 @@ class-mean direction also covers; random 0.0% / 0.9%); without reasoning,
 §B5 (names the chosen letter in 987/1050, all 27 actions; patch 0.29·|h|,
 same matched edits; class-mean 9.4% of no-ops; random 0.0%).
 
+## Paper plan (2026-10-12): the story and the seven experiments
+
+The abstract in five lines:
+1. An LLM managing system can explain itself in its reasoning; is that
+   explanation faithful?
+2. On SWIM, 11 models with and without reasoning: reasoning changes how the
+   system behaves, not how well it performs, so its value is as an
+   explanation (RQ1).
+3. That explanation is faithful when the system acts, and post-hoc when it
+   does nothing, which is ~90% of decisions (RQ2).
+4. Reading the activations with NLA covers the gap: the NLA explanation names
+   the decision, and editing it steers the model, for no-ops too and when
+   the system writes no reasoning at all (RQ3).
+5. Thesis: written reasoning explains an LLM managing system's actions; its
+   activations explain its inaction.
+
+| # | RQ | Question | What we do | Headline result | In the paper | Status |
+|---|---|---|---|---|---|---|
+| E1 | 1 | Does reasoning help? | 11 models × with/without reasoning × 10 runs; PLA, Thallium, best fixed configuration as references | 10 of 11 act more with it; utility differs significantly for 2 of 11; best models approach the fixed configuration | Fig. `models/reasoning` | done (§A) |
+| E2 | 1 | Does stating the objective help? | objective stated/not × reasoning/not, 11 models | average unchanged, spread across models doubles (SD ~5,100 vs ~2,700); helps 6 of 11 | Fig. `models/ablation` or a small table | done (§A2) |
+| E3 | 2 | Does the decision depend on the reasoning? | perturb the reasoning (remove, replace with another period's, negate, truncate), re-decide | actions: 60% change when removed, 100% with another period's; no-ops: 1-9%; no-ops 96-99% predictable from the state alone | Fig. `interp/battery` (a) | done (§B2) |
+| E4 | 2 | Do the inputs act through the reasoning? | edit one telemetry value, or remove the objective; reasoning held vs regenerated | telemetry: 0-13% change held vs 73-100% regenerated; objective: 92% of its effect goes through the reasoning | Fig. `interp/battery` (b, c) | done (§B1, §B2) |
+| E5 | 3 | Can NLA read the decision? | NLA at the action cue and before any reasoning, gemma-27B with and without reasoning | names the chosen action in 96% / 94% (all 27 actions without reasoning); decision partly present before the reasoning (dimmer changes 82% vs 57-59% from telemetry) | small table | done (§B3, §B5) |
+| E6 | 3 | Is the NLA explanation causal (the action it names)? | swap the letter it names, reconstruct, write the difference back at layer 41; vs class-mean and random directions | with reasoning 89% no-ops / 53% actions move (2× strength); without 88% / 80% (4×), class-mean 9% of no-ops; random <1% | Fig. `nla/patch` | done (§B4, §B5) |
+| E7 | 3 | Is it causal in its content, not just its letter? | Haiku finds the phrases saying what the model will do; our code rewrites them to the other action, letters untouched; letter-only / meaning-only / both | — | rows added to Fig. `nla/patch` | proposed (~4 GPU-h) |
+
+Supporting material, not experiments in the paper: the integration check
+and the replay control (methods); the baseline re-runs, the re-targeted PLA,
+the fixed-configuration grid, WorldCup and 2-3× load (one limitations
+paragraph, details in an appendix or artifact); the earlier prompt study
+(§2b-2e: the objective in words alone is the worst prompt; one sentence of
+motivation for the prompt design). Dropped: the topic counts, the per-model
+prompt history.
+
 ## Contributions (draft)
 
 1. An LLM managing system for SWIM with an integration check, evaluated under
