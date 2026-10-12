@@ -16,6 +16,8 @@
 #
 # SELAS_PILOT is a pilot.py output directory under ~/selas-results whose runs
 # are also there. Output: ~/selas-results/$SELAS_PILOT/patch (or SELAS_OUT).
+# SELAS_EDITS: a judge_rewrite.py edits file to patch with instead of the
+# letter swap (then set SELAS_OUT too).
 set -uo pipefail
 REPO="${SELAS_REPO:-$HOME/SELAS}"
 PILOT="$HOME/selas-results/${SELAS_PILOT:?set SELAS_PILOT to a pilot directory under ~/selas-results}"
@@ -28,7 +30,7 @@ export HF_HUB_OFFLINE=1
 cd "$REPO/experiments/nla" || exit 1
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 python edit_patch.py "$PILOT" -o "$OUT" ${SELAS_LIMIT:+--limit "$SELAS_LIMIT"} \
-    ${SELAS_ALPHAS:+--alphas $SELAS_ALPHAS}
+    ${SELAS_ALPHAS:+--alphas $SELAS_ALPHAS} ${SELAS_EDITS:+--edits "$SELAS_EDITS"}
 status=$?
 [ $status -eq 0 ] && python analyse_patch.py "$OUT" -o "$OUT/patch.json"
 echo "exit $status -> $OUT"

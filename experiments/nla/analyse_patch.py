@@ -84,7 +84,8 @@ def main() -> int:
     summary = {}
     for key, per_run in acc.items():
         summary["|".join(map(str, key))] = pooled(list(per_run.values()))
-    conds = [c for c in ("nla", "meandiff", "random") if any(k[0] == c for k in acc)]
+    conds = [c for c in ("nla", "rewrite", "paraphrase", "paraphrase_matched", "meandiff", "random")
+             if any(k[0] == c for k in acc)]
     alphas = sorted({k[1] for k in acc})
     for m, sfx in (("to target", ""), ("changed", ""), ("dlogp", ""), ("to target", "|matched")):
         print(f"\n{m}{' (edits the class-mean direction covers)' if sfx else ''}")

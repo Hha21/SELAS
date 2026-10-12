@@ -15,7 +15,8 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from edit_patch import Patcher, letter_swap, masked_softmax, seeded_direction, unit  # noqa: E402
+from edit_patch import (Patcher, edit_groups, letter_swap, load_supplied, masked_softmax,  # noqa: E402
+                        seeded_direction, unit)
 
 
 def test_letter_swap_names_the_choice_only():
@@ -33,6 +34,27 @@ def test_letter_swap_keeps_words_and_suffixes():
     assert (new, n) == ('a lettered option like "H" or "H4" to set it to zero. Do it.', 2)
     assert letter_swap("Action = D, then Done", "D", "A") == ("Action = A, then Done", 1)
     assert letter_swap("no quoted letter here", "C", "A") == ("no quoted letter here", 0)
+
+
+def test_supplied_edits_match_decisions_and_set_the_control_size(tmp_path):
+    rows = [(7, {"run": "r/s0", "period": 3, "action": "no_op",
+                 "options": [["A", "add_server"], ["C", "no_op"]]}, {"explanation": "orig"})]
+    f = tmp_path / "edits.jsonl"
+    f.write_text('{"run": "r/s0", "period": 3, "target": "A", "kind": "rewrite", "edited": "cf"}\n'
+                 '{"run": "r/s0", "period": 3, "target": "A", "kind": "paraphrase", "edited": "pp"}\n'
+                 '{"run": "r/s1", "period": 0, "target": "A", "kind": "rewrite", "edited": "x"}\n')
+    edits, skipped = load_supplied(f, rows)
+    assert skipped == {"not among the decisions replayed": 1}
+    assert [(e["row"], e["kind"], e["chosen"], e["explanation"]) for e in edits] == \
+        [(7, "rewrite", "C", "orig"), (7, "paraphrase", "C", "orig")]
+    rec = {"orig": np.zeros(3), "cf": np.array([3.0, 0, 0]), "pp": np.array([0, 1.0, 0])}
+    [(target, dirs, n_main, _)] = list(edit_groups(edits, rec, supplied=True))
+    assert target == "A" and n_main == 3.0
+    assert dirs["rewrite"][1] == 3.0 and dirs["paraphrase"][1] == 1.0
+    assert dirs["paraphrase_matched"][1] == 3.0          # the paraphrase at the rewrite's size
+    assert np.allclose(dirs["paraphrase_matched"][0], [0, 1, 0])
+    # a paraphrase alone is not patched: there is no rewrite to set the target and size
+    assert list(edit_groups([edits[1]], rec, supplied=True)) == []
 
 
 def test_masked_softmax_and_directions():

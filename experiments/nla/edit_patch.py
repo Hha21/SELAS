@@ -30,11 +30,18 @@ The edit is exact: the chosen letter is replaced where the explanation names it
 as a choice (in quotes, or after "letter", "option", "button", "label", "= ");
 explanations that never name it that way are recorded and skipped.
 
+With ``--edits FILE`` the edits come from elsewhere instead of the letter swap:
+judge_rewrite.py's verified LLM rewrites, one row per decision and kind
+(``rewrite``: says the controller will choose ``target``; ``paraphrase``: the
+same choice in other words). The directions are then ``rewrite`` (as ``nla``
+above), ``paraphrase`` at its own size, ``paraphrase_matched`` at the
+rewrite's size, and ``random`` and ``meandiff`` at the rewrite's size.
+
 Needs a finished pilot (pilot.py) on the same runs. One GPU, two phases: the AR
 reconstructs every original and edited explanation, then the target replays
 each decision.
 
-    python edit_patch.py PILOT_DIR -o OUT [--alphas 1 2 4 8] [--limit N]
+    python edit_patch.py PILOT_DIR -o OUT [--edits FILE] [--alphas 1 2 4 8] [--limit N]
 
 Output in OUT: edits.jsonl (one row per decision and target, with the edited
 text), patched.jsonl (one row per decision, target, direction and alpha, plus
@@ -199,6 +206,51 @@ def build_edits(rows) -> tuple[list[dict], dict[str, int]]:
     return edits, dict(skipped)
 
 
+def load_supplied(path: Path, rows) -> tuple[list[dict], dict[str, int]]:
+    """Edits written elsewhere ({run, period, target, kind, edited} per line),
+    matched to the pilot's decisions; the original is the pilot's explanation."""
+    by_key = {(i["run"], i["period"]): (k, i, e) for k, i, e in rows}
+    edits, skipped = [], defaultdict(int)
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        x = json.loads(line)
+        hit = by_key.get((x["run"], x["period"]))
+        if hit is None:
+            skipped["not among the decisions replayed"] += 1
+            continue
+        k, i, e = hit
+        edits.append({"row": k, "run": i["run"], "period": i["period"], "action": i["action"],
+                      "chosen": letter_of(i["options"], i["action"]), "target": x["target"],
+                      "kind": x["kind"], "replacements": None,
+                      "explanation": e["explanation"], "edited": x["edited"]})
+    return edits, dict(skipped)
+
+
+def edit_groups(row_edits: list[dict], rec: dict, supplied: bool):
+    """Per target of one decision: (target, {direction: (unit vector, norm its
+    size scales with)}, the main edit's norm, replacements). The main edit
+    (the letter swap, or the rewrite) sets the size of the controls."""
+    if not supplied:
+        for e in row_edits:
+            d = rec[e["edited"]] - rec[e["explanation"]]
+            n = float(np.linalg.norm(d))
+            yield e["target"], {"nla": (unit(d), n)}, n, e["replacements"]
+        return
+    by_kind = {e["kind"]: e for e in row_edits}
+    rw, pp = by_kind.get("rewrite"), by_kind.get("paraphrase")
+    if rw is None:
+        return
+    d = rec[rw["edited"]] - rec[rw["explanation"]]
+    n = float(np.linalg.norm(d))
+    dirs = {"rewrite": (unit(d), n)}
+    if pp is not None:
+        dp = rec[pp["edited"]] - rec[pp["explanation"]]
+        dirs["paraphrase"] = (unit(dp), float(np.linalg.norm(dp)))
+        dirs["paraphrase_matched"] = (unit(dp), n)
+    yield rw["target"], dirs, n, None
+
+
 def class_means(rows, V) -> tuple[dict, dict]:
     """Per run and action: sum and count of P_action vectors, for
     leave-one-run-out means."""
@@ -225,6 +277,8 @@ def main() -> int:
     ap.add_argument("--alphas", type=float, nargs="+", default=[1.0, 2.0, 4.0, 8.0])
     ap.add_argument("--min-class", type=int, default=3)
     ap.add_argument("--limit", type=int, default=None, help="first N decisions (smoke test)")
+    ap.add_argument("--edits", type=Path, default=None,
+                    help="supplied edits (judge_rewrite.py) instead of the letter swap")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -235,7 +289,7 @@ def main() -> int:
     rows, V = load_pilot(args.pilot)
     if args.limit:
         rows = rows[: args.limit]
-    edits, skipped = build_edits(rows)
+    edits, skipped = load_supplied(args.edits, rows) if args.edits else build_edits(rows)
     print(f"{len(rows)} decisions at P_action, {len(edits)} edits; skipped: {skipped}", flush=True)
 
     # Phase 1: reconstruct every distinct text.
@@ -288,22 +342,20 @@ def main() -> int:
             fh.write(json.dumps({**base, "cond": "unpatched", "h_norm": hn,
                                  "h_cos_captured": float(unit(h) @ unit(V[k])),
                                  "dist": dist0, "recorded": i["distribution"]}) + "\n")
-            for e in by_row[k]:
-                d_nla = rec[e["edited"]] - rec[e["explanation"]]
-                mt = loo_mean(sums, counts, run, dict(i["options"])[e["target"]], args.min_class)
+            for target, dirs, n_main, reps in edit_groups(by_row[k], rec, args.edits is not None):
+                mt = loo_mean(sums, counts, run, dict(i["options"])[target], args.min_class)
                 mc = loo_mean(sums, counts, run, i["action"], args.min_class)
-                dirs = {"nla": unit(d_nla),
-                        "random": seeded_direction(len(h), run, i["period"], e["target"])}
+                dirs["random"] = (seeded_direction(len(h), run, i["period"], target), n_main)
                 if mt is not None and mc is not None:
-                    dirs["meandiff"] = unit(mt - mc)
+                    dirs["meandiff"] = (unit(mt - mc), n_main)
                 for alpha in args.alphas:
-                    size = alpha * hn * float(np.linalg.norm(d_nla))
-                    for cond, u in dirs.items():
+                    for cond, (u, nrm) in dirs.items():
+                        size = alpha * hn * nrm
                         logp, _ = P.last(cache, ids[-1], letters, (size * u).astype(np.float32))
                         dist = masked_softmax(logp, i["legal_ids"])
-                        fh.write(json.dumps({**base, "target": e["target"], "cond": cond,
+                        fh.write(json.dumps({**base, "target": target, "cond": cond,
                                              "alpha": alpha, "delta_norm": size,
-                                             "replacements": e["replacements"], "dist": dist}) + "\n")
+                                             "replacements": reps, "dist": dist}) + "\n")
             del cache
             if (n + 1) % 25 == 0:
                 print(f"  {n + 1}/{len(rows)} decisions, {time.time() - t1:.0f}s", flush=True)
