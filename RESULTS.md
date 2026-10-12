@@ -254,6 +254,10 @@ whatever it says, but only actions need it; a no-op is settled by the state
 before the reasoning is written, and the reasoning restates it** (post-hoc in
 Lanham et al.'s sense: the answer does not depend on it). The no-op range to
 quote for removal is 1-2% (removed 1.2%, filler 1.8%), not 1-9%.
+With run-resampled intervals (`experiments/replay/shuffled_by_conclusion.py` ->
+`results-local/csf/interp-gemma27b-final/shuffled_by_conclusion.json`): no-ops given a
+substitute concluding otherwise change 93.1% [87.4, 98.1]; this replaces the
+"another period's" row in the paper's battery figure.
 
 **Counterfactual telemetry.** One telemetry value edited per decision
 (response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare

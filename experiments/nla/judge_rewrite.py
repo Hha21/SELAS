@@ -28,6 +28,10 @@ edit_patch.py's --edits format.
 
 The calls go through the Claude Code CLI (``claude -p --model haiku``, the
 user's plan), several texts per call with a JSON schema, a few calls at once.
+Every finished call is saved at once, so the run can stop at any point: touch
+OUT/STOP and it finishes the calls in flight, saves them and exits (it will not
+start while STOP exists; remove it and re-run to resume). The log shows the
+calls and tokens used so far.
 
     python judge_rewrite.py PILOT_DIR [PILOT_DIR ...] -o OUT [--jobs judge rewrite verify]
 """
@@ -45,6 +49,32 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 MODEL = "haiku"
+USAGE = {"calls": 0, "in": 0, "out": 0, "usd": 0.0}
+_usage_lock = threading.Lock()
+STOP: Path | None = None        # OUT/STOP, set in main
+
+
+class Stopped(Exception):
+    pass
+
+
+def stopped() -> bool:
+    return STOP is not None and STOP.exists()
+
+
+def note_usage(d: dict):
+    u = d.get("usage") or {}
+    with _usage_lock:
+        USAGE["calls"] += 1
+        USAGE["in"] += sum(u.get(k, 0) for k in ("input_tokens", "cache_creation_input_tokens",
+                                                  "cache_read_input_tokens"))
+        USAGE["out"] += u.get("output_tokens", 0)
+        USAGE["usd"] += d.get("total_cost_usd") or 0.0
+
+
+def usage_line() -> str:
+    return (f"{USAGE['calls']} CLI calls, {USAGE['in'] / 1e6:.2f}M tokens in, "
+            f"{USAGE['out'] / 1e3:.0f}k out (${USAGE['usd']:.2f} at API list price)")
 UNCLEAR = "unclear"
 RAISE, LOWER = "raise the dimmer (level not stated)", "lower the dimmer (level not stated)"
 
@@ -125,10 +155,13 @@ def call(system: str, prompt: str, sch: dict, cwd: Path, n_items: int, tries: in
            "--json-schema", json.dumps(sch)]
     err = None
     for attempt in range(tries):
+        if stopped():
+            raise Stopped()
         try:
             p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, cwd=cwd,
                                timeout=600)
             d = json.loads(p.stdout)
+            note_usage(d)
             if d.get("is_error") or not d.get("structured_output"):
                 raise RuntimeError(f"{d.get('subtype')}: {str(d.get('result'))[:200]}")
             got = {it["id"]: it for it in d["structured_output"]["items"]}
@@ -199,18 +232,31 @@ def key(d: dict, kind: str) -> str:
 def run_batches(items: list, size: int, workers: int, work) -> int:
     """Run ``work`` on batches of ``items`` in parallel; count failed batches."""
     batches = [items[n:n + size] for n in range(0, len(items), size)]
-    failed, done, t0 = 0, 0, time.time()
+    failed, done, skipped, t0 = 0, 0, 0, time.time()
+
+    def guarded(b):
+        if stopped():
+            raise Stopped()
+        work(b)
+
     with ThreadPoolExecutor(workers) as ex:
-        futs = [ex.submit(work, b) for b in batches]
+        futs = [ex.submit(guarded, b) for b in batches]
         for f in as_completed(futs):
             try:
                 f.result()
+            except Stopped:
+                skipped += 1
+                continue
             except Exception as e:  # noqa: BLE001 -- reported, the job is resumable
                 failed += 1
                 print(f"  batch failed: {e}", file=sys.stderr, flush=True)
             done += 1
             if done % 10 == 0 or done == len(batches):
-                print(f"  {done}/{len(batches)} calls, {time.time() - t0:.0f}s", flush=True)
+                print(f"  {done}/{len(batches)} batches, {time.time() - t0:.0f}s; {usage_line()}",
+                      flush=True)
+    if skipped:
+        print(f"  STOP: {skipped} batches not started; remove {STOP} and re-run to resume",
+              flush=True)
     return failed
 
 
@@ -241,6 +287,11 @@ def main() -> int:
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     cwd = args.out          # not the repository: no CLAUDE.md or project memory in the calls
+    global STOP
+    STOP = args.out / "STOP"
+    if stopped():
+        print(f"{STOP} exists: not starting (remove it to resume)")
+        return 1
 
     decs = []
     for p in args.pilots:
@@ -271,7 +322,7 @@ def main() -> int:
         texts += [(key(d, "reasoning"), d["reasoning"]) for d in decs if d["reasoning"]]
         judge_texts(texts, options, judged, args.judge_batch, args.workers, cwd)
 
-    if "rewrite" in args.jobs:
+    if "rewrite" in args.jobs and not stopped():
         todo = [d for d in decs if key(d, "rewrite") not in rewrites.rows
                 and d["target"] is not None]
         print(f"rewrite: {len(todo)} decisions to do", flush=True)
@@ -289,7 +340,7 @@ def main() -> int:
 
         run_batches(todo, args.rewrite_batch, args.workers, work)
 
-    if "verify" in args.jobs:
+    if "verify" in args.jobs and not stopped():
         texts = []
         for d in decs:
             r = rewrites.rows.get(key(d, "rewrite"))
@@ -328,6 +379,7 @@ def main() -> int:
         (args.out / pilot / "edits.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     for k in sorted(tally):
         print(" | ".join(k), tally[k])
+    print(f"usage this run: {usage_line()}")
     (args.out / "tally.json").write_text(json.dumps({" | ".join(k): v for k, v in sorted(tally.items())},
                                                     indent=1))
     return 0
