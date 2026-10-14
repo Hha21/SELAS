@@ -253,11 +253,6 @@ def aspects(aspects_json: Path, out: Path) -> None:
         ax.plot(t, r, color=color, ls=ls, lw=1.1, marker=marker, markersize=3.6,
                 markeredgecolor="white", markeredgewidth=0.35, label=f"{label} (n={A[split]['n']:,})",
                 zorder=3)
-    # Simulatability is (gain + 1) / 2, so 0.5 on its spoke is no gain: mark it.
-    ts = theta[ASPECTS.index("Simulatability")]
-    arc = np.linspace(ts - 0.16, ts + 0.16, 20)
-    ax.plot(arc, [0.5] * len(arc), color=INK, lw=1.1, zorder=4, solid_capstyle="butt")
-    ax.annotate("no gain", xy=(ts + 0.17, 0.5), fontsize=6, color=INK, ha="right", va="bottom")
     ax.set_ylim(0, 1)
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0.25", "0.5", "0.75", "1"], fontsize=6, color=INK2)
