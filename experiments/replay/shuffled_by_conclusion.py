@@ -9,8 +9,12 @@ random.Random(seed) per run, consumed only by ``shuffled``, in decision order)
 recovers which period each substitute came from; its recorded action is what
 the substitute concluded. Reported per split (the decision was a no-op / an
 action): the share of decisions whose action changes when the substitute
-concluded otherwise, and when it concluded the same kind, pooled over runs
-with run-resampled 95% intervals.
+concluded otherwise, and when it concluded the same kind, and, where it
+concluded otherwise, the share that take the substitute's action exactly and
+its kind (act / do nothing). Options are read as the controller reads them, the
+argmax over legal options (fixed 2026-10-14: an unmasked argmax counted 94
+changes of 101 where the controller sees 89). Pooled over runs with
+run-resampled 95% intervals.
 
     python shuffled_by_conclusion.py DIR [--seed 0] -o shuffled.json
 
@@ -39,8 +43,9 @@ def action_of(r: dict) -> str:
     return a if isinstance(a, str) else json.dumps(a)
 
 
-def top(dist: dict) -> str:
-    return max(dist, key=dist.get)
+def top(dist: dict, legal: list[str]) -> str:
+    """The option the controller would take: the argmax over legal options."""
+    return max((k for k in legal if k in dist), key=dist.get)
 
 
 def main() -> int:
@@ -73,8 +78,14 @@ def main() -> int:
             sub = source[substitute[x["period"]].strip()]
             split = "no_op" if own == "no_op" else "action"
             same = (sub == "no_op") == (own == "no_op")
-            changed = top(x["distribution_rescored"]) != top(x["distribution_recorded"])
-            acc[(split, "concludes the same kind" if same else "concludes otherwise")][run_dir.name].append(changed)
+            legal, opts = x["legal_ids"], dict(x["options"])
+            new = opts[top(x["distribution_rescored"], legal)]
+            changed = new != opts[top(x["distribution_recorded"], legal)]
+            key = "concludes the same kind" if same else "concludes otherwise"
+            acc[(split, key)][run_dir.name].append(changed)
+            if not same:   # does the decision take the substitute's action, or only its kind?
+                acc[(split, key + ", adopts its action")][run_dir.name].append(new == sub)
+                acc[(split, key + ", adopts its kind")][run_dir.name].append((new == "no_op") == (sub == "no_op"))
 
     out = {f"{split}|{sub}": pooled(list(per_run.values())) for (split, sub), per_run in sorted(acc.items())}
     for k, v in out.items():

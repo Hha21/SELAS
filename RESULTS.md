@@ -258,6 +258,17 @@ With run-resampled intervals (`experiments/replay/shuffled_by_conclusion.py` ->
 `results-local/csf/interp-gemma27b-final/shuffled_by_conclusion.json`): no-ops given a
 substitute concluding otherwise change 93.1% [87.4, 98.1]; this replaces the
 "another period's" row in the paper's battery figure.
+*Corrected 2026-10-14 (sceptical review, M1):* that 93.1% took the argmax over
+all options, illegal ones included. Read as the controller reads it (legal
+options only) it is **88.1% [82.7, 93.9]** (89 of 101), every one to the
+substitute's kind (act / do nothing) but only 49.5% to its exact action; all
+97 actions given a no-op substitute become no-ops. The same bug in
+`aspects.py` (Mistakes) moves actions from 0.288 to **0.269**; the other
+aspects are unchanged. Simulatability on that scale is (gain + 1) / 2, so its
+values (all 0.19, actions 0.47, no-ops 0.16) are all *below* no gain: from the
+premises the simulators do worse than from the state (actions +6.7 / −18.3
+points, no-ops −64 / −71); 890 of 946 no-ops are at dimmer 1.0, which the
+premises do not mention.
 
 **Counterfactual telemetry.** One telemetry value edited per decision
 (response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare
@@ -585,6 +596,21 @@ fixed before its result was seen (seed-sets 0-9):
 The objective is not the bottleneck; the planner's performance model is
 (with 0.030 s it underestimates load, runs ~2 servers at dimmer 1 and is
 late most of the run).
+
+**Decision (2026-10-13): the paper's reference is PLA planning for SEAMS
+2017A with S = 1/maxServiceRate (11,262.7 ± 0).** Every reference must plan
+for the utility it is scored on, so the as-shipped PLA (4,089) and Thallium
+(4,659), which plan for Stevens's utility, leave the paper. SWIM declares this
+service time itself (`swim.ini:54`, `maxServiceRate = 1 / 0.04452713 #
+typically the inverse of the normal service time`), and its SEAMS 2017A
+utility uses the same constant, so the port's missing input is defined after
+all. On 2026-10-08 the 0.030 s variant was declared primary before any
+result; this switch came after the results were seen, and the paper's threats
+state the 0.030 s result (−15.1k, late in 59 of 90 periods). Thallium is not
+re-targeted (README, "Thallium: not re-targeted") and is dropped. Re-run on
+the current image (rebuilt after the 2026-10-08 runs for the static manager),
+seed-sets 0-9: 11,262.7 in every run, late 4, the same as before
+(`results-local/swim_planners/pla-seams-recheck-20261013-144019/`).
 
 **What this configuration rewards** (fixed grid, 12 servers × 10 dimmer
 levels × 10 seed-sets, both traces; README "Does adaptation pay on

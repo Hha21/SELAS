@@ -34,8 +34,9 @@ STUDENTS = ("gemma-3-12b-it", "qwen2.5-14b-instruct")
 PAIRS = ("rt_breached|rt_met", "load_high|load_low", "spare_none|spare_ample")
 
 
-def top(dist: dict) -> str:
-    return max(dist, key=dist.get)
+def top(dist: dict, legal: list[str]) -> str:
+    """The option the controller would take: the argmax over legal options."""
+    return max((k for k in legal if k in dist), key=dist.get)
 
 
 def mistakes(run_dirs: list[Path]) -> dict:
@@ -51,7 +52,7 @@ def mistakes(run_dirs: list[Path]) -> dict:
             if len(pair) < 2:
                 continue
             a, b = pair["corrupt_open"], pair["truncate_3"]
-            flip = top(a["distribution_rescored"]) != top(b["distribution_rescored"])
+            flip = top(a["distribution_rescored"], a["legal_ids"]) != top(b["distribution_rescored"], b["legal_ids"])
             split = "no_op" if a["action_recorded"] == "no_op" else "action"
             for s in (split, "all"):
                 acc[s][d.name].append(flip)

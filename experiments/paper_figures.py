@@ -14,7 +14,7 @@ colour, and a reference (another controller, or a null) is grey.
 
   models     (page width) Utility per model with and without reasoning, with the
              objective stated (a) and not (b); dots are runs, ticks are means;
-             PLA and Thallium as reference lines.
+             PLA-SDP (planning for SEAMS 2017A) as a reference line.
   reasoning  (column) Panel (a) of ``models`` alone.
   battery    (column) Share of decisions whose action changes under each
              intervention, for decisions to act and to do nothing.
@@ -253,6 +253,11 @@ def aspects(aspects_json: Path, out: Path) -> None:
         ax.plot(t, r, color=color, ls=ls, lw=1.1, marker=marker, markersize=3.6,
                 markeredgecolor="white", markeredgewidth=0.35, label=f"{label} (n={A[split]['n']:,})",
                 zorder=3)
+    # Simulatability is (gain + 1) / 2, so 0.5 on its spoke is no gain: mark it.
+    ts = theta[ASPECTS.index("Simulatability")]
+    arc = np.linspace(ts - 0.16, ts + 0.16, 20)
+    ax.plot(arc, [0.5] * len(arc), color=INK, lw=1.1, zorder=4, solid_capstyle="butt")
+    ax.annotate("no gain", xy=(ts + 0.17, 0.5), fontsize=6, color=INK, ha="right", va="bottom")
     ax.set_ylim(0, 1)
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0.25", "0.5", "0.75", "1"], fontsize=6, color=INK2)
@@ -332,7 +337,7 @@ def main() -> int:
                     default=Path("results-local/csf/interp-gemma27b-final/aspects.json"))
     ap.add_argument("--table", type=Path, default=Path("results-local/csf/final_table.json"))
     ap.add_argument("--reference", action="append", default=None, metavar="NAME=VALUE",
-                    help="reference line (repeatable); default PLA and Thallium as shipped")
+                    help="reference line (repeatable); default PLA-SDP planning for SEAMS 2017A (RESULTS §C)")
     ap.add_argument("--battery", type=Path,
                     default=Path("results-local/csf/interp-gemma27b-final/battery.json"))
     ap.add_argument("--shuffled", type=Path,
@@ -349,7 +354,7 @@ def main() -> int:
     args = ap.parse_args()
     style()
     refs = [(n.strip(), float(v)) for n, _, v in
-            (r.rpartition("=") for r in (args.reference or ["PLA=4089.09", "Thallium=4658.65"]))]
+            (r.rpartition("=") for r in (args.reference or ["PLA-SDP=11262.7"]))]
     if "models" in args.only:
         models(args.table, refs, args.out / "models")
     if "reasoning" in args.only:

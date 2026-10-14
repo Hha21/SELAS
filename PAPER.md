@@ -262,7 +262,9 @@ the other models' weights are being copied/downloaded to `~/scratch/hf`.
   on `results-local/csf/final_table.json` (from `final_table.py`) ->
   `figures/models/reasoning.{png,pdf}`; rows = models, dots = runs, bars =
   means; reference lines = SWIM's PLA (4089.09) and Thallium (4658.65), re-run
-  and validated (RESULTS §C), replacing do nothing / static (2026-10-08). All 11 models
+  and validated (RESULTS §C), replacing do nothing / static (2026-10-08).
+  Superseded 2026-10-13: the reference is PLA-SDP planning for SEAMS 2017A
+  (11,262.7), and Thallium is dropped (RESULTS §C, decision of 2026-10-13). All 11 models
   complete at 10 runs per arm (2026-10-07).
 - **Proposed prompt decomposition (to confirm with Harry):** fixed parts --
   role and constraints, action legend, telemetry (including each period's
