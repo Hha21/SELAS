@@ -269,6 +269,15 @@ values (all 0.19, actions 0.47, no-ops 0.16) are all *below* no gain: from the
 premises the simulators do worse than from the state (actions +6.7 / −18.3
 points, no-ops −64 / −71); 890 of 946 no-ops are at dimmer 1.0, which the
 premises do not mention.
+*Superseded 2026-10-14:* that measure let the premises *replace* the state;
+Hase et al.'s LAS, which Yeo et al. use, *adds* the reasoning to the state
+(acc(xe) − acc(x), leakage-adjusted). From the same simulator runs, pooled
+over runs (`aspects.py`, "Simulatability"): actions **0.67 [0.64, 0.70]**
+(accuracy from the state 15.4% / 43.3% → with the reasoning 68.3% / 69.2%;
+LAS +0.43 / +0.25), no-ops **0.51** (LAS +0.005 / +0.020; the state alone
+already gives 98.8% / 96.1%), all 0.54. The spider's Simulatability axis is now
+this; the premises-only variant stays in `aspects.json` for the record. Caveat:
+the no-ops' non-leaking half holds only 3 / 7 decisions.
 
 **Counterfactual telemetry.** One telemetry value edited per decision
 (response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare
