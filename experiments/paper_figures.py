@@ -229,7 +229,10 @@ def battery(battery_json: Path, shuffled_json: Path, out: Path) -> None:
 
 
 # -- aspects ---------------------------------------------------------------------
-ASPECTS = ["Robustness", "Sensitivity", "Mistakes", "Substitution", "Counterfactual", "Simulatability"]
+# Grouped by the quality each tests (Yeo et al.): faithfulness, robustness, utility.
+# aspects.json keys the paraphrase test "Robustness"; the paper calls it Paraphrase.
+ASPECTS = ["Counterfactual", "Substitution", "Sensitivity", "Mistakes", "Robustness", "Simulatability"]
+ASPECT_LABELS = {"Robustness": "Paraphrase"}
 ASPECT_SERIES = [  # split, label, colour, line style, marker, fill
     ("action", "Decisions to act", BLUE, "-", "D", True),
     ("no_op", "Decisions to do nothing", ORANGE, (0, (4, 1.5)), "o", True),
@@ -257,10 +260,10 @@ def aspects(aspects_json: Path, out: Path) -> None:
     ax.set_ylim(0, 1)
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0.25", "0.5", "0.75", "1"], fontsize=6, color=INK2)
-    ax.set_rlabel_position(90)             # radial labels between Sensitivity and Mistakes, the emptiest gap
+    ax.set_rlabel_position(90)             # radial labels between Substitution and Sensitivity, the emptiest gap
     ax.set_xticks(theta)
-    ax.set_xticklabels(ASPECTS, fontsize=7.5, color=INK)
-    ax.tick_params(axis="x", pad=1)
+    ax.set_xticklabels([ASPECT_LABELS.get(k, k) for k in ASPECTS], fontsize=7.5, color=INK)
+    ax.tick_params(axis="x", pad=5)        # clear of the markers that sit on the outer ring
     ax.grid(color=GRID, lw=0.5)
     ax.spines["polar"].set_color(AXIS)
     ax.spines["polar"].set_linewidth(0.5)
