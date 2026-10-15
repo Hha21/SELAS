@@ -350,6 +350,29 @@ or regenerated, (c) objective removed; decisions to act vs to do nothing,
   telemetry). The decision is partly represented before it is verbalised;
   caveat as before: a linear read-out from five numbers is a weak baseline
   for what the full telemetry text encodes.
+- **FVE against our own mean (2026-10-15, `fve_own.py`, no GPU).** The
+  reported FVE is the NLA paper's: error over the variance of the pair's
+  *training* vectors (0.0579), so its baseline is the training mean. Our
+  activations at a position spread only 7-32% as much (50-59% at the end of
+  the state), so a constant (the leave-one-out mean of our vectors) scores
+  higher than the explanations everywhere. Medians, with / without reasoning:
+
+  | position | FVE (training mean, reported) | constant: our mean | our spread / training | FVE vs our mean | centred FVE |
+  |---|---|---|---|---|---|
+  | end of state | 0.08 / 0.11 | 0.49 / 0.61 | 0.59 / 0.50 | −0.56 / −0.79 | 0.14 / 0.17 |
+  | turn opens | 0.54 / 0.44 | 0.96 / 0.96 | 0.07 / 0.08 | −5.1 / −6.1 | 0.18 / 0.23 |
+  | Capacity | 0.76 / – | 0.88 | 0.18 | −0.32 | 0.61 |
+  | Therefore | 0.74 / – | 0.86 | 0.27 | 0.03 | 0.60 |
+  | action cue | 0.47 / 0.41 | 0.96 / 0.97 | 0.17 / 0.07 | −2.1 / −7.0 | 0.68 / 0.19 |
+
+  (Centred: each side's mean over the 1050 decisions subtracted, i.e. the
+  share of the decision-to-decision variation the words carry.) "Captures
+  about half of the activation's variance" is half of the variance about the
+  *web-text* mean. The explanations miss what all SELAS decisions share
+  (consistent with their foreign-domain wording) but carry much of what
+  differs between decisions, at the action cue with reasoning (0.68) more
+  than without (0.19). The edit-and-patch direction is a difference of two
+  reconstructions, in which the shared offset cancels.
 
 ### B4. Edit and patch — done (2026-10-08)
 
