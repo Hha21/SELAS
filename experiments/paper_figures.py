@@ -18,8 +18,9 @@ colour, and a reference (another controller, or a null) is grey.
   reasoning  (column) Panel (a) of ``models`` alone.
   battery    (column) Share of decisions whose action changes under each
              intervention, for decisions to act and to do nothing.
-  aspects    (column) The five interpretability aspects of Yeo et al. as a
-             spider, for all decisions, decisions to act and to do nothing.
+  aspects    (column) The six interpretability aspects (Yeo et al. and the tests
+             they build on, plus substitution) as a spider, for all decisions,
+             decisions to act and to do nothing.
   patch      (column) Edit and patch: share of decisions moved to the option
              the edited NLA explanation names, by strength, with and without
              reasoning.
@@ -228,7 +229,7 @@ def battery(battery_json: Path, shuffled_json: Path, out: Path) -> None:
 
 
 # -- aspects ---------------------------------------------------------------------
-ASPECTS = ["Robustness", "Sensitivity", "Mistakes", "Counterfactual", "Simulatability"]
+ASPECTS = ["Robustness", "Sensitivity", "Mistakes", "Substitution", "Counterfactual", "Simulatability"]
 ASPECT_SERIES = [  # split, label, colour, line style, marker, fill
     ("action", "Decisions to act", BLUE, "-", "D", True),
     ("no_op", "Decisions to do nothing", ORANGE, (0, (4, 1.5)), "o", True),
@@ -256,7 +257,7 @@ def aspects(aspects_json: Path, out: Path) -> None:
     ax.set_ylim(0, 1)
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0.25", "0.5", "0.75", "1"], fontsize=6, color=INK2)
-    ax.set_rlabel_position(360 / n / 2)    # radial labels between the first two spokes
+    ax.set_rlabel_position(90)             # radial labels between Sensitivity and Mistakes, the emptiest gap
     ax.set_xticks(theta)
     ax.set_xticklabels(ASPECTS, fontsize=7.5, color=INK)
     ax.tick_params(axis="x", pad=1)

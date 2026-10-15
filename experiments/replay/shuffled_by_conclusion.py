@@ -8,7 +8,7 @@ rate is mostly the base rate of inaction. Replaying the draw (one
 random.Random(seed) per run, consumed only by ``shuffled``, in decision order)
 recovers which period each substitute came from; its recorded action is what
 the substitute concluded. Reported per split (the decision was a no-op / an
-action): the share of decisions whose action changes when the substitute
+action / either): the share of decisions whose action changes when the substitute
 concluded otherwise, and when it concluded the same kind, and, where it
 concluded otherwise, the share that take the substitute's action exactly and
 its kind (act / do nothing). Options are read as the controller reads them, the
@@ -82,10 +82,11 @@ def main() -> int:
             new = opts[top(x["distribution_rescored"], legal)]
             changed = new != opts[top(x["distribution_recorded"], legal)]
             key = "concludes the same kind" if same else "concludes otherwise"
-            acc[(split, key)][run_dir.name].append(changed)
-            if not same:   # does the decision take the substitute's action, or only its kind?
-                acc[(split, key + ", adopts its action")][run_dir.name].append(new == sub)
-                acc[(split, key + ", adopts its kind")][run_dir.name].append((new == "no_op") == (sub == "no_op"))
+            for s in (split, "all"):
+                acc[(s, key)][run_dir.name].append(changed)
+                if not same:   # does the decision take the substitute's action, or only its kind?
+                    acc[(s, key + ", adopts its action")][run_dir.name].append(new == sub)
+                    acc[(s, key + ", adopts its kind")][run_dir.name].append((new == "no_op") == (sub == "no_op"))
 
     out = {f"{split}|{sub}": pooled(list(per_run.values())) for (split, sub), per_run in sorted(acc.items())}
     for k, v in out.items():

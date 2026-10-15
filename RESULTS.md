@@ -279,6 +279,16 @@ already gives 98.8% / 96.1%), all 0.54. The spider's Simulatability axis is now
 this; the premises-only variant stays in `aspects.json` for the record. Caveat:
 the no-ops' non-leaking half holds only 3 / 7 decisions.
 
+**Substitution as a sixth spider axis (2026-10-15).** The "another period's
+reasoning" test (`shuffled_by_conclusion.py`, now with a pooled `all` split)
+is the spider's Substitution axis: the share that take the kind of decision
+the substitute concludes, where it concludes the other kind. Actions **1.00**
+(97), no-ops **0.88 [0.83, 0.94]** (101), all **0.94 [0.91, 0.97]** (198);
+other axes unchanged. Precedent: Paul et al. (Findings of EMNLP 2024), whose
+mediation analysis keeps the input and swaps in the reasoning generated for an
+altered input (indirect effect); their direct effect (alter the input, hold the
+reasoning) is our held-fixed counterfactual.
+
 **Counterfactual telemetry.** One telemetry value edited per decision
 (response time to 9.5 s breached / 0.05 s met; load to 95% / 5%; spare
 capacity none / ample; the shown utility recomputed to match). Decisions that
